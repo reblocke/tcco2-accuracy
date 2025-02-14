@@ -1,0 +1,6 @@
+.DS_Store
+*.dta
+*.gph
+/Results and Figures
+temp.log
+*.stswp
