@@ -53,7 +53,8 @@ c(m, bias_mean,sqrt(sd2_est), tau_est, LOA_L, LOA_U, CI_L_mod, CI_U_mod, CI_L_rv
 Load data from wherever you saved the file named 'data.Rdata' from figshare by adding in the file location
 
 ```{r}
-load('data.Rdata')
+
+load("data.Rdata")  # Load the dataset
 ```
 
 ##Legend:
@@ -724,3 +725,17 @@ abline(v=c(LOA_l,LOA_u), lty = 2, col = 'black')
 abline(v=c(LOA_l_CI, LOA_u_CI), lty=1, col = 'black')
 title("Figure: Comparisons within and across studies")
 ```
+
+To create a stata file with the rdata file
+```{r}
+install.packages("haven")
+install.packages("janitor")
+library(janitor)
+library(haven)
+
+load("data.Rdata")  # Load the dataset
+main <- clean_names(main)  # Renames variables into a safe format
+names(main) <- substr(names(main), 1, 30)  # Shorten all names to ≤30 chars
+write_dta(main, "data.dta")  # Save as Stata file
+```
+
