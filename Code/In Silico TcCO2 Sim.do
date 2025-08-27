@@ -217,5 +217,5 @@ OTHER ANALYSES NOT CURRENTLY USED
 //Overlaps & ROC CURVES
 twoway (hist paco2 if tcco2_hypercap_flag == 0, frac fcolor(%25) lcolor(ebblue) width(1)) (hist paco2 if tcco2_hypercap_flag == 1, frac fcolor(%25) lcolor(cranberry) width(1)), xtitle("PaCO2") xlabel(5(5)150) legend(pos(2) ring(0) label(1 "TcCO2 < 45 mmHg") label(2 "TcCO2 >= 45 mmHg"))
 
-roctab paco2_flag tcco2_reading, graph plotopts(lwidth(thick) ylabel(,labsize(4)) xlabel(,labsize(4)) xtitle(, size(5)) ytitle(, size(5) height(5)) title("ROC for Hypercapnia by TcCO2 reading", size(5)) ) scheme(white_w3d) // this takes a very long time
+//roctab paco2_flag tcco2_reading, graph plotopts(lwidth(thick) ylabel(,labsize(4)) xlabel(,labsize(4)) xtitle(, size(5)) ytitle(, size(5) height(5)) title("ROC for Hypercapnia by TcCO2 reading", size(5)) ) scheme(white_w3d) // this takes a very long time
 //graph export "Results and Figures/$S_DATE/AMB ROC HCO3 Labels.png", as(png) name("Graph") replace
