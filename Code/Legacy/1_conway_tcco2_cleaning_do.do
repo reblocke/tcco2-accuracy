@@ -5,26 +5,10 @@ Conway Cleaning
 
 //Methods note: source of data: https://figshare.com/articles/dataset/Accuracy_of_TcCO2_monitoring_meta-analysis/6244058/2
 
-use "Original Conway Dataset_Full", clear
+use "Original Conway Dataset_Full"
 
 *Drop unecessary variables/subgroups
 drop technology location_of_sensor device_temp funding_equip picu neonates surgery paed volunteer olv sedat crf cpex_11
-
-*Add Bolliger 2007 ICU subpopulation (included in Conway, not present here)
-set obs `= _N + 1'
-replace study      = "Bolliger 2007 (TOSCA - ICU)" in L
-replace n          = 49    in L
-replace n_2        = 49    in L
-replace c          = 1.000 in L
-replace bias       = -2.175 in L
-replace lower95    = -11.550 in L
-replace upper95    = 7.200  in L
-replace s2         = 22.878651 in L
-replace s2_2       = 22.878651 in L
-replace v_bias     = 0.4669112 in L
-replace logs2      = 1.3802637 in L
-replace v_logs2    = 0.04166667 in L
-replace icu1      = 1.00 in L
 
 *Rename and apply labels for populations of interest
 rename icu1 icu_group
@@ -33,6 +17,5 @@ rename respiratory_lft pft_group
 label var pft "PFT Clinic" 
 rename ed_arf ed_inp_group
 label var ed_inp "ED and Inpatients (ARF)"
-
 
 save "Conway_Tcco2_pruned_dataset", replace

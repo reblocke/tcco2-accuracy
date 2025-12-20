@@ -367,12 +367,11 @@ tab confusion_matrix_`group'
 }
 
 *Binary variable for Simulated TcCO2=hypercapnic or not:, more extreme TcCO2 cutoffs
-// Note: Makes 1 if >50 and 0 if <40, leaves misisng if midrange. 
 foreach group in pft_group ed_inp_group icu_group{
 capture drop tcco2_`group'_extreme
 gen tcco2_`group'_extreme = .
 capture label variable tcco2_`group'_extreme "TcCO2 ≤40 or ≥ 50 mmHg for `group'?"
-replace tcco2_`group'_extreme =  1 if !missing(tcco2_`group'_sim) & tcco2_`group'_sim >= 50 
+replace tcco2_`group'_extreme =  1 if !missing(tcco2_`group'_sim) & tcco2_`group'_sim >= 50
 replace tcco2_`group'_extreme =  0 if !missing(tcco2_`group'_sim) & tcco2_`group'_sim < 40
 capture label define tcco2_extreme_lab 0 "TcCO2 < 40 mmHg" 1 "TcCO2 ≥ 50 mmHg" 
 label values tcco2_`group'_extreme tcco2_extreme_lab
@@ -390,6 +389,8 @@ diagt paco2_hypercap tcco2_`group'_extreme //calculate operating characteristics
 tab matrix_`group'_extreme
 }
 
+
 *Save the default frame as the working conway dataset and the working frame as the DAB_working dataset
-frame default: save "Conway_Tcco2_working_dataset", replace 
+frame default: save "Conway_Tcco2_working_dataset", replace
+cd .. 
 frame work: save "Final TcCO2 Dataset", replace

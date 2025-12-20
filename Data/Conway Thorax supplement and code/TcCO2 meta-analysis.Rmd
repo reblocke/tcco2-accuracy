@@ -1,0 +1,726 @@
+---
+title: "Accuracy of transcutaneous carbon dioxide measurements"
+output: html_document
+---
+
+Functions for calculating Bland-Altman meta-analysis
+
+```{r}
+meta <- function(Te, V_T) {
+  m <- length(Te)
+  wt_FE <- 1 / V_T
+  T_FE <- sum(Te * wt_FE) / sum(wt_FE)
+  Q <- sum(wt_FE * (Te - T_FE)^2)
+  S1 <- sum(wt_FE)
+  S2 <- sum(wt_FE^2)
+  o2 <- (Q - (m - 1)) / (S1 - S2 / S1)
+  wt_RE <- 1 / (V_T + o2)
+  T_RE <- sum(Te * wt_RE) / sum(wt_RE)
+  V_T_RE_mod <- 1 / sum(wt_RE)
+  V_T_RE_rve <- (m / (m - 1)) * sum(wt_RE^2 * (Te - T_RE)^2) / (sum(wt_RE))^2
+  c(m, T_RE, o2, V_T_RE_mod, V_T_RE_rve)
+}
+loa_maker <- function(bias,V_bias,logs2,V_logs2) {
+bias_row=meta(bias, V_bias)
+logs2_row=meta(logs2, V_logs2)
+bias_mean <- bias_row[2]
+sd2_est <- exp(logs2_row[2])
+tau_est <- bias_row[3]
+LOA_L <- bias_mean - 2*sqrt(sd2_est + tau_est)
+LOA_U <- bias_mean + 2*sqrt(sd2_est + tau_est)
+m <- bias_row[1]
+tcrit <- qt(1-.05/2,m-1)
+B1 <- sd2_est^2/(sd2_est + tau_est)
+B2 <- tau_est^2/(sd2_est + tau_est)
+wt <- 1/V_bias
+S1 <- sum(wt)
+S2 <- sum(wt^2)
+S3 <- sum(wt^3)
+A0 <- 2*(m-1)/(S1-S2/S1)^2
+A1 <- 4/(S1 - S2/S1)
+A2 <- 2*(S2-2*S3/S1+S2^2/S1^2)/(S1-S2/S1)^2
+V_logT2 <- A0/tau_est^2 + A1/tau_est + A2
+V_logT2 <- 2/sum((V_bias + tau_est)^(-2))
+V_LOA_mod <- bias_row[4] + B1*logs2_row[4] + B2*V_logT2
+V_LOA_rve <- bias_row[5] + B1*logs2_row[5] + B2*V_logT2
+CI_L_mod <- LOA_L - tcrit*sqrt(V_LOA_mod)
+CI_U_mod <- LOA_U + tcrit*sqrt(V_LOA_mod)
+CI_L_rve <- LOA_L - tcrit*sqrt(V_LOA_rve)
+CI_U_rve <- LOA_U + tcrit*sqrt(V_LOA_rve)
+c(m, bias_mean,sqrt(sd2_est), tau_est, LOA_L, LOA_U, CI_L_mod, CI_U_mod, CI_L_rve, CI_U_rve)}
+```
+
+Load data from wherever you saved the file named 'data.Rdata' from figshare by adding in the file location
+
+```{r}
+load('data.Rdata')
+```
+
+##Legend:
+
+Bias=pooled estimate of mean differences calculated as PaCO2-TcCO2 in mmHg
+
+SD=pooled standard deviation of differences
+
+tau2=Variation in bias between studies
+
+LoA_L LoA_U = Lower and upper 95% limit of agreement calculated from pooled estimates of bias and standard deviation of differences
+
+CI_Lm CI_Um = Model-based random-effects meta-analysis estimate of CI for LOA
+
+CI_Lr CI_Ur = Robust variance estimation meta-analysis estimate of CI for LOA
+
+#Primary meta-analysis (all included studies)
+
+```{r}
+out=loa_maker(main$bias,main$V_bias,main$logs2,main$V_logs2)
+names(out) <- c("studies","bias","sd","tau2","LOA_L","LOA_U","CI_Lm","CI_Um","CI_Lr","CI_Ur")
+out[1:10]
+
+bias=main$bias
+s2_unb = main$S2
+pooled_bias = out[2]
+pooled_sd = out[3]
+pooled_tau2 = out[4]
+pooled_sd = sqrt(pooled_sd^2 + pooled_tau2)
+
+
+x <- seq(-20,20,length=200)
+hx <- dnorm(x,bias[1],sd=sqrt(s2_unb[1]))
+plot(x, hx, type = "l", lty = 2, col='gray',xlab="Difference between transcutaneous and arterial carbon dioxide (mmHg)",ylab="Density", ylim=c(0,0.13))
+
+for (i in 2:length(bias)) {
+hx <- dnorm(x,bias[i],sd=sqrt(s2_unb[i]))
+lines(x, hx, type = "l", lty = 2,col='gray')
+}
+
+hx <- dnorm(x,pooled_bias,pooled_sd)
+lines(x,hx,lty=1,col='black')
+LOA_l = out[5]
+LOA_u = out[6]
+LOA_l_CI = out[9]
+LOA_u_CI = out[10]
+abline(v=c(LOA_l,LOA_u), lty = 2, col = 'black')
+abline(v=c(LOA_l_CI, LOA_u_CI), lty=1, col = 'black')
+arrows(-7.1,0.14,6.9,0.14, length = 0.15, angle = 20, lty=1,code=3 , lwd=1, xpd=TRUE)
+text(0,0.145, "Pooled limits of agreement", xpd=TRUE)
+arrows(-15.1,0.15,14.9,0.15, length = 0.15, angle = 20, lty=1,code=3 , lwd=1,  xpd=TRUE)
+text(0,0.155, "Outer confidence intervals for pooled limits of agreement", xpd=TRUE)
+mycol <- rgb(0, 0, 255, max = 255, alpha = 125, names = "blue50")
+polygon(x,(dnorm(x,pooled_bias,pooled_sd)), col=mycol, border=NA)
+```
+
+
+Sensitivity analysis including only studies rated as low risk of bias
+
+```{r}
+out=loa_maker(lowrisk$bias,lowrisk$V_bias,lowrisk$logs2,lowrisk$V_logs2)
+names(out) <- c("studies","bias","sd","tau2","LOA_L","LOA_U","CI_Lm","CI_Um","CI_Lr","CI_Ur")
+out[1:10]
+
+bias=lowrisk$bias
+s2_unb =lowrisk$S2
+pooled_bias = out[2]
+pooled_sd = out[3]
+pooled_tau2 = out[4]
+pooled_sd = sqrt(pooled_sd^2 + pooled_tau2)
+
+
+x <- seq(-20,20,length=200)
+hx <- dnorm(x,bias[1],sd=sqrt(s2_unb[1]))
+plot(x, hx, type = "l", lty = 2, col='gray',xlab="Difference between transcutaneous and arterial carbon dioxide (mmHg)",ylab="Density",ylim=c(0,0.2))
+
+for (i in 2:length(bias)) {
+hx <- dnorm(x,bias[i],sd=sqrt(s2_unb[i]))
+lines(x, hx, type = "l", lty = 2,col='gray')
+}
+
+
+hx <- dnorm(x,pooled_bias,pooled_sd)
+lines(x,hx,lty=1,col='black')
+LOA_l = out[5]
+LOA_u = out[6]
+LOA_l_CI = out[9]
+LOA_u_CI = out[10]
+abline(v=c(LOA_l,LOA_u), lty = 2, col = 'black')
+abline(v=c(LOA_l_CI, LOA_u_CI), lty=1, col = 'black')
+title("Figure: Comparisons within and across studies")
+```
+
+Subgroup analysis of studies that used the Sentec device
+
+```{r}
+out=loa_maker(sentec$bias,sentec$V_bias,sentec$logs2,sentec$V_logs2)
+names(out) <- c("studies","bias","sd","tau2","LOA_L","LOA_U","CI_Lm","CI_Um","CI_Lr","CI_Ur")
+out[1:10]
+
+bias=sentec$bias
+s2_unb =sentec$S2
+pooled_bias = out[2]
+pooled_sd = out[3]
+pooled_tau2 = out[4]
+pooled_sd = sqrt(pooled_sd^2 + pooled_tau2)
+
+
+x <- seq(-20,20,length=200)
+hx <- dnorm(x,bias[1],sd=sqrt(s2_unb[1]))
+plot(x, hx, type = "l", lty = 2, col='gray',xlab="Difference between transcutaneous and arterial carbon dioxide (mmHg)",ylab="Density",ylim=c(0,0.2))
+
+for (i in 2:length(bias)) {
+hx <- dnorm(x,bias[i],sd=sqrt(s2_unb[i]))
+lines(x, hx, type = "l", lty = 2,col='gray')
+}
+
+
+hx <- dnorm(x,pooled_bias,pooled_sd)
+lines(x,hx,lty=1,col='black')
+LOA_l = out[5]
+LOA_u = out[6]
+LOA_l_CI = out[9]
+LOA_u_CI = out[10]
+abline(v=c(LOA_l,LOA_u), lty = 2, col = 'black')
+abline(v=c(LOA_l_CI, LOA_u_CI), lty=1, col = 'black')
+title("Figure: Comparisons within and across studies")
+```
+
+Subgroup analysis of studies that used the TOSCA device
+
+```{r}
+out=loa_maker(tosca$bias,tosca$V_bias,tosca$logs2,tosca$V_logs2)
+names(out) <- c("studies","bias","sd","tau2","LOA_L","LOA_U","CI_Lm","CI_Um","CI_Lr","CI_Ur")
+out[1:10]
+
+bias=tosca$bias
+s2_unb =tosca$S2
+pooled_bias = out[2]
+pooled_sd = out[3]
+pooled_tau2 = out[4]
+pooled_sd = sqrt(pooled_sd^2 + pooled_tau2)
+
+
+x <- seq(-20,20,length=200)
+hx <- dnorm(x,bias[1],sd=sqrt(s2_unb[1]))
+plot(x, hx, type = "l", lty = 2, col='gray',xlab="Difference between transcutaneous and arterial carbon dioxide (mmHg)",ylab="Density",ylim=c(0,0.2))
+
+for (i in 2:75) {
+hx <- dnorm(x,bias[i],sd=sqrt(s2_unb[i]))
+lines(x, hx, type = "l", lty = 2,col='gray')
+}
+
+
+hx <- dnorm(x,pooled_bias,pooled_sd)
+lines(x,hx,lty=1,col='black')
+LOA_l = out[5]
+LOA_u = out[6]
+LOA_l_CI = out[9]
+LOA_u_CI = out[10]
+abline(v=c(LOA_l,LOA_u), lty = 2, col = 'black')
+abline(v=c(LOA_l_CI, LOA_u_CI), lty=1, col = 'black')
+title("Figure: Comparisons within and across studies")
+```
+
+
+Subgroup analysis of studies that applied the sensor to the earlobe
+
+```{r}
+out=loa_maker(earlobe$bias,earlobe$V_bias,earlobe$logs2,earlobe$V_logs2)
+names(out) <- c("studies","bias","sd","tau2","LOA_L","LOA_U","CI_Lm","CI_Um","CI_Lr","CI_Ur")
+out[1:10]
+
+bias=earlobe$bias
+s2_unb =earlobe$S2
+pooled_bias = out[2]
+pooled_sd = out[3]
+pooled_tau2 = out[4]
+pooled_sd = sqrt(pooled_sd^2 + pooled_tau2)
+
+
+x <- seq(-20,20,length=200)
+hx <- dnorm(x,bias[1],sd=sqrt(s2_unb[1]))
+plot(x, hx, type = "l", lty = 2, col='gray',xlab="Difference between transcutaneous and arterial carbon dioxide (mmHg)",ylab="Density",ylim=c(0,0.2))
+
+for (i in 2:75) {
+hx <- dnorm(x,bias[i],sd=sqrt(s2_unb[i]))
+lines(x, hx, type = "l", lty = 2,col='gray')
+}
+
+
+hx <- dnorm(x,pooled_bias,pooled_sd)
+lines(x,hx,lty=1,col='black')
+LOA_l = out[5]
+LOA_u = out[6]
+LOA_l_CI = out[9]
+LOA_u_CI = out[10]
+abline(v=c(LOA_l,LOA_u), lty = 2, col = 'black')
+abline(v=c(LOA_l_CI, LOA_u_CI), lty=1, col = 'black')
+title("Figure: Comparisons within and across studies")
+```
+
+Subgroup analysis of studies that applied the sensor to the chest
+
+```{r}
+out=loa_maker(chest$bias,chest$V_bias,chest$logs2,chest$V_logs2)
+names(out) <- c("studies","bias","sd","tau2","LOA_L","LOA_U","CI_Lm","CI_Um","CI_Lr","CI_Ur")
+out[1:10]
+
+bias=chest$bias
+s2_unb =chest$S2
+pooled_bias = out[2]
+pooled_sd = out[3]
+pooled_tau2 = out[4]
+pooled_sd = sqrt(pooled_sd^2 + pooled_tau2)
+
+
+x <- seq(-20,20,length=200)
+hx <- dnorm(x,bias[1],sd=sqrt(s2_unb[1]))
+plot(x, hx, type = "l", lty = 2, col='gray',xlab="Difference between transcutaneous and arterial carbon dioxide (mmHg)",ylab="Density",ylim=c(0,0.2))
+
+for (i in 2:75) {
+hx <- dnorm(x,bias[i],sd=sqrt(s2_unb[i]))
+lines(x, hx, type = "l", lty = 2,col='gray')
+}
+
+
+hx <- dnorm(x,pooled_bias,pooled_sd)
+lines(x,hx,lty=1,col='black')
+LOA_l = out[5]
+LOA_u = out[6]
+LOA_l_CI = out[9]
+LOA_u_CI = out[10]
+abline(v=c(LOA_l,LOA_u), lty = 2, col = 'black')
+abline(v=c(LOA_l_CI, LOA_u_CI), lty=1, col = 'black')
+title("Figure: Comparisons within and across studies")
+```
+
+Subgroup analysis of studies that applied the sensor to an alternative site
+
+```{r}
+out=loa_maker(othersite$bias,othersite$V_bias,othersite$logs2,othersite$V_logs2)
+names(out) <- c("studies","bias","sd","tau2","LOA_L","LOA_U","CI_Lm","CI_Um","CI_Lr","CI_Ur")
+out[1:10]
+
+bias=othersite$bias
+s2_unb =othersite$S2
+pooled_bias = out[2]
+pooled_sd = out[3]
+pooled_tau2 = out[4]
+pooled_sd = sqrt(pooled_sd^2 + pooled_tau2)
+
+
+x <- seq(-20,20,length=200)
+hx <- dnorm(x,bias[1],sd=sqrt(s2_unb[1]))
+plot(x, hx, type = "l", lty = 2, col='gray',xlab="Difference between transcutaneous and arterial carbon dioxide (mmHg)",ylab="Density",ylim=c(0,0.2))
+
+for (i in 2:75) {
+hx <- dnorm(x,bias[i],sd=sqrt(s2_unb[i]))
+lines(x, hx, type = "l", lty = 2,col='gray')
+}
+
+
+hx <- dnorm(x,pooled_bias,pooled_sd)
+lines(x,hx,lty=1,col='black')
+LOA_l = out[5]
+LOA_u = out[6]
+LOA_l_CI = out[9]
+LOA_u_CI = out[10]
+abline(v=c(LOA_l,LOA_u), lty = 2, col = 'black')
+abline(v=c(LOA_l_CI, LOA_u_CI), lty=1, col = 'black')
+title("Figure: Comparisons within and across studies")
+```
+
+Subgroup analysis of studies that set the temperature of the sensor to 42 degrees
+
+```{r}
+out=loa_maker(temp42$bias,temp42$V_bias,temp42$logs2,temp42$V_logs2)
+names(out) <- c("studies","bias","sd","tau2","LOA_L","LOA_U","CI_Lm","CI_Um","CI_Lr","CI_Ur")
+out[1:10]
+
+bias=temp42$bias
+s2_unb =temp42$S2
+pooled_bias = out[2]
+pooled_sd = out[3]
+pooled_tau2 = out[4]
+pooled_sd = sqrt(pooled_sd^2 + pooled_tau2)
+
+
+x <- seq(-20,20,length=200)
+hx <- dnorm(x,bias[1],sd=sqrt(s2_unb[1]))
+plot(x, hx, type = "l", lty = 2, col='gray',xlab="Difference between transcutaneous and arterial carbon dioxide (mmHg)",ylab="Density",ylim=c(0,0.2))
+
+for (i in 2:75) {
+hx <- dnorm(x,bias[i],sd=sqrt(s2_unb[i]))
+lines(x, hx, type = "l", lty = 2,col='gray')
+}
+
+
+hx <- dnorm(x,pooled_bias,pooled_sd)
+lines(x,hx,lty=1,col='black')
+LOA_l = out[5]
+LOA_u = out[6]
+LOA_l_CI = out[9]
+LOA_u_CI = out[10]
+abline(v=c(LOA_l,LOA_u), lty = 2, col = 'black')
+abline(v=c(LOA_l_CI, LOA_u_CI), lty=1, col = 'black')
+title("Figure: Comparisons within and across studies")
+```
+
+Subgroup analysis of studies that set the temperature of the sensor to more than 42 degrees
+
+```{r}
+out=loa_maker(morethan42$bias,morethan42$V_bias,morethan42$logs2,morethan42$V_logs2)
+names(out) <- c("studies","bias","sd","tau2","LOA_L","LOA_U","CI_Lm","CI_Um","CI_Lr","CI_Ur")
+out[1:10]
+
+bias=morethan42$bias
+s2_unb =morethan42$S2
+pooled_bias = out[2]
+pooled_sd = out[3]
+pooled_tau2 = out[4]
+pooled_sd = sqrt(pooled_sd^2 + pooled_tau2)
+
+
+x <- seq(-20,20,length=200)
+hx <- dnorm(x,bias[1],sd=sqrt(s2_unb[1]))
+plot(x, hx, type = "l", lty = 2, col='gray',xlab="Difference between transcutaneous and arterial carbon dioxide (mmHg)",ylab="Density",ylim=c(0,0.2))
+
+for (i in 2:75) {
+hx <- dnorm(x,bias[i],sd=sqrt(s2_unb[i]))
+lines(x, hx, type = "l", lty = 2,col='gray')
+}
+
+
+hx <- dnorm(x,pooled_bias,pooled_sd)
+lines(x,hx,lty=1,col='black')
+LOA_l = out[5]
+LOA_u = out[6]
+LOA_l_CI = out[9]
+LOA_u_CI = out[10]
+abline(v=c(LOA_l,LOA_u), lty = 2, col = 'black')
+abline(v=c(LOA_l_CI, LOA_u_CI), lty=1, col = 'black')
+title("Figure: Comparisons within and across studies")
+```
+
+
+Subgroup analysis of studies that were conducted in the adult ICU
+
+```{r}
+out=loa_maker(ICU$bias,ICU$V_bias,ICU$logs2,ICU$V_logs2)
+names(out) <- c("studies","bias","sd","tau2","LOA_L","LOA_U","CI_Lm","CI_Um","CI_Lr","CI_Ur")
+out[1:10]
+
+bias=ICU$bias
+s2_unb =ICU$S2
+pooled_bias = out[2]
+pooled_sd = out[3]
+pooled_tau2 = out[4]
+pooled_sd = sqrt(pooled_sd^2 + pooled_tau2)
+
+
+x <- seq(-20,20,length=200)
+hx <- dnorm(x,bias[1],sd=sqrt(s2_unb[1]))
+plot(x, hx, type = "l", lty = 2, col='gray',xlab="Difference between transcutaneous and arterial carbon dioxide (mmHg)",ylab="Density",ylim=c(0,0.2))
+
+for (i in 2:75) {
+hx <- dnorm(x,bias[i],sd=sqrt(s2_unb[i]))
+lines(x, hx, type = "l", lty = 2,col='gray')
+}
+
+
+hx <- dnorm(x,pooled_bias,pooled_sd)
+lines(x,hx,lty=1,col='black')
+LOA_l = out[5]
+LOA_u = out[6]
+LOA_l_CI = out[9]
+LOA_u_CI = out[10]
+abline(v=c(LOA_l,LOA_u), lty = 2, col = 'black')
+abline(v=c(LOA_l_CI, LOA_u_CI), lty=1, col = 'black')
+title("Figure: Comparisons within and across studies")
+```
+
+Subgroup analysis of studies that were conducted with neonates
+
+```{r}
+out=loa_maker(neonates$bias,neonates$V_bias,neonates$logs2,neonates$V_logs2)
+names(out) <- c("studies","bias","sd","tau2","LOA_L","LOA_U","CI_Lm","CI_Um","CI_Lr","CI_Ur")
+out[1:10]
+
+bias=neonates$bias
+s2_unb =neonates$S2
+pooled_bias = out[2]
+pooled_sd = out[3]
+pooled_tau2 = out[4]
+pooled_sd = sqrt(pooled_sd^2 + pooled_tau2)
+
+
+x <- seq(-20,20,length=200)
+hx <- dnorm(x,bias[1],sd=sqrt(s2_unb[1]))
+plot(x, hx, type = "l", lty = 2, col='gray',xlab="Difference between transcutaneous and arterial carbon dioxide (mmHg)",ylab="Density",ylim=c(0,0.2))
+
+for (i in 2:75) {
+hx <- dnorm(x,bias[i],sd=sqrt(s2_unb[i]))
+lines(x, hx, type = "l", lty = 2,col='gray')
+}
+
+
+hx <- dnorm(x,pooled_bias,pooled_sd)
+lines(x,hx,lty=1,col='black')
+LOA_l = out[5]
+LOA_u = out[6]
+LOA_l_CI = out[9]
+LOA_u_CI = out[10]
+abline(v=c(LOA_l,LOA_u), lty = 2, col = 'black')
+abline(v=c(LOA_l_CI, LOA_u_CI), lty=1, col = 'black')
+title("Figure: Comparisons within and across studies")
+```
+
+Subgroup analysis of studies that were conducted with patients in acute respiratory failure
+
+```{r}
+out=loa_maker(ARF$bias,ARF$V_bias,ARF$logs2,ARF$V_logs2)
+names(out) <- c("studies","bias","sd","tau2","LOA_L","LOA_U","CI_Lm","CI_Um","CI_Lr","CI_Ur")
+out[1:10]
+
+bias=ARF$bias
+s2_unb =ARF$S2
+pooled_bias = out[2]
+pooled_sd = out[3]
+pooled_tau2 = out[4]
+pooled_sd = sqrt(pooled_sd^2 + pooled_tau2)
+
+
+x <- seq(-20,20,length=200)
+hx <- dnorm(x,bias[1],sd=sqrt(s2_unb[1]))
+plot(x, hx, type = "l", lty = 2, col='gray',xlab="Difference between transcutaneous and arterial carbon dioxide (mmHg)",ylab="Density",ylim=c(0,0.2))
+
+for (i in 2:75) {
+hx <- dnorm(x,bias[i],sd=sqrt(s2_unb[i]))
+lines(x, hx, type = "l", lty = 2,col='gray')
+}
+
+
+hx <- dnorm(x,pooled_bias,pooled_sd)
+lines(x,hx,lty=1,col='black')
+LOA_l = out[5]
+LOA_u = out[6]
+LOA_l_CI = out[9]
+LOA_u_CI = out[10]
+abline(v=c(LOA_l,LOA_u), lty = 2, col = 'black')
+abline(v=c(LOA_l_CI, LOA_u_CI), lty=1, col = 'black')
+title("Figure: Comparisons within and across studies")
+```
+
+Subgroup analysis of studies that were conducted with patients undergoing surgery with general anaesthesia
+
+```{r}
+out=loa_maker(GA$bias,GA$V_bias,GA$logs2,GA$V_logs2)
+names(out) <- c("studies","bias","sd","tau2","LOA_L","LOA_U","CI_Lm","CI_Um","CI_Lr","CI_Ur")
+out[1:10]
+
+bias=GA$bias
+s2_unb =GA$S2
+pooled_bias = out[2]
+pooled_sd = out[3]
+pooled_tau2 = out[4]
+pooled_sd = sqrt(pooled_sd^2 + pooled_tau2)
+
+
+x <- seq(-20,20,length=200)
+hx <- dnorm(x,bias[1],sd=sqrt(s2_unb[1]))
+plot(x, hx, type = "l", lty = 2, col='gray',xlab="Difference between transcutaneous and arterial carbon dioxide (mmHg)",ylab="Density",ylim=c(0,0.2))
+
+for (i in 2:75) {
+hx <- dnorm(x,bias[i],sd=sqrt(s2_unb[i]))
+lines(x, hx, type = "l", lty = 2,col='gray')
+}
+
+
+hx <- dnorm(x,pooled_bias,pooled_sd)
+lines(x,hx,lty=1,col='black')
+LOA_l = out[5]
+LOA_u = out[6]
+LOA_l_CI = out[9]
+LOA_u_CI = out[10]
+abline(v=c(LOA_l,LOA_u), lty = 2, col = 'black')
+abline(v=c(LOA_l_CI, LOA_u_CI), lty=1, col = 'black')
+title("Figure: Comparisons within and across studies")
+```
+
+Subgroup analysis of studies that were conducted with patients undergoing throacic surgery with one lung ventilation
+
+```{r}
+out=loa_maker(OLV$bias,OLV$V_bias,OLV$logs2,OLV$V_logs2)
+names(out) <- c("studies","bias","sd","tau2","LOA_L","LOA_U","CI_Lm","CI_Um","CI_Lr","CI_Ur")
+out[1:10]
+
+bias=OLV$bias
+s2_unb =OLV$S2
+pooled_bias = out[2]
+pooled_sd = out[3]
+pooled_tau2 = out[4]
+pooled_sd = sqrt(pooled_sd^2 + pooled_tau2)
+
+
+x <- seq(-20,20,length=200)
+hx <- dnorm(x,bias[1],sd=sqrt(s2_unb[1]))
+plot(x, hx, type = "l", lty = 2, col='gray',xlab="Difference between transcutaneous and arterial carbon dioxide (mmHg)",ylab="Density",ylim=c(0,0.2))
+
+for (i in 2:75) {
+hx <- dnorm(x,bias[i],sd=sqrt(s2_unb[i]))
+lines(x, hx, type = "l", lty = 2,col='gray')
+}
+
+
+hx <- dnorm(x,pooled_bias,pooled_sd)
+lines(x,hx,lty=1,col='black')
+LOA_l = out[5]
+LOA_u = out[6]
+LOA_l_CI = out[9]
+LOA_u_CI = out[10]
+abline(v=c(LOA_l,LOA_u), lty = 2, col = 'black')
+abline(v=c(LOA_l_CI, LOA_u_CI), lty=1, col = 'black')
+title("Figure: Comparisons within and across studies")
+```
+
+Subgroup analysis of studies that were conducted with paediatric patients
+
+```{r}
+out=loa_maker(paed$bias,paed$V_bias,paed$logs2,paed$V_logs2)
+names(out) <- c("studies","bias","sd","tau2","LOA_L","LOA_U","CI_Lm","CI_Um","CI_Lr","CI_Ur")
+out[1:10]
+
+bias=paed$bias
+s2_unb =paed$S2
+pooled_bias = out[2]
+pooled_sd = out[3]
+pooled_tau2 = out[4]
+pooled_sd = sqrt(pooled_sd^2 + pooled_tau2)
+
+
+x <- seq(-20,20,length=200)
+hx <- dnorm(x,bias[1],sd=sqrt(s2_unb[1]))
+plot(x, hx, type = "l", lty = 2, col='gray',xlab="Difference between transcutaneous and arterial carbon dioxide (mmHg)",ylab="Density",ylim=c(0,0.25))
+
+for (i in 2:75) {
+hx <- dnorm(x,bias[i],sd=sqrt(s2_unb[i]))
+lines(x, hx, type = "l", lty = 2,col='gray')
+}
+
+
+hx <- dnorm(x,pooled_bias,pooled_sd)
+lines(x,hx,lty=1,col='black')
+LOA_l = out[5]
+LOA_u = out[6]
+LOA_l_CI = out[9]
+LOA_u_CI = out[10]
+abline(v=c(LOA_l,LOA_u), lty = 2, col = 'black')
+abline(v=c(LOA_l_CI, LOA_u_CI), lty=1, col = 'black')
+title("Figure: Comparisons within and across studies")
+```
+
+Subgroup analysis of studies that were conducted with sedated patients
+
+```{r}
+out=loa_maker(sedation$bias,sedation$V_bias,sedation$logs2,sedation$V_logs2)
+names(out) <- c("studies","bias","sd","tau2","LOA_L","LOA_U","CI_Lm","CI_Um","CI_Lr","CI_Ur")
+out[1:10]
+
+bias=sedation$bias
+s2_unb =sedation$S2
+pooled_bias = out[2]
+pooled_sd = out[3]
+pooled_tau2 = out[4]
+pooled_sd = sqrt(pooled_sd^2 + pooled_tau2)
+
+
+x <- seq(-20,20,length=200)
+hx <- dnorm(x,bias[1],sd=sqrt(s2_unb[1]))
+plot(x, hx, type = "l", lty = 2, col='gray',xlab="Difference between transcutaneous and arterial carbon dioxide (mmHg)",ylab="Density",ylim=c(0,0.2))
+
+for (i in 2:75) {
+hx <- dnorm(x,bias[i],sd=sqrt(s2_unb[i]))
+lines(x, hx, type = "l", lty = 2,col='gray')
+}
+
+
+hx <- dnorm(x,pooled_bias,pooled_sd)
+lines(x,hx,lty=1,col='black')
+LOA_l = out[5]
+LOA_u = out[6]
+LOA_l_CI = out[9]
+LOA_u_CI = out[10]
+abline(v=c(LOA_l,LOA_u), lty = 2, col = 'black')
+abline(v=c(LOA_l_CI, LOA_u_CI), lty=1, col = 'black')
+title("Figure: Comparisons within and across studies")
+```
+
+Subgroup analysis of studies that were conducted with patients who had chronic respiratory failure
+
+```{r}
+out=loa_maker(CRF$bias,CRF$V_bias,CRF$logs2,CRF$V_logs2)
+names(out) <- c("studies","bias","sd","tau2","LOA_L","LOA_U","CI_Lm","CI_Um","CI_Lr","CI_Ur")
+out[1:10]
+
+bias=CRF$bias
+s2_unb =CRF$S2
+pooled_bias = out[2]
+pooled_sd = out[3]
+pooled_tau2 = out[4]
+pooled_sd = sqrt(pooled_sd^2 + pooled_tau2)
+
+
+x <- seq(-20,20,length=200)
+hx <- dnorm(x,bias[1],sd=sqrt(s2_unb[1]))
+plot(x, hx, type = "l", lty = 2, col='gray',xlab="Difference between transcutaneous and arterial carbon dioxide (mmHg)",ylab="Density",ylim=c(0,0.2))
+
+for (i in 2:75) {
+hx <- dnorm(x,bias[i],sd=sqrt(s2_unb[i]))
+lines(x, hx, type = "l", lty = 2,col='gray')
+}
+
+
+hx <- dnorm(x,pooled_bias,pooled_sd)
+lines(x,hx,lty=1,col='black')
+LOA_l = out[5]
+LOA_u = out[6]
+LOA_l_CI = out[9]
+LOA_u_CI = out[10]
+abline(v=c(LOA_l,LOA_u), lty = 2, col = 'black')
+abline(v=c(LOA_l_CI, LOA_u_CI), lty=1, col = 'black')
+title("Figure: Comparisons within and across studies")
+```
+
+Subgroup analysis of studies that were conducted with patients who were undergoing lung function testing
+
+```{r}
+out=loa_maker(LFT$bias,LFT$V_bias,LFT$logs2,LFT$V_logs2)
+names(out) <- c("studies","bias","sd","tau2","LOA_L","LOA_U","CI_Lm","CI_Um","CI_Lr","CI_Ur")
+out[1:10]
+
+bias=LFT$bias
+s2_unb =LFT$S2
+pooled_bias = out[2]
+pooled_sd = out[3]
+pooled_tau2 = out[4]
+pooled_sd = sqrt(pooled_sd^2 + pooled_tau2)
+
+
+x <- seq(-20,20,length=200)
+hx <- dnorm(x,bias[1],sd=sqrt(s2_unb[1]))
+plot(x, hx, type = "l", lty = 2, col='gray',xlab="Difference between transcutaneous and arterial carbon dioxide (mmHg)",ylab="Density",ylim=c(0,0.2))
+
+for (i in 2:75) {
+hx <- dnorm(x,bias[i],sd=sqrt(s2_unb[i]))
+lines(x, hx, type = "l", lty = 2,col='gray')
+}
+
+
+hx <- dnorm(x,pooled_bias,pooled_sd)
+lines(x,hx,lty=1,col='black')
+LOA_l = out[5]
+LOA_u = out[6]
+LOA_l_CI = out[9]
+LOA_u_CI = out[10]
+abline(v=c(LOA_l,LOA_u), lty = 2, col = 'black')
+abline(v=c(LOA_l_CI, LOA_u_CI), lty=1, col = 'black')
+title("Figure: Comparisons within and across studies")
+```
