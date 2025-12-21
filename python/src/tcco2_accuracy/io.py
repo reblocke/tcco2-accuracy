@@ -3,11 +3,19 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Sequence
+
 import pandas as pd
 
 from .bootstrap import bootstrap_group_draws
 from .conway_meta import conway_group_summary
 from .data import load_conway_group
+from .simulation import (
+    DEFAULT_CLASSIFICATION_THRESHOLDS,
+    DEFAULT_SUMMARY_QUANTILES,
+    simulate_forward,
+    summarize_simulation_metrics,
+)
 
 
 CONWAY_GROUPS: dict[str, str] = {
@@ -111,3 +119,108 @@ def format_bootstrap_summary(summary: pd.DataFrame, n_boot: int, seed: int) -> s
     )
 
     return "\n".join(lines)
+
+
+def build_simulation_summary(
+    params: pd.DataFrame,
+    paco2_data: pd.DataFrame,
+    thresholds: Sequence[float] = DEFAULT_CLASSIFICATION_THRESHOLDS,
+    mode: str = "analytic",
+    seed: int | None = None,
+    n_draws: int | None = None,
+    n_mc: int | None = None,
+) -> pd.DataFrame:
+    """Generate forward simulation summaries by subgroup."""
+
+    metrics = simulate_forward(
+        paco2_data,
+        params,
+        thresholds=thresholds,
+        mode=mode,
+        seed=seed,
+        n_draws=n_draws,
+        n_mc=n_mc,
+    )
+    return summarize_simulation_metrics(metrics, quantiles=DEFAULT_SUMMARY_QUANTILES)
+
+
+def format_simulation_summary(
+    summary: pd.DataFrame,
+    thresholds: Sequence[float],
+    n_boot: int,
+    mode: str,
+) -> str:
+    """Return a markdown summary of forward simulation outputs."""
+
+    if summary.empty:
+        return "# Forward simulation summary\n\nNo simulation rows available."
+
+    threshold_label = ", ".join(f"{value:.0f}" for value in thresholds)
+    lines = [
+        "# Forward simulation summary",
+        "",
+        f"Bootstrap draws: {n_boot} per subgroup.",
+        f"Mode: {mode}. Thresholds (mmHg): {threshold_label}.",
+        "",
+        "Median values shown with [2.5%, 97.5%] bootstrap intervals.",
+        "",
+        "## d distribution + LoA",
+        "",
+        "| Group | d mean | d SD | d q2.5 | d q97.5 | LoA L | LoA U |",
+        "| --- | --- | --- | --- | --- | --- | --- |",
+    ]
+
+    summary_no_threshold = summary.drop_duplicates(subset=["group"])
+    for _, row in summary_no_threshold.iterrows():
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    str(row["group"]),
+                    _format_interval(row, "d_mean", precision=2),
+                    _format_interval(row, "d_sd", precision=2),
+                    _format_interval(row, "d_q025", precision=2),
+                    _format_interval(row, "d_q975", precision=2),
+                    _format_interval(row, "loa_l", precision=2),
+                    _format_interval(row, "loa_u", precision=2),
+                ]
+            )
+            + " |"
+        )
+
+    lines.extend(
+        [
+            "",
+            "## Classification metrics",
+            "",
+            "| Group | Threshold | Prevalence | Sensitivity | Specificity | PPV | NPV | Accuracy |",
+            "| --- | --- | --- | --- | --- | --- | --- | --- |",
+        ]
+    )
+
+    for _, row in summary.iterrows():
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    str(row["group"]),
+                    f"{row['threshold']:.0f}",
+                    _format_interval(row, "prevalence", precision=3),
+                    _format_interval(row, "sensitivity", precision=3),
+                    _format_interval(row, "specificity", precision=3),
+                    _format_interval(row, "ppv", precision=3),
+                    _format_interval(row, "npv", precision=3),
+                    _format_interval(row, "accuracy", precision=3),
+                ]
+            )
+            + " |"
+        )
+
+    return "\n".join(lines)
+
+
+def _format_interval(row: pd.Series, metric: str, precision: int) -> str:
+    return (
+        f"{row[f'{metric}_q500']:.{precision}f} "
+        f"[{row[f'{metric}_q025']:.{precision}f}, {row[f'{metric}_q975']:.{precision}f}]"
+    )
