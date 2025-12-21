@@ -2,4 +2,11 @@
 
 - Reference fixture: `python/tests/fixtures/conway_table1.csv`.
 - Formula: SD_total = sqrt(sigma^2 + tau^2); LoA = delta ± 2 * SD_total.
-- Main analysis: delta = -0.1, sigma = 1.9, tau2 = 8.9 → SD_total = 3.537, LoA = -7.17 to 6.97 (matches Table 1 -7.1 to 6.9 within rounding).
+- Recomputed summaries (robust LOA CI) match Table 1 within rounding.
+
+| Population | Bias | SD | Tau2 | LoA L | LoA U | CI L | CI U |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Main analysis | -0.09 | 1.86 | 8.85 | -7.10 | 6.93 | -15.06 | 14.89 |
+| ICU | -0.60 | 1.99 | 1.89 | -5.43 | 4.24 | -7.33 | 6.14 |
+| Acute respiratory failure | 1.69 | 2.01 | 3.16 | -3.68 | 7.06 | -7.82 | 11.21 |
+| Outpatients requiring lung function tests | -0.05 | 1.59 | 1.45 | -4.04 | 3.94 | -7.36 | 7.26 |
