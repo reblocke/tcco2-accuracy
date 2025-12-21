@@ -5,7 +5,8 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from tcco2_accuracy.workflows import bootstrap, infer, meta, paco2, sim
+from tcco2_accuracy.bootstrap import BOOTSTRAP_MODES
+from tcco2_accuracy.workflows import bootstrap, conditional, infer, meta, paco2, sim
 
 
 def parse_args() -> argparse.Namespace:
@@ -13,6 +14,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=202401, help="Seed for bootstrap and simulations.")
     parser.add_argument("--out", type=Path, default=Path("artifacts"), help="Output directory.")
     parser.add_argument("--n-boot", type=int, default=1000, help="Bootstrap draws per subgroup.")
+    parser.add_argument(
+        "--bootstrap-mode",
+        type=str,
+        choices=BOOTSTRAP_MODES,
+        default="cluster_plus_withinstudy",
+        help="Bootstrap uncertainty mode.",
+    )
     parser.add_argument(
         "--mode",
         type=str,
@@ -63,6 +71,7 @@ def main() -> None:
         n_boot=args.n_boot,
         seed=args.seed,
         conway_path=conway_path,
+        bootstrap_mode=args.bootstrap_mode,
         out_dir=out_dir,
     )
     paco2_result = paco2.run_paco2_summary(paco2_path=paco2_path, out_dir=out_dir)
@@ -77,6 +86,13 @@ def main() -> None:
         params=bootstrap_result.draws,
         paco2_data=paco2_result.data,
         seed=args.seed,
+        out_dir=out_dir,
+    )
+    conditional.run_conditional_classification(
+        params=bootstrap_result.draws,
+        paco2_data=paco2_result.data,
+        seed=args.seed,
+        bootstrap_mode=args.bootstrap_mode,
         out_dir=out_dir,
     )
 

@@ -8,7 +8,7 @@ import pandas.testing as pdt
 import pytest
 
 from tcco2_accuracy.data import CONWAY_DATA_PATH, INSILICO_PACO2_PATH
-from tcco2_accuracy.workflows import bootstrap, infer, meta, paco2, sim
+from tcco2_accuracy.workflows import bootstrap, conditional, infer, meta, paco2, sim
 
 
 def test_workflows_deterministic(tmp_path: Path) -> None:
@@ -98,6 +98,24 @@ def test_workflows_deterministic(tmp_path: Path) -> None:
     )
     assert (out_dir1 / "inference_demo.md").exists()
     pdt.assert_frame_equal(infer_result1.summary, infer_result2.summary, check_exact=False, atol=1e-12)
+
+    cond_result1 = conditional.run_conditional_classification(
+        params=boot_result1.draws,
+        paco2_data=paco2_result1.data,
+        seed=seed,
+        n_draws=10,
+        out_dir=out_dir1,
+    )
+    cond_result2 = conditional.run_conditional_classification(
+        params=boot_result2.draws,
+        paco2_data=paco2_result2.data,
+        seed=seed,
+        n_draws=10,
+        out_dir=out_dir2,
+    )
+    assert (out_dir1 / "conditional_classification_t45.csv").exists()
+    assert (out_dir1 / "conditional_classification_t45.md").exists()
+    pdt.assert_frame_equal(cond_result1.curves, cond_result2.curves, check_exact=False, atol=1e-12)
 
 
 def test_format_inference_demo_requires_single_threshold() -> None:

@@ -36,6 +36,7 @@ def run_inference_demo(
     thresholds: Sequence[float] = DEFAULT_CLASSIFICATION_THRESHOLDS,
     seed: int | None = None,
     n_boot: int = 1000,
+    bootstrap_mode: str = "cluster_plus_withinstudy",
     n_draws: int | None = None,
     include_prior: bool = True,
     out_dir: Path | None = None,
@@ -54,13 +55,23 @@ def run_inference_demo(
         summaries. Output frames include ``group``, ``tcco2``, PaCO2 quantiles, and
         threshold exceedance probabilities.
 
+    Notes:
+        ``bootstrap_mode`` governs how parameter uncertainty feeds into the
+        likelihood mixture intervals.
+
     Determinism:
         Fully deterministic for fixed ``seed`` and parameter draws; formatting
         requires a single threshold value.
     """
 
     if params is None:
-        params = bootstrap_workflow.run_bootstrap(n_boot=n_boot, seed=seed, conway_path=conway_path).draws
+        # Bootstrap mode determines how parameter uncertainty enters inference intervals.
+        params = bootstrap_workflow.run_bootstrap(
+            n_boot=n_boot,
+            seed=seed,
+            conway_path=conway_path,
+            bootstrap_mode=bootstrap_mode,
+        ).draws
     if paco2_data is None:
         paco2_data = load_paco2_distribution(paco2_path)
     likelihood = infer_paco2_by_subgroup(

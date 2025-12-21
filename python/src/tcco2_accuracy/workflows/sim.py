@@ -34,6 +34,7 @@ def run_forward_simulation_summary(
     mode: str = "analytic",
     seed: int | None = None,
     n_boot: int = 1000,
+    bootstrap_mode: str = "cluster_plus_withinstudy",
     n_draws: int | None = None,
     n_mc: int | None = None,
     out_dir: Path | None = None,
@@ -51,13 +52,23 @@ def run_forward_simulation_summary(
         ``SimulationWorkflowResult`` with quantile summaries per subgroup and
         threshold. Output includes d moments, LoA bounds, and classification metrics.
 
+    Notes:
+        ``bootstrap_mode`` controls how parameter uncertainty is propagated into
+        the reported interval widths.
+
     Determinism:
         Deterministic for fixed ``seed`` and parameter draws; Monte Carlo mode
         uses ``seed`` for sampling.
     """
 
     if params is None:
-        params = bootstrap_workflow.run_bootstrap(n_boot=n_boot, seed=seed, conway_path=conway_path).draws
+        # Bootstrap mode controls the parameter uncertainty propagated downstream.
+        params = bootstrap_workflow.run_bootstrap(
+            n_boot=n_boot,
+            seed=seed,
+            conway_path=conway_path,
+            bootstrap_mode=bootstrap_mode,
+        ).draws
     if paco2_data is None:
         paco2_data = load_paco2_distribution(paco2_path)
     summary = build_simulation_summary(

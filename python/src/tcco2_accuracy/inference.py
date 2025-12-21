@@ -33,6 +33,7 @@ def infer_paco2(
         raise ValueError("Prior-weighted inference requires paco2_prior values.")
     params = validate_params_df(params)
     rng = np.random.default_rng(seed)
+    # Bootstrap draws encode epistemic uncertainty; sd_total captures measurement error + heterogeneity.
     params = _select_param_draws(params, n_draws=n_draws, rng=rng)
     deltas, sd_total = _extract_params(params)
     paco2_prior_values = _validate_prior(paco2_prior) if use_prior else None

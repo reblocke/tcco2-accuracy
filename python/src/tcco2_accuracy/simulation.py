@@ -88,6 +88,7 @@ def simulate_forward_metrics(
         sigma2 = float(getattr(params_row, "sigma2"))
         tau2 = float(getattr(params_row, "tau2"))
         sd_within = math.sqrt(sigma2)
+        # Bootstrap draws encode epistemic uncertainty; sd_total captures measurement error + heterogeneity.
         sd_total = total_sd(sd_within, tau2)
         base_row = _base_row_from_params(params_row, index, sd_total)
         if mode == "analytic":
