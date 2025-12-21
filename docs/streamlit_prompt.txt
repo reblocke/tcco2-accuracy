@@ -1,0 +1,208 @@
+$tcco2-python-port
+
+IMPLEMENTATION TICKET
+Title: Interactive UI for TcCO2→PaCO2 inference (PI + P(threshold)) with posterior visualization
+
+User story (primary)
+- A clinician/researcher enters a TcCO2 value (mmHg).
+- They select a clinical setting/subgroup (pft / ed_inp / icu) and (optionally) choose:
+  - threshold for hypercapnia (default 45; allow arbitrary like 52),
+  - inference mode: likelihood-only vs prior-weighted (empirical PaCO2 prior),
+  - interval level (default 95%).
+- The UI displays:
+  1) PaCO2 median + 95% prediction interval (PI)
+  2) P(PaCO2 ≥ threshold)
+  3) A visualization that is “analogous” to the conditional bar figure but conditioned on OBSERVED TcCO2:
+     - i.e., show a posterior distribution over PaCO2 values given TcCO2, with the threshold region highlighted,
+       and optionally show the prior (pretest) distribution for comparison.
+
+Key context (must honor existing project semantics)
+- Difference definition: d = PaCO2 − TcCO2 (Conway convention).
+- The model already produces 95% PIs, not CIs (document this prominently).
+- Parameter uncertainty is represented by bootstrap parameter draws (delta, sigma2, tau2 per subgroup).
+- Empirical PaCO2 distributions per subgroup are used as “pretest” priors when in prior-weighted mode.
+
+Existing artifacts (for alignment / optional regression checks)
+- `artifacts/inference_demo.md` documents expected behavior and language (PI not CI, and example probabilities). Use as reference for UI output phrasing and optional regression checks. (Do not hardcode the demo numbers.) 
+- `artifacts/conditional_classification_t45.md` describes the schema for conditional misclassification curves conditional on TRUE PaCO2; this UI needs posterior conditional on OBSERVED TcCO2 instead. Keep both concepts clear in docs.
+- `artifacts/bootstrap_summary.md` indicates bootstrap mode and that bootstrap-based uncertainty differs from Conway outer CI; do not claim UI “matches Conway CI” unless explicitly toggled.
+
+Framework decision
+- Implement UI in Python using Streamlit (preferred) for rapid iteration and deployability.
+- Keep a strict separation between:
+  - “compute layer” (pure Python functions, unit-testable, no Streamlit imports)
+  - “presentation layer” (Streamlit app only)
+This separation is mandatory.
+
+Dependencies / packaging
+- Add UI deps as an OPTIONAL extra in pyproject (e.g., [project.optional-dependencies] ui = ["streamlit", "plotly"]).
+- Base library must remain usable without installing UI deps.
+
+Deliverables
+
+A) Compute layer API (unit-testable)
+Create a new module: python/src/tcco2_accuracy/ui_api.py (or similar) exposing ONE public function:
+
+    predict_paco2_from_tcco2(
+        tcco2: float,
+        subgroup: Literal["pft","ed_inp","icu"],
+        threshold: float = 45.0,
+        mode: Literal["prior_weighted","likelihood_only"] = "prior_weighted",
+        interval: float = 0.95,
+        params_draws: pd.DataFrame | None = None,
+        paco2_prior_values: np.ndarray | None = None,
+        n_param_draws: int | None = None,
+        seed: int | None = None,
+        bin_width: float = 1.0,
+    ) -> PredictionResult
+
+Where PredictionResult is a small dataclass including:
+- subgroup, tcco2, threshold, mode, interval
+- paco2_q_low, paco2_median, paco2_q_high (PI bounds)
+- p_ge_threshold
+- decision_label based on TcCO2 threshold rule (positive if tcco2 >= threshold)
+- probabilities of outcome correctness given the observed TcCO2:
+  - If decision_label == "positive":
+      p_true_positive = p_ge_threshold
+      p_false_positive = 1 - p_ge_threshold
+      p_true_negative = 0
+      p_false_negative = 0
+    If decision_label == "negative":
+      p_true_negative = 1 - p_ge_threshold
+      p_false_negative = p_ge_threshold
+      p_true_positive = 0
+      p_false_positive = 0
+- posterior histogram for visualization (TcCO2-conditioned):
+  - paco2_bin (array of bin centers or ints)
+  - posterior_prob (array; sums to 1)
+  - prior_prob (array; sums to 1; optional but preferred to show)
+  - store also posterior_cdf if useful
+
+Implementation guidance for compute layer
+- Reuse existing inference machinery for quantiles/probabilities wherever possible:
+  - likelihood-only path already exists (mixture quantiles)
+  - prior-weighted path already exists (empirical prior weighting)
+- Add ONE new internal helper (unit-testable): compute a discretized posterior over PaCO2 bins for plotting.
+  Recommended approach:
+  - Prior-weighted mode:
+    - compute normalized posterior weights over prior samples (already done internally in inference.py)
+    - bin the weighted samples into 1 mmHg bins to get posterior_prob(p_bin)
+    - also bin the unweighted prior samples to get prior_prob(p_bin)
+  - Likelihood-only mode:
+    - either sample from the mixture Normal(tcco2 + delta_j, sd_total_j) to approximate a histogram
+      OR compute mixture density on a fixed grid and normalize.
+    - choose a method that is deterministic with seed and fast enough for UI.
+- IMPORTANT: include brief inline comments explaining:
+  - what “prior-weighted” means clinically (pretest PaCO2 distribution by setting)
+  - what the PI represents (prediction interval for a hypothetical ABG given observed TcCO2, integrating measurement variability + parameter uncertainty)
+  - why threshold probability is computed from posterior mass
+
+Data sourcing policy for UI
+- The compute function should accept params_draws and paco2_prior_values explicitly (dependency injection for tests).
+- The Streamlit layer will load:
+  - bootstrap parameter draws (default from artifacts/bootstrap_params.csv or a configured path)
+  - paco2 prior values per subgroup (default from Data/In Silico TCCO2 Database.dta if present; otherwise fall back to a small binned prior artifact if available)
+- If data files are missing, fail gracefully with a clear actionable message.
+
+B) Streamlit app (presentation layer)
+Create: app/streamlit_app.py (or similar)
+UI elements:
+- Input: TcCO2 numeric (mmHg)
+- Selector: subgroup (Ambulatory/PFT, ED/Inpatient, ICU)
+- Input: threshold numeric (default 45)
+- Toggle: inference mode (prior-weighted vs likelihood-only)
+- Optional: slider for interval (90/95/99)
+- Optional: “advanced” controls: number of param draws, seed
+
+Outputs:
+- A result card showing:
+  - PI: median + [low, high]
+  - P(PaCO2 ≥ threshold)
+  - decision label (TcCO2 >= threshold?)
+  - correctness breakdown (TP/FP or TN/FN probabilities depending on decision)
+- Visualization panel:
+  - Posterior histogram over PaCO2 bins (bar plot)
+  - Overlay prior distribution (line or faint bars) if in prior-weighted mode
+  - Highlight threshold region (PaCO2 >= threshold) and annotate posterior mass in that region
+  - Mark median and PI bounds visually
+
+Usability requirements
+- Cache heavy loads (data + params) using Streamlit caching.
+- UI should update interactively without multi-second recomputation for typical settings (1000 draws).
+- Add a conspicuous disclaimer: “Research tool. Not for clinical decision-making.”
+
+C) Documentation
+- Add docs/UI.md explaining:
+  - what the UI does and does not do
+  - PI vs CI (use the same language used in inference_demo artifacts)
+  - how prior-weighted differs from likelihood-only
+  - how to run the app locally (pip install -e ".[ui]" then streamlit run ...)
+  - data requirements and how to point to local data files
+- Update python/README.md to link to docs/UI.md and include quickstart commands.
+
+D) Tests (must be robust and not UI-framework dependent)
+Add unit tests for compute layer only (pytest). UI itself gets a smoke-import test.
+
+Required tests (acceptance tests)
+1) Deterministic single-draw correctness (no priors needed):
+   - Given params_draws with ONE row: delta=0, sigma2=4, tau2=0 => sd_total=2
+   - mode="likelihood_only"
+   - For tcco2=45 and threshold=45:
+     - The posterior for PaCO2 under likelihood-only (flat prior) is Normal(mean=45, sd=2).
+     - Assert returned PI quantiles match Normal quantiles within tolerance (or if you sample, ensure tolerance and fixed seed).
+     - Assert P(PaCO2≥45) == 0.5 +/- tiny tolerance.
+
+2) Prior-weighting changes the posterior (sanity):
+   - Use a tiny synthetic prior_values array with skew (e.g., more mass above threshold).
+   - Compare mode=prior_weighted vs likelihood_only for the same tcco2 and same params_draws:
+     - Prior-weighted p_ge_threshold should move toward the prior’s mass distribution (directional assertion).
+
+3) Posterior histogram conservation:
+   - posterior_prob sums to 1 within 1e-10
+   - all probs in [0,1]
+   - prior_prob (if returned) also sums to 1 and in [0,1]
+   - posterior bins cover PI bounds (quantile locations should lie within min/max bin range)
+
+4) Decision-label correctness probabilities:
+   - If tcco2 >= threshold:
+       p_true_positive + p_false_positive == 1
+       p_true_negative == 0 and p_false_negative == 0
+   - If tcco2 < threshold:
+       p_true_negative + p_false_negative == 1
+       p_true_positive == 0 and p_false_positive == 0
+
+5) Optional real-data regression (skip if files absent):
+   - If artifacts/inference_demo.md exists and required data paths exist:
+     - run predict_paco2_from_tcco2 for (tcco2=45, subgroup=pft, threshold=45, mode=prior_weighted) with full draws
+     - Assert p_ge_threshold is within a loose tolerance of the demo output (do not require exact match; accept +/- 0.05) because binning/implementation details may differ.
+   This test should be SKIPPED (not failed) if data isn’t present.
+
+6) Streamlit app smoke test:
+   - Import app/streamlit_app.py in a test to ensure it doesn’t crash on import.
+   - Do not run Streamlit; just ensure module import works without side effects (app should guard heavy work under functions and caching).
+
+Commenting requirements (mandatory)
+- Add short explanatory comments (1–3 lines each) in:
+  - compute layer where posterior is constructed and where threshold probability is computed
+  - UI plotting code where “prior vs posterior” and “threshold region” are drawn
+  - docs/UI.md summarizing the conceptual meaning
+Avoid verbose comments; focus on meaning and assumptions.
+
+Repo conventions
+- Read and follow AGENTS.md instructions.
+- Do not commit large patient-level extracts. If you need priors, load from local data file at runtime or ship a small aggregated histogram artifact.
+- Run pytest at end. Print exact git add/commit commands (do not run git).
+
+Acceptance criteria (human)
+- `pytest -q` passes.
+- After installing UI extras, `streamlit run app/streamlit_app.py` launches.
+- Entering TcCO2=45, subgroup=ed_inp, threshold=45 yields a sensible PI and a probability around the same scale as inference_demo (not necessarily exact).
+- UI clearly labels PI vs CI and clarifies prior-weighted vs likelihood-only modes.
+- Posterior histogram + threshold highlight updates correctly when user changes threshold (e.g., 52).
+
+End of task output
+- Summarize changes.
+- Print:
+  git add ...
+  git commit -m "Add Streamlit UI + compute API for TcCO2→PaCO2 PI and threshold probability"
+- Do not run git here.
