@@ -1,8 +1,7 @@
 # Meta-analysis LoA Check
 
-- Reference fixture: `python/tests/fixtures/conway_table1.csv`.
+Source: `Conway Meta/data.dta`.
 - Formula: SD_total = sqrt(sigma^2 + tau^2); LoA = delta ± 2 * SD_total.
-- Recomputed summaries (robust LOA CI) match Table 1 within rounding.
 
 | Population | Bias | SD | Tau2 | LoA L | LoA U | CI L | CI U |
 | --- | --- | --- | --- | --- | --- | --- | --- |

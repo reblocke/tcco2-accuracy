@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: tcco2-accuracy
+Version: 0.0.0
+Summary: Python port of TcCO2 accuracy meta-analysis and simulation
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Dynamic: license-file
+
+# tcco2-accuracy
+ Code for TcCO2 Paper

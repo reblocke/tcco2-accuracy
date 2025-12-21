@@ -1,0 +1,70 @@
+$tcco2-python-port
+
+Task: Create a notebook-friendly workflow layer (notebooks + runners) and a matching test harness that validates each workflow stage. Do NOT change core statistical logic unless a test requires a bugfix, and if you do, document it in docs/DECISIONS.md.
+
+Context: This repo already has:
+- Conway meta-analysis reproduction and bootstrap (δ, σ², τ²) with tests
+- PaCO2 distribution ingestion with subgrouping (ED included) with tests
+- Forward simulation with uncertainty propagation with tests
+- Inverse inference (TcCO2 → PaCO2 intervals) with tests
+- Artifacts in artifacts/*.md and artifacts/*.csv
+
+Goal: Make it easy for a human to run and inspect step-by-step in Jupyter, while preserving a command-line “outer loop” that regenerates artifacts deterministically.
+
+Deliverables to implement:
+
+A) Notebook templates (under python/notebooks/)
+1) Create python/notebooks/00_smoke.ipynb
+   - Uses autoreload.
+   - Imports the package cleanly (assume editable install; include a short note cell).
+   - Runs each stage in separate cells:
+     (1) meta reproduction (Conway)
+     (2) bootstrap draws summary
+     (3) PaCO2 distribution summary by subgroup (ED included)
+     (4) forward simulation summary
+     (5) inference demo for TcCO2 values [35, 45, 55] for each subgroup
+   - Each stage cell must:
+     - call a single public function (you will add in section B below)
+     - display a small dataframe/table and print key invariants
+   - Keep the notebook lightweight (no huge data printing).
+
+2) Create python/notebooks/01_inference_playground.ipynb
+   - Exposes a small function to sweep TcCO2 across a grid (e.g., 30..70 step 2)
+   - Plots (matplotlib) posterior median and 95% interval by subgroup (optional, keep simple).
+   - Demonstrates both likelihood-only and prior-weighted modes.
+
+B) Deterministic runners that notebooks call (under python/src/tcco2_accuracy/workflows/)
+Add python/src/tcco2_accuracy/workflows/ with public functions:
+1) workflows.meta.run_meta_checks(...)
+2) workflows.bootstrap.run_bootstrap(...)
+3) workflows.paco2.run_paco2_summary(...)
+4) workflows.sim.run_forward_simulation_summary(...)
+5) workflows.infer.run_inference_demo(...)
+
+Constraints:
+- Thin orchestration wrappers calling existing core functions
+- No hardcoded paths; allow overrides
+- Runnable without Jupyter
+
+C) End-to-end script runner
+Add python/scripts/run_all_workflows.py with args: --seed --out --n-boot --mode --input-path
+Runs workflows in order and writes artifacts under --out.
+
+D) Tests
+Add python/tests/test_workflows.py:
+- run each workflow into a tmp dir with fixed seed
+- assert artifacts created + deterministic outputs
+- do not require committing patient-level data
+- if raw input absent, use tiny synthetic fallback for tests or skip with a clear message
+
+E) Documentation
+- Update python/README.md with install/test/run/notebook instructions
+- Update docs/VALIDATION.md: what each stage checks + mapping to scientific claims
+
+At end:
+- Run pytest
+- Print exact git add/commit commands
+- Do not attempt git operations directly.
+
+Commit message suggestion:
+"add notebook workflows + deterministic runners + workflow tests"

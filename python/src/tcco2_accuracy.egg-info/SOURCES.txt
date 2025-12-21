@@ -1,0 +1,15 @@
+LICENSE
+README.md
+pyproject.toml
+python/src/tcco2_accuracy/__init__.py
+python/src/tcco2_accuracy/bland_altman.py
+python/src/tcco2_accuracy/bootstrap.py
+python/src/tcco2_accuracy/conway_meta.py
+python/src/tcco2_accuracy/data.py
+python/src/tcco2_accuracy/inference.py
+python/src/tcco2_accuracy/io.py
+python/src/tcco2_accuracy/simulation.py
+python/src/tcco2_accuracy.egg-info/PKG-INFO
+python/src/tcco2_accuracy.egg-info/SOURCES.txt
+python/src/tcco2_accuracy.egg-info/dependency_links.txt
+python/src/tcco2_accuracy.egg-info/top_level.txt

@@ -45,7 +45,7 @@ def write_bootstrap_params(path: Path, params: pd.DataFrame) -> None:
         raise ValueError(f"Unsupported bootstrap params format: {path.suffix}")
 
 
-def bootstrap_loa_summary(params: pd.DataFrame) -> pd.DataFrame:
+def bootstrap_loa_summary(params: pd.DataFrame, conway_path: Path | None = None) -> pd.DataFrame:
     """Summarize bootstrap LoA bounds versus Conway CIs."""
 
     rows: list[dict[str, float | str]] = []
@@ -55,7 +55,7 @@ def bootstrap_loa_summary(params: pd.DataFrame) -> pd.DataFrame:
             continue
         loa_l_q = subset["loa_l"].quantile([0.025, 0.5, 0.975])
         loa_u_q = subset["loa_u"].quantile([0.025, 0.5, 0.975])
-        summary = conway_group_summary(load_conway_group(group_key))
+        summary = conway_group_summary(load_conway_group(group_key, path=conway_path))
         rows.append(
             {
                 "group": group_name,
