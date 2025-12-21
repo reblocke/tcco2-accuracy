@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pandas.testing as pdt
+import pytest
 
 from tcco2_accuracy.data import CONWAY_DATA_PATH, INSILICO_PACO2_PATH
 from tcco2_accuracy.workflows import bootstrap, infer, meta, paco2, sim
@@ -97,6 +98,29 @@ def test_workflows_deterministic(tmp_path: Path) -> None:
     )
     assert (out_dir1 / "inference_demo.md").exists()
     pdt.assert_frame_equal(infer_result1.summary, infer_result2.summary, check_exact=False, atol=1e-12)
+
+
+def test_format_inference_demo_requires_single_threshold() -> None:
+    likelihood = pd.DataFrame(
+        {
+            "group": ["pft"],
+            "tcco2": [40.0],
+            "paco2_q025": [30.0],
+            "paco2_q500": [40.0],
+            "paco2_q975": [50.0],
+        }
+    )
+
+    with pytest.raises(ValueError, match="format_inference_demo supports one threshold"):
+        infer.format_inference_demo(
+            likelihood,
+            prior=None,
+            thresholds=[40.0, 45.0],
+            n_boot=1,
+            n_draws=None,
+            seed=None,
+            paco2_data=_synthetic_paco2_data(),
+        )
 
 
 def _resolve_conway_sources() -> tuple[Path | None, list[tuple[str, pd.DataFrame]] | None]:

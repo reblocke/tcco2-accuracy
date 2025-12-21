@@ -7,7 +7,12 @@ import pandas as pd
 import pytest
 
 from tcco2_accuracy.data import load_paco2_distribution, prepare_paco2_distribution
-from tcco2_accuracy.simulation import simulate_forward, simulate_forward_metrics, summarize_simulation_metrics
+from tcco2_accuracy.simulation import (
+    expected_classification_metrics,
+    simulate_forward,
+    simulate_forward_metrics,
+    summarize_simulation_metrics,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -34,3 +39,31 @@ def test_bootstrap_intervals_are_non_degenerate() -> None:
 
     for _, row in summary.iterrows():
         assert row["d_mean_q025"] < row["d_mean_q975"]
+
+
+def test_expected_classification_metrics_handles_prevalence_extremes() -> None:
+    paco2_values = np.array([40.0, 41.0, 42.0])
+
+    high_threshold = expected_classification_metrics(paco2_values, delta=0.0, sd_total=2.0, threshold_value=60.0)
+    assert high_threshold["prevalence"] == pytest.approx(0.0)
+    assert np.isnan(high_threshold["sensitivity"])
+    assert np.isfinite(high_threshold["specificity"])
+
+    low_threshold = expected_classification_metrics(paco2_values, delta=0.0, sd_total=2.0, threshold_value=30.0)
+    assert low_threshold["prevalence"] == pytest.approx(1.0)
+    assert np.isfinite(low_threshold["sensitivity"])
+    assert np.isnan(low_threshold["specificity"])
+
+
+def test_simulation_missing_group_params_falls_back() -> None:
+    paco2_data = pd.DataFrame(
+        {"paco2": [35.0, 45.0, 55.0], "subgroup": ["pft", "ed_inp", "icu"]}
+    )
+    params = pd.DataFrame(
+        {"group": ["main"], "delta": [1.0], "sigma2": [4.0], "tau2": [0.0]}
+    )
+
+    with pytest.warns(UserWarning, match="No parameters found"):
+        metrics = simulate_forward(paco2_data, params, thresholds=[45.0], mode="analytic")
+
+    assert set(metrics["group"]) == {"pft", "ed_inp", "icu"}

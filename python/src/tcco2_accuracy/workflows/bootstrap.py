@@ -31,6 +31,25 @@ def run_bootstrap(
     truncate_tau2: bool = True,
     out_dir: Path | None = None,
 ) -> BootstrapWorkflowResult:
+    """Run Conway bootstrap draws and summaries.
+
+    Reads:
+        - Conway study-level data from ``conway_path`` when provided, otherwise
+          the bundled `Conway Meta/data.dta`.
+
+    Writes:
+        - ``bootstrap_params.csv`` and ``bootstrap_summary.md`` in ``out_dir`` when provided.
+
+    Returns:
+        ``BootstrapWorkflowResult`` with bootstrap draws (columns include
+        ``replicate``, ``group``, ``delta``, ``sigma2``, ``tau2``) plus summary
+        quantiles versus Conway LoA bounds.
+
+    Determinism:
+        Deterministic for fixed ``seed``; tau2 is truncated at zero by default
+        to maintain non-negative between-study variance in bootstrap draws.
+    """
+
     group_map = groups or CONWAY_GROUPS
     if data_by_group is None:
         data_by_group = [

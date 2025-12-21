@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import warnings
 from typing import Iterable, Sequence
 
 import numpy as np
@@ -11,6 +12,7 @@ from scipy import optimize, special, stats
 
 from .data import PACO2_SUBGROUP_ORDER, prepare_paco2_distribution
 from .simulation import DEFAULT_CLASSIFICATION_THRESHOLDS, PACO2_TO_CONWAY_GROUP
+from .utils import threshold_label, validate_params_df
 
 
 DEFAULT_INFERENCE_QUANTILES: tuple[float, ...] = (0.025, 0.5, 0.975)
@@ -29,7 +31,7 @@ def infer_paco2(
 
     if use_prior and paco2_prior is None:
         raise ValueError("Prior-weighted inference requires paco2_prior values.")
-    params = _validate_params(params)
+    params = validate_params_df(params)
     rng = np.random.default_rng(seed)
     params = _select_param_draws(params, n_draws=n_draws, rng=rng)
     deltas, sd_total = _extract_params(params)
@@ -80,7 +82,11 @@ def infer_paco2_by_subgroup(
         else:
             group_params = params
         if group_params.empty:
-            continue
+            warnings.warn(
+                f"No parameters found for subgroup '{subgroup}'; falling back to all params.",
+                UserWarning,
+            )
+            group_params = params
         group_seed = int(rng.integers(0, np.iinfo(np.uint32).max))
         summaries = infer_paco2(
             tcco2_values,
@@ -257,14 +263,9 @@ def _mixture_cdf(value: float, means: np.ndarray, sd_total: np.ndarray) -> float
 
 def _threshold_prob_map(thresholds: Sequence[float], probs: Sequence[float]) -> dict[str, float]:
     return {
-        f"p_ge_{_threshold_label(threshold)}": float(prob)
+        f"p_ge_{threshold_label(threshold)}": float(prob)
         for threshold, prob in zip(thresholds, probs)
     }
-
-
-def _threshold_label(value: float) -> str:
-    label = f"{value:g}".replace(".", "p")
-    return label.replace("-", "m")
 
 
 def _select_param_draws(
@@ -286,13 +287,6 @@ def _extract_params(params: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
     if np.any(sd_total <= 0):
         raise ValueError("Total SD must be positive for inference.")
     return deltas, sd_total
-
-
-def _validate_params(params: pd.DataFrame) -> pd.DataFrame:
-    missing = {"delta", "sigma2", "tau2"} - set(params.columns)
-    if missing:
-        raise ValueError(f"Missing parameter columns: {sorted(missing)}")
-    return params
 
 
 def _validate_prior(paco2_prior: np.ndarray | None) -> np.ndarray:

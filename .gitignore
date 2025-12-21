@@ -4,3 +4,6 @@
 /Results and Figures
 temp.log
 *.stswp
+__pycache__/
+*.pyc
+.pytest_cache/

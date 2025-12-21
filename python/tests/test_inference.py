@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 from scipy import stats
 
-from tcco2_accuracy.inference import infer_paco2
+from tcco2_accuracy.inference import infer_paco2, infer_paco2_by_subgroup
 
 
 def test_likelihood_only_matches_normal() -> None:
@@ -49,3 +49,17 @@ def test_prior_weighted_symmetry_keeps_center() -> None:
     row = result.iloc[0]
     assert row["paco2_q500"] == pytest.approx(40.0)
     assert row["p_ge_40"] > 0.5
+
+
+def test_inference_missing_group_params_falls_back() -> None:
+    paco2_data = pd.DataFrame(
+        {"paco2": [35.0, 45.0, 55.0], "subgroup": ["pft", "ed_inp", "icu"]}
+    )
+    params = pd.DataFrame(
+        {"group": ["main"], "delta": [0.0], "sigma2": [1.0], "tau2": [0.0]}
+    )
+
+    with pytest.warns(UserWarning, match="No parameters found"):
+        result = infer_paco2_by_subgroup([40.0], paco2_data, params, thresholds=[45.0])
+
+    assert set(result["group"]) == {"pft", "ed_inp", "icu"}

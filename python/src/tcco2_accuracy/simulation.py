@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import warnings
 from typing import Sequence
 
 import numpy as np
@@ -11,6 +12,7 @@ from scipy import stats
 
 from .bland_altman import loa_bounds, total_sd
 from .data import PACO2_SUBGROUP_ORDER, prepare_paco2_distribution
+from .utils import quantile_key, safe_ratio, validate_params_df
 
 
 DEFAULT_CLASSIFICATION_THRESHOLDS: tuple[float, ...] = (45.0,)
@@ -44,7 +46,11 @@ def simulate_forward(
         else:
             group_params = params
         if group_params.empty:
-            continue
+            warnings.warn(
+                f"No parameters found for subgroup '{subgroup}'; falling back to all params.",
+                UserWarning,
+            )
+            group_params = params
         if n_draws is not None and n_draws < group_params.shape[0]:
             chosen = random_state.choice(group_params.index.to_numpy(), size=n_draws, replace=True)
             group_params = group_params.loc[chosen].reset_index(drop=True)
@@ -76,7 +82,7 @@ def simulate_forward_metrics(
 ) -> pd.DataFrame:
     random_state = np.random.default_rng(seed)
     rows: list[dict[str, float | int]] = []
-    params = _validate_params(params)
+    params = validate_params_df(params)
     for index, params_row in enumerate(params.itertuples(index=False)):
         delta = float(getattr(params_row, "delta"))
         sigma2 = float(getattr(params_row, "sigma2"))
@@ -127,7 +133,7 @@ def difference_moments(
     quantile_values = stats.norm.ppf(quantiles, loc=delta, scale=sd_total)
     moment_summary: dict[str, float] = {"d_mean": delta, "d_sd": sd_total}
     for quantile_value, quantile in zip(quantile_values, quantiles):
-        moment_summary[_quantile_key("d", quantile)] = float(quantile_value)
+        moment_summary[quantile_key("d", quantile)] = float(quantile_value)
     return moment_summary
 
 
@@ -152,10 +158,10 @@ def expected_classification_metrics(
     false_positive = prob_positive[negative_mask].sum() / total_count
     true_negative = (1 - prob_positive[negative_mask]).sum() / total_count
     prevalence = positive_mask.mean()
-    sensitivity = _safe_ratio(true_positive, true_positive + false_negative)
-    specificity = _safe_ratio(true_negative, true_negative + false_positive)
-    ppv = _safe_ratio(true_positive, true_positive + false_positive)
-    npv = _safe_ratio(true_negative, true_negative + false_negative)
+    sensitivity = safe_ratio(true_positive, true_positive + false_negative)
+    specificity = safe_ratio(true_negative, true_negative + false_positive)
+    ppv = safe_ratio(true_positive, true_positive + false_positive)
+    npv = safe_ratio(true_negative, true_negative + false_negative)
     accuracy = true_positive + true_negative
     return {
         "prevalence": float(prevalence),
@@ -196,7 +202,7 @@ def summarize_simulation_metrics(
     ]
     summary = metrics.groupby(group_columns)[value_columns].quantile(quantiles).unstack(-1)
     summary.columns = [
-        f"{metric}_{_quantile_key('', quantile).lstrip('_')}" for metric, quantile in summary.columns
+        f"{metric}_{quantile_key('', quantile).lstrip('_')}" for metric, quantile in summary.columns
     ]
     return summary.reset_index()
 
@@ -242,8 +248,8 @@ def _difference_sample_summary(difference_sample: np.ndarray) -> dict[str, float
     return {
         "d_mean": float(np.mean(difference_sample)),
         "d_sd": float(np.std(difference_sample, ddof=0)),
-        _quantile_key("d", DEFAULT_D_QUANTILES[0]): float(quantiles[0]),
-        _quantile_key("d", DEFAULT_D_QUANTILES[1]): float(quantiles[1]),
+        quantile_key("d", DEFAULT_D_QUANTILES[0]): float(quantiles[0]),
+        quantile_key("d", DEFAULT_D_QUANTILES[1]): float(quantiles[1]),
     }
 
 
@@ -264,11 +270,11 @@ def _sample_classification_metrics(
     total_count = paco2_sample.size
     prevalence = true_positive + false_negative
     negative_total = true_negative + false_positive
-    sensitivity = _safe_ratio(true_positive, prevalence)
-    specificity = _safe_ratio(true_negative, negative_total)
-    ppv = _safe_ratio(true_positive, true_positive + false_positive)
-    npv = _safe_ratio(true_negative, true_negative + false_negative)
-    accuracy = _safe_ratio(true_positive + true_negative, total_count)
+    sensitivity = safe_ratio(true_positive, prevalence)
+    specificity = safe_ratio(true_negative, negative_total)
+    ppv = safe_ratio(true_positive, true_positive + false_positive)
+    npv = safe_ratio(true_negative, true_negative + false_negative)
+    accuracy = safe_ratio(true_positive + true_negative, total_count)
     return {
         "prevalence": float(prevalence / total_count),
         "sensitivity": float(sensitivity),
@@ -277,22 +283,6 @@ def _sample_classification_metrics(
         "npv": float(npv),
         "accuracy": float(accuracy),
     }
-
-
-def _safe_ratio(numerator: float, denominator: float) -> float:
-    return float(numerator / denominator) if denominator > 0 else float("nan")
-
-
-def _quantile_key(prefix: str, quantile: float) -> str:
-    label = f"q{int(round(quantile * 1000)):03d}"
-    return f"{prefix}_{label}" if prefix else label
-
-
-def _validate_params(params: pd.DataFrame) -> pd.DataFrame:
-    missing = {"delta", "sigma2", "tau2"} - set(params.columns)
-    if missing:
-        raise ValueError(f"Missing parameter columns: {sorted(missing)}")
-    return params
 
 
 def _base_row_from_params(

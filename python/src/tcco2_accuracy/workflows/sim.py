@@ -14,6 +14,7 @@ from ..io import (
     build_simulation_summary,
     format_simulation_summary,
 )
+from ..utils import n_draws_per_group
 from . import bootstrap as bootstrap_workflow
 
 
@@ -37,6 +38,24 @@ def run_forward_simulation_summary(
     n_mc: int | None = None,
     out_dir: Path | None = None,
 ) -> SimulationWorkflowResult:
+    """Run forward simulation summaries for TcCO2 accuracy.
+
+    Reads:
+        - Conway bootstrap parameters (if ``params`` is not provided).
+        - PaCO2 distribution data (if ``paco2_data`` is not provided).
+
+    Writes:
+        - ``simulation_summary.md`` in ``out_dir`` when provided.
+
+    Returns:
+        ``SimulationWorkflowResult`` with quantile summaries per subgroup and
+        threshold. Output includes d moments, LoA bounds, and classification metrics.
+
+    Determinism:
+        Deterministic for fixed ``seed`` and parameter draws; Monte Carlo mode
+        uses ``seed`` for sampling.
+    """
+
     if params is None:
         params = bootstrap_workflow.run_bootstrap(n_boot=n_boot, seed=seed, conway_path=conway_path).draws
     if paco2_data is None:
@@ -50,7 +69,7 @@ def run_forward_simulation_summary(
         n_draws=n_draws,
         n_mc=n_mc,
     )
-    n_boot_per_group = _n_boot_per_group(params)
+    n_boot_per_group = n_draws_per_group(params)
     markdown = format_simulation_summary(summary, thresholds=thresholds, n_boot=n_boot_per_group, mode=mode)
     if out_dir is not None:
         _write_text(Path(out_dir) / "simulation_summary.md", markdown)
@@ -60,13 +79,6 @@ def run_forward_simulation_summary(
         "mode": mode,
     }
     return SimulationWorkflowResult(summary=summary, invariants=invariants, markdown=markdown)
-
-
-def _n_boot_per_group(params: pd.DataFrame) -> int:
-    if "group" not in params.columns:
-        return int(params.shape[0])
-    counts = params.groupby("group").size()
-    return int(counts.max()) if not counts.empty else 0
 
 
 def _write_text(path: Path, content: str) -> None:

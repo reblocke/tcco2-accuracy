@@ -1,70 +1,164 @@
 $tcco2-python-port
 
-Task: Create a notebook-friendly workflow layer (notebooks + runners) and a matching test harness that validates each workflow stage. Do NOT change core statistical logic unless a test requires a bugfix, and if you do, document it in docs/DECISIONS.md.
+Objective
+Harden the entire TcCO2 accuracy Python pipeline: improve statistical edge-case robustness, remove duplicated utilities, strengthen parameter validation, expand/clarify docstrings, and update documentation to match actual behavior. Implement fixes + tests + doc updates. Keep the scientific behavior stable unless a change fixes a clearly incorrect or ambiguous behavior.
 
-Context: This repo already has:
-- Conway meta-analysis reproduction and bootstrap (δ, σ², τ²) with tests
-- PaCO2 distribution ingestion with subgrouping (ED included) with tests
-- Forward simulation with uncertainty propagation with tests
-- Inverse inference (TcCO2 → PaCO2 intervals) with tests
-- Artifacts in artifacts/*.md and artifacts/*.csv
+Constraints
+- Do NOT change the core estimands or sign convention: d = PaCO2 - TcCO2 everywhere.
+- Do NOT “mirror Stata”; follow docs/SPEC.md and Conway methods as implemented.
+- Minimize refactors. Only refactor to remove duplication or to centralize validation safely.
+- If you change any behavior that could affect outputs, update docs/DECISIONS.md and add/adjust tests accordingly.
+- Run pytest at the end. Print exact git add/commit commands (do not run git operations here).
 
-Goal: Make it easy for a human to run and inspect step-by-step in Jupyter, while preserving a command-line “outer loop” that regenerates artifacts deterministically.
+Start by reading these files to understand current implementation + documentation:
+- python/src/tcco2_accuracy/conway_meta.py
+- python/src/tcco2_accuracy/bootstrap.py
+- python/src/tcco2_accuracy/data.py
+- python/src/tcco2_accuracy/simulation.py
+- python/src/tcco2_accuracy/inference.py
+- python/src/tcco2_accuracy/io.py
+- python/src/tcco2_accuracy/workflows/meta.py
+- python/src/tcco2_accuracy/workflows/bootstrap.py
+- python/src/tcco2_accuracy/workflows/paco2.py
+- python/src/tcco2_accuracy/workflows/sim.py
+- python/src/tcco2_accuracy/workflows/infer.py
+- python/tests/test_conway_meta.py
+- python/tests/test_bootstrap.py
+- python/tests/test_paco2_distribution.py
+- python/tests/test_simulation.py
+- python/tests/test_inference.py
+- python/tests/test_workflows.py
+- docs/SPEC.md
+- docs/DECISIONS.md
+- docs/VALIDATION.md
+- python/README.md (or create/update if missing)
 
-Deliverables to implement:
+Deliverables
+A) Edge-case robustness in meta-analysis
+1) Add docstrings to key functions in conway_meta.py:
+   - random_effects_meta
+   - loa_summary
+   - conway_group_summary
+   - prepare_conway_inputs (or equivalent)
+   Include: inputs, outputs, assumptions, and what each field means (delta, sigma2, tau2, LoA, CI).
+2) Harden random_effects_meta for low-study edge cases:
+   - If studies <= 1:
+     - tau2 must be set to 0.0 (no heterogeneity estimable)
+     - robust variance should be defined sensibly (or set to model variance)
+     - return a MetaEstimate that does not contain NaN/Inf for core fields.
+   - If any denominator in tau2 method-of-moments becomes 0 or NaN, treat tau2 as 0.0.
+3) Harden CI computation in loa_summary:
+   - If studies < 2 (df <= 0), do not call t.ppf with df<=0.
+   - Choose a defined behavior:
+     (a) skip CI (set CI bounds to NaN) and document it, OR
+     (b) use a normal approximation (z=1.96) as fallback.
+   - Implement the chosen behavior consistently and document in docs/DECISIONS.md.
 
-A) Notebook templates (under python/notebooks/)
-1) Create python/notebooks/00_smoke.ipynb
-   - Uses autoreload.
-   - Imports the package cleanly (assume editable install; include a short note cell).
-   - Runs each stage in separate cells:
-     (1) meta reproduction (Conway)
-     (2) bootstrap draws summary
-     (3) PaCO2 distribution summary by subgroup (ED included)
-     (4) forward simulation summary
-     (5) inference demo for TcCO2 values [35, 45, 55] for each subgroup
-   - Each stage cell must:
-     - call a single public function (you will add in section B below)
-     - display a small dataframe/table and print key invariants
-   - Keep the notebook lightweight (no huge data printing).
+B) Make tau² truncation behavior explicit and consistent
+4) Ensure there is a clear, documented policy for negative tau2:
+   - Meta reproduction should match Conway (may allow negative tau2 internally if that is needed to reproduce Table 1).
+   - Bootstrap draws should enforce tau2 >= 0 for stability (already present).
+5) Implement consistent options:
+   - conway_meta functions should accept truncate_tau2 (bool) and document defaults.
+   - workflows/bootstrap should explicitly state in docstring + DECISIONS.md that bootstrap truncates tau2 >= 0 (and why).
+6) Add a regression test to ensure bootstrap draws never contain tau2 < 0 even when a replicate would yield negative tau2.
 
-2) Create python/notebooks/01_inference_playground.ipynb
-   - Exposes a small function to sweep TcCO2 across a grid (e.g., 30..70 step 2)
-   - Plots (matplotlib) posterior median and 95% interval by subgroup (optional, keep simple).
-   - Demonstrates both likelihood-only and prior-weighted modes.
+C) Remove duplicate utilities (reduce drift risk)
+7) Identify duplicated helper functions:
+   - threshold label helpers (e.g., _threshold_label)
+   - quantile-key helpers (e.g., _quantile_key / _quantile_label)
+   - n_boot_per_group helpers (appears in multiple workflow modules)
+   - _validate_params appears duplicated between simulation.py and inference.py
+8) Create a new module python/src/tcco2_accuracy/utils.py (or similar) containing:
+   - threshold_label(threshold: float) -> str (e.g., "45" or "45_0" consistent with existing column naming)
+   - quantile_key(prefix: str, q: float) -> str (e.g., "d_mean_q025")
+   - n_draws_per_group(params_df) -> int|dict logic (exact same behavior currently duplicated)
+   - validate_params_df(params_df) that ensures required columns exist and are finite numeric
+   - safe_ratio(num, den) (if used in multiple places)
+9) Replace duplicated implementations with imports from utils.py.
+   - Ensure no public API breaks.
+   - Update tests if they import private helpers (prefer not).
+   - Ensure identical output column names are preserved.
 
-B) Deterministic runners that notebooks call (under python/src/tcco2_accuracy/workflows/)
-Add python/src/tcco2_accuracy/workflows/ with public functions:
-1) workflows.meta.run_meta_checks(...)
-2) workflows.bootstrap.run_bootstrap(...)
-3) workflows.paco2.run_paco2_summary(...)
-4) workflows.sim.run_forward_simulation_summary(...)
-5) workflows.infer.run_inference_demo(...)
+D) Guard against mis-specified grouped params in simulation/inference
+10) Improve behavior when params has a 'group' column but lacks subgroup-specific entries:
+   - Current risk: inference/sim may silently return empty outputs for a subgroup.
+11) Implement one clear behavior (choose one and document):
+   Option 1 (recommended for robustness):
+   - If subgroup-specific params are missing, fall back to using the full params_df (ignoring group filter) and emit a warning (warnings.warn).
+   Option 2:
+   - Raise a ValueError with a clear message.
+12) Add tests that exercise this case:
+   - Construct a params_df with a 'group' column but only "main", then call:
+     - simulate_forward(...) or workflow sim runner
+     - infer_paco2_by_subgroup(...)
+   - Verify behavior matches the chosen policy (fallback + warning OR error).
 
-Constraints:
-- Thin orchestration wrappers calling existing core functions
-- No hardcoded paths; allow overrides
-- Runnable without Jupyter
+E) Strengthen parameter validation (numeric + finite + non-negative variances)
+13) Centralize validation:
+   - Use the new validate_params_df utility in both inference and simulation.
+14) Enforce:
+   - columns present: delta, sigma2, tau2
+   - numeric and finite values
+   - sigma2 >= 0; tau2 >= 0 (if tau2 can be negative in the Conway reproduction pathway, enforce non-negativity only in bootstrap/sim/infer layers, not necessarily in the raw meta reproduction functions).
+15) If invalid values occur:
+   - Decide: raise ValueError with clear message (preferred) vs coerce (dangerous). Prefer raising for invalid values in inference/simulation.
 
-C) End-to-end script runner
-Add python/scripts/run_all_workflows.py with args: --seed --out --n-boot --mode --input-path
-Runs workflows in order and writes artifacts under --out.
+F) Clarify docstrings and documentation outputs
+16) Expand docstrings for public workflow functions:
+   - workflows/meta.run_meta_checks
+   - workflows/bootstrap.run_bootstrap
+   - workflows/paco2.run_paco2_summary
+   - workflows/sim.run_forward_simulation_summary
+   - workflows/infer.run_inference_demo
+   Each docstring must clearly state:
+   - what it reads (inputs)
+   - what it writes (artifact files)
+   - what it returns (DataFrame schema summary)
+   - determinism expectations (seed)
+17) Update docs/VALIDATION.md:
+   - Add a section for each stage with:
+     - purpose
+     - invariants enforced by tests
+     - which artifact(s) support which scientific claim
+   - Keep it concise and practical.
 
-D) Tests
-Add python/tests/test_workflows.py:
-- run each workflow into a tmp dir with fixed seed
-- assert artifacts created + deterministic outputs
-- do not require committing patient-level data
-- if raw input absent, use tiny synthetic fallback for tests or skip with a clear message
+G) Clarify/handle multiple thresholds in inference demo formatting
+18) Current limitation: format_inference_demo uses only thresholds[0].
+   Replace “silent first-threshold selection” with explicit behavior:
+   Choose one:
+   - If len(thresholds) != 1: raise ValueError with clear message (“format_inference_demo supports one threshold; pass a single threshold or extend formatting”), OR
+   - Implement multi-threshold display (table includes a threshold column or multiple probability columns).
+19) Add/adjust tests accordingly.
+   Minimal path: implement the explicit ValueError + update docs.
 
-E) Documentation
-- Update python/README.md with install/test/run/notebook instructions
-- Update docs/VALIDATION.md: what each stage checks + mapping to scientific claims
+H) Add two additional hardening tests
+20) expected_classification_metrics edge cases:
+   - Create a paco2_values array such that prevalence is 0 for a high threshold and 1 for a low threshold.
+   - Assert returned sensitivity/specificity behavior is consistent (nan where undefined) and does not crash.
+21) Meta-analysis single-study edge:
+   - Create a tiny synthetic study-level dataset with one study and ensure random_effects_meta / loa_summary returns finite values and defined CI policy (NaN or z fallback) and does not raise unintentionally.
 
-At end:
-- Run pytest
-- Print exact git add/commit commands
-- Do not attempt git operations directly.
+I) Repo hygiene (quick check)
+22) Ensure .gitignore includes:
+   - __pycache__/
+   - *.pyc
+   - .pytest_cache/
+   (Only do this if not already present.)
 
-Commit message suggestion:
-"add notebook workflows + deterministic runners + workflow tests"
+Acceptance criteria
+- pytest passes locally.
+- Existing published-target tests still pass (Table 1 checks etc.).
+- No silent behavior changes: any changed behavior is documented in docs/DECISIONS.md.
+- No duplicated utility code remains for threshold labeling, quantile keys, n_boot_per_group, and parameter validation.
+- Simulation/inference does not silently drop subgroups if params grouping is incomplete (either warns + falls back or errors explicitly).
+- Documentation is updated to match behavior.
+
+Execution instructions
+- Run: pytest -q
+- Print final:
+  - summary of changes
+  - exact git add ... command(s)
+  - exact git commit -m "harden pipeline: meta edge cases, utils dedup, validation, docs" (or similar)
+
+Do not run git in this environment.

@@ -31,6 +31,23 @@ def run_paco2_summary(
     quantiles: Sequence[float] = DEFAULT_PACO2_QUANTILES,
     out_dir: Path | None = None,
 ) -> Paco2WorkflowResult:
+    """Summarize PaCO2 distributions by subgroup.
+
+    Reads:
+        - PaCO2 distribution data from ``paco2_path`` when provided, otherwise
+          the bundled `Data/In Silico TCCO2 Database.dta`.
+
+    Writes:
+        - ``paco2_distribution_summary.md`` in ``out_dir`` when provided.
+
+    Returns:
+        ``Paco2WorkflowResult`` with subgroup summary columns ``group``, ``count``,
+        and ``paco2_qXYZ`` quantiles, plus the prepared data with subgroup labels.
+
+    Determinism:
+        Deterministic; no random sampling is used.
+    """
+
     provided_data = paco2_data is not None
     if paco2_data is None:
         paco2_data = load_paco2_distribution(paco2_path)

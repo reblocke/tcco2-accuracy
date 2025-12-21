@@ -11,6 +11,7 @@ import pandas as pd
 from ..data import PACO2_SUBGROUP_ORDER, load_paco2_distribution, prepare_paco2_distribution
 from ..inference import infer_paco2_by_subgroup
 from ..simulation import DEFAULT_CLASSIFICATION_THRESHOLDS
+from ..utils import n_draws_per_group, threshold_label
 from . import bootstrap as bootstrap_workflow
 
 
@@ -39,6 +40,25 @@ def run_inference_demo(
     include_prior: bool = True,
     out_dir: Path | None = None,
 ) -> InferenceWorkflowResult:
+    """Run inference demo tables for TcCO2 → PaCO2.
+
+    Reads:
+        - Conway bootstrap parameters (if ``params`` is not provided).
+        - PaCO2 distribution data (if ``paco2_data`` is not provided).
+
+    Writes:
+        - ``inference_demo.md`` in ``out_dir`` when provided.
+
+    Returns:
+        ``InferenceWorkflowResult`` with likelihood-only and optional prior-weighted
+        summaries. Output frames include ``group``, ``tcco2``, PaCO2 quantiles, and
+        threshold exceedance probabilities.
+
+    Determinism:
+        Fully deterministic for fixed ``seed`` and parameter draws; formatting
+        requires a single threshold value.
+    """
+
     if params is None:
         params = bootstrap_workflow.run_bootstrap(n_boot=n_boot, seed=seed, conway_path=conway_path).draws
     if paco2_data is None:
@@ -68,7 +88,7 @@ def run_inference_demo(
         likelihood,
         prior,
         thresholds=thresholds,
-        n_boot=_n_boot_per_group(params),
+        n_boot=n_draws_per_group(params),
         n_draws=n_draws,
         seed=seed,
         paco2_data=paco2_data,
@@ -98,10 +118,15 @@ def format_inference_demo(
     seed: int | None,
     paco2_data: pd.DataFrame,
 ) -> str:
-    if not thresholds:
+    threshold_list = list(thresholds)
+    if not threshold_list:
         raise ValueError("Inference thresholds must be non-empty.")
-    threshold = thresholds[0]
-    threshold_col = f"p_ge_{_threshold_label(threshold)}"
+    if len(threshold_list) != 1:
+        raise ValueError(
+            "format_inference_demo supports one threshold; pass a single threshold or extend formatting."
+        )
+    threshold = threshold_list[0]
+    threshold_col = f"p_ge_{threshold_label(threshold)}"
     prepared = paco2_data if "subgroup" in paco2_data.columns else prepare_paco2_distribution(paco2_data)
     prior_counts = prepared.groupby("subgroup")["paco2"].count()
     counts = ", ".join(
@@ -171,18 +196,6 @@ def _combine_modes(likelihood: pd.DataFrame, prior: pd.DataFrame | None) -> pd.D
 
 def _format_interval(row: pd.Series) -> str:
     return f"{row['paco2_q500']:.2f} [{row['paco2_q025']:.2f}, {row['paco2_q975']:.2f}]"
-
-
-def _threshold_label(value: float) -> str:
-    label = f"{value:g}".replace(".", "p")
-    return label.replace("-", "m")
-
-
-def _n_boot_per_group(params: pd.DataFrame) -> int:
-    if "group" not in params.columns:
-        return int(params.shape[0])
-    counts = params.groupby("group").size()
-    return int(counts.max()) if not counts.empty else 0
 
 
 def _write_text(path: Path, content: str) -> None:

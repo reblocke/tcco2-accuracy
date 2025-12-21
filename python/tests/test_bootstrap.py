@@ -23,3 +23,19 @@ def test_bootstrap_tau2_nonnegative_and_loa_spread() -> None:
     assert (draws["tau2"] >= 0).all()
     assert draws["loa_u"].max() - draws["loa_u"].min() > 0.1
     assert draws["loa_l"].max() - draws["loa_l"].min() > 0.1
+
+
+def test_bootstrap_truncates_negative_tau2() -> None:
+    data = pd.DataFrame(
+        {
+            "study": ["a", "b"],
+            "n": [10.0, 10.0],
+            "n_2": [10.0, 10.0],
+            "bias": [0.0, 0.0],
+            "s2": [4.0, 4.0],
+        }
+    )
+
+    draws = bootstrap_conway_parameters(data, n_boot=10, seed=123, truncate_tau2=True)
+
+    assert (draws["tau2"] >= 0).all()
