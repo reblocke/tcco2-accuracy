@@ -1,0 +1,34 @@
+- Goal (incl. success criteria):
+  - Implement Streamlit UI + compute API for TcCO2→PaCO2 inference (PI + P(threshold)) with posterior visualization, tests, docs, and pytest passing.
+- Constraints/Assumptions:
+  - Follow Conway difference definition (PaCO2 − TcCO2).
+  - Use bootstrap parameter draws; keep compute layer pure and UI layer separate.
+  - Do not modify `Code/Legacy/` or `Drafts/`; no large patient-level data.
+  - Add UI deps as optional extras; run pytest; print git add/commit commands only.
+- Key decisions:
+  - UNCONFIRMED
+- State:
+  - Implemented UI compute layer, Streamlit app, docs, tests, and optional deps; pytest full run blocked by sandbox.
+- Done:
+  - Created `http:/CONTINUITY.md` ledger.
+  - Reviewed `python/src/tcco2_accuracy/inference.py`, `data.py`, and existing tests.
+  - Added `python/src/tcco2_accuracy/ui_api.py` compute API + histogram helper.
+  - Added `app/streamlit_app.py` Streamlit UI.
+  - Added UI docs, tests, optional deps, and artifact update.
+  - Ran `python -c "import pytest; ..."` for `python/tests/test_ui_api.py` and `python/tests/test_inference.py` (passed).
+  - Attempted full `pytest -q` (blocked by sandbox; likely temp dir restrictions).
+- Now:
+  - Summarize changes and report pytest sandbox issue.
+- Next:
+  - Provide git add/commit commands.
+- Open questions (UNCONFIRMED if needed):
+  - None.
+- Working set (files/ids/commands):
+  - `python/src/tcco2_accuracy/ui_api.py`
+  - `app/streamlit_app.py`
+  - `python/tests/test_ui_api.py`
+  - `python/tests/test_streamlit_app.py`
+  - `docs/UI.md`
+  - `python/README.md`
+  - `pyproject.toml`
+  - `artifacts/ui_overview.md`

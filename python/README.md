@@ -15,3 +15,8 @@
 - Launch: `jupyter lab`
 - Open `python/notebooks/00_smoke.ipynb` for step-by-step checks.
 - Open `python/notebooks/01_inference_playground.ipynb` for inference sweeps.
+
+## Streamlit UI
+- Docs: `docs/UI.md`
+- Install extras: `python -m pip install -e ".[ui]"`
+- Run: `streamlit run app/streamlit_app.py`
