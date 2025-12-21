@@ -9,6 +9,12 @@ description = "Python port of TcCO2 accuracy meta-analysis and simulation"
 readme = "README.md"
 requires-python = ">=3.10"
 
+[project.optional-dependencies]
+ui = [
+    "plotly>=5.18",
+    "streamlit>=1.31",
+]
+
 [tool.setuptools]
 package-dir = {"" = "python/src"}
 
