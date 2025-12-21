@@ -2,7 +2,7 @@
 
 Bootstrap draws: 1000 per subgroup (seed=202401).
 Parameter draws: full bootstrap set per subgroup.
-Subgroup priors: empirical PaCO2 distributions for pft/ed_inp/icu (n=10456, 120538, 66704).
+Subgroup priors: empirical PaCO2 distributions for pft (n=10456), ed_inp (n=120538), icu (n=66704).
 Interval type: 95% prediction interval (PI), not CI.
 
 ## Likelihood-only (bootstrap mixture)
