@@ -29,6 +29,7 @@ def run_bootstrap(
     data_by_group: Iterable[tuple[str, pd.DataFrame]] | None = None,
     study_id: str = "study",
     truncate_tau2: bool = True,
+    bootstrap_mode: str = "cluster_plus_withinstudy",
     out_dir: Path | None = None,
 ) -> BootstrapWorkflowResult:
     """Run Conway bootstrap draws and summaries.
@@ -44,6 +45,10 @@ def run_bootstrap(
         ``BootstrapWorkflowResult`` with bootstrap draws (columns include
         ``replicate``, ``group``, ``delta``, ``sigma2``, ``tau2``) plus summary
         quantiles versus Conway LoA bounds.
+
+    Notes:
+        ``bootstrap_mode`` controls whether within-study estimation uncertainty
+        is injected in addition to cluster resampling.
 
     Determinism:
         Deterministic for fixed ``seed``; tau2 is truncated at zero by default
@@ -62,9 +67,15 @@ def run_bootstrap(
         seed=seed,
         study_id=study_id,
         truncate_tau2=truncate_tau2,
+        bootstrap_mode=bootstrap_mode,
     )
     summary = bootstrap_loa_summary(draws, conway_path=conway_path)
-    markdown = format_bootstrap_summary(summary, n_boot=n_boot, seed=seed)
+    markdown = format_bootstrap_summary(
+        summary,
+        n_boot=n_boot,
+        seed=seed,
+        bootstrap_mode=bootstrap_mode,
+    )
     if out_dir is not None:
         out_dir = Path(out_dir)
         write_bootstrap_params(out_dir / "bootstrap_params.csv", draws)
@@ -73,6 +84,7 @@ def run_bootstrap(
         "groups": int(summary.shape[0]),
         "n_boot": int(n_boot),
         "draws": int(draws.shape[0]),
+        "bootstrap_mode": bootstrap_mode,
     }
     return BootstrapWorkflowResult(draws=draws, summary=summary, invariants=invariants, markdown=markdown)
 

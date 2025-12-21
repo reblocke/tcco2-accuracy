@@ -35,3 +35,9 @@
 - Invariants: likelihood/prior checks in `python/tests/test_inference.py` and determinism in `python/tests/test_workflows.py`.
 - Artifacts: `artifacts/inference_demo.md`.
 - Scientific claim: TcCO2 measurements map to PaCO2 intervals with uncertainty.
+
+### Conditional misclassification curves
+- Purpose: summarize conditional TN/FP/FN/TP probabilities by true PaCO2 bin.
+- Invariants: probability mass and branching checks in `python/tests/test_hybrid_bootstrap_and_conditional.py`.
+- Artifacts: `artifacts/conditional_classification_t45.csv`, `artifacts/conditional_classification_t45.md`.
+- Scientific claim: conditional error rates vary smoothly with PaCO2 and include parameter uncertainty.

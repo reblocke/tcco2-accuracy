@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Sequence
 
+import numpy as np
 import pandas as pd
 
 from .bootstrap import bootstrap_group_draws
@@ -26,11 +27,21 @@ CONWAY_GROUPS: dict[str, str] = {
 }
 
 
-def build_bootstrap_params(n_boot: int = 1000, seed: int = 202401) -> pd.DataFrame:
+def build_bootstrap_params(
+    n_boot: int = 1000,
+    seed: int = 202401,
+    bootstrap_mode: str = "cluster_plus_withinstudy",
+) -> pd.DataFrame:
     """Generate bootstrap draws for Conway subgroups."""
 
     group_data = [(name, load_conway_group(key)) for name, key in CONWAY_GROUPS.items()]
-    return bootstrap_group_draws(group_data, n_boot=n_boot, seed=seed, truncate_tau2=True)
+    return bootstrap_group_draws(
+        group_data,
+        n_boot=n_boot,
+        seed=seed,
+        truncate_tau2=True,
+        bootstrap_mode=bootstrap_mode,
+    )
 
 
 def write_bootstrap_params(path: Path, params: pd.DataFrame) -> None:
@@ -49,6 +60,7 @@ def bootstrap_loa_summary(params: pd.DataFrame, conway_path: Path | None = None)
     """Summarize bootstrap LoA bounds versus Conway CIs."""
 
     rows: list[dict[str, float | str]] = []
+    bootstrap_mode = _extract_bootstrap_mode(params)
     for group_name, group_key in CONWAY_GROUPS.items():
         subset = params[params["group"] == group_name]
         if subset.empty:
@@ -56,6 +68,13 @@ def bootstrap_loa_summary(params: pd.DataFrame, conway_path: Path | None = None)
         loa_l_q = subset["loa_l"].quantile([0.025, 0.5, 0.975])
         loa_u_q = subset["loa_u"].quantile([0.025, 0.5, 0.975])
         summary = conway_group_summary(load_conway_group(group_key, path=conway_path))
+        bootstrap_outer_width = float(loa_u_q.loc[0.975] - loa_l_q.loc[0.025])
+        conway_outer_width = float(summary.ci_u - summary.ci_l)
+        width_ratio = (
+            bootstrap_outer_width / conway_outer_width
+            if np.isfinite(conway_outer_width) and conway_outer_width != 0
+            else float("nan")
+        )
         rows.append(
             {
                 "group": group_name,
@@ -69,26 +88,37 @@ def bootstrap_loa_summary(params: pd.DataFrame, conway_path: Path | None = None)
                 "conway_loa_u": summary.loa_u,
                 "conway_ci_l": summary.ci_l,
                 "conway_ci_u": summary.ci_u,
+                "bootstrap_outer_width": bootstrap_outer_width,
+                "conway_outer_width": conway_outer_width,
+                "width_ratio": float(width_ratio),
+                "width_gap": float(conway_outer_width - bootstrap_outer_width),
                 "n_boot": int(subset.shape[0]),
+                **({"bootstrap_mode": bootstrap_mode} if bootstrap_mode is not None else {}),
             }
         )
 
     return pd.DataFrame(rows)
 
 
-def format_bootstrap_summary(summary: pd.DataFrame, n_boot: int, seed: int) -> str:
+def format_bootstrap_summary(
+    summary: pd.DataFrame,
+    n_boot: int,
+    seed: int,
+    bootstrap_mode: str,
+) -> str:
     """Return a markdown summary of bootstrap LoA spread."""
 
     lines = [
         "# Bootstrap LoA spread summary",
         "",
         f"Bootstrap draws: {n_boot} per subgroup (seed={seed}).",
+        f"Bootstrap mode: {bootstrap_mode}.",
         "",
         "LoA bounds shown as 2.5/50/97.5% bootstrap quantiles;",
         "Conway CI shown as reported outer CI bounds.",
         "",
-        "| Group | LoA L q2.5 | LoA L q50 | LoA L q97.5 | LoA U q2.5 | LoA U q50 | LoA U q97.5 | Conway CI L | Conway CI U |",
-        "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+        "| Group | LoA L q2.5 | LoA L q50 | LoA L q97.5 | LoA U q2.5 | LoA U q50 | LoA U q97.5 | Conway CI L | Conway CI U | Width ratio | Width gap |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
 
     for _, row in summary.iterrows():
@@ -105,20 +135,39 @@ def format_bootstrap_summary(summary: pd.DataFrame, n_boot: int, seed: int) -> s
                     f"{row['loa_u_q975']:.2f}",
                     f"{row['conway_ci_l']:.2f}",
                     f"{row['conway_ci_u']:.2f}",
+                    f"{row['width_ratio']:.2f}",
+                    f"{row['width_gap']:.2f}",
                 ]
             )
             + " |"
         )
 
-    lines.extend(
-        [
-            "",
-            "Qualitative check: bootstrap LoA quantile ranges span a similar",
-            "scale to Conway's outer CI bounds across subgroups.",
-        ]
-    )
+    lines.append("")
+    lines.append("Width interpretation (bootstrap vs Conway outer CI):")
+    for _, row in summary.iterrows():
+        interpretation = _interpret_width_ratio(float(row["width_ratio"]))
+        lines.append(f"- {row['group']}: {interpretation}.")
 
     return "\n".join(lines)
+
+
+def _extract_bootstrap_mode(params: pd.DataFrame) -> str | None:
+    if "bootstrap_mode" not in params.columns:
+        return None
+    modes = pd.Series(params["bootstrap_mode"]).dropna().unique()
+    if modes.size != 1:
+        return None
+    return str(modes[0])
+
+
+def _interpret_width_ratio(width_ratio: float) -> str:
+    if not np.isfinite(width_ratio):
+        return "ratio unavailable"
+    if width_ratio < 0.8:
+        return "materially narrower than Conway CI"
+    if width_ratio <= 1.2:
+        return "comparable to Conway CI"
+    return "wider than Conway CI"
 
 
 def build_simulation_summary(
