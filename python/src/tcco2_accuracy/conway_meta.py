@@ -65,7 +65,7 @@ def prepare_conway_inputs(data: pd.DataFrame) -> pd.DataFrame:
     return inputs
 
 
-def random_effects_meta(effect, variance) -> MetaEstimate:
+def random_effects_meta(effect, variance, truncate_tau2: bool = False) -> MetaEstimate:
     effect = np.asarray(effect, dtype=float)
     variance = np.asarray(variance, dtype=float)
     mask = np.isfinite(effect) & np.isfinite(variance)
@@ -78,6 +78,8 @@ def random_effects_meta(effect, variance) -> MetaEstimate:
     sum_wt = np.sum(weights_fe)
     sum_wt_sq = np.sum(weights_fe**2)
     tau2 = (q_stat - (studies - 1)) / (sum_wt - sum_wt_sq / sum_wt)
+    if truncate_tau2:
+        tau2 = max(0.0, tau2)
     weights_re = 1 / (variance + tau2)
     mean_re = np.sum(effect * weights_re) / np.sum(weights_re)
     var_model = 1 / np.sum(weights_re)
@@ -95,9 +97,9 @@ def random_effects_meta(effect, variance) -> MetaEstimate:
     )
 
 
-def loa_summary(bias, v_bias, logs2, v_logs2) -> LoaSummary:
-    bias_row = random_effects_meta(bias, v_bias)
-    logs2_row = random_effects_meta(logs2, v_logs2)
+def loa_summary(bias, v_bias, logs2, v_logs2, truncate_tau2: bool = False) -> LoaSummary:
+    bias_row = random_effects_meta(bias, v_bias, truncate_tau2=truncate_tau2)
+    logs2_row = random_effects_meta(logs2, v_logs2, truncate_tau2=truncate_tau2)
     bias_mean = bias_row.mean
     sd2_est = float(np.exp(logs2_row.mean))
     tau_est = bias_row.tau2
