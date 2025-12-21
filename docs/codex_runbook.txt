@@ -1,0 +1,155 @@
+# codex_runbook.txt
+# TcCO2 Accuracy Python Port — Codex runbook (7 sequential prompts)
+#
+# Usage (non-interactive, reads this file from stdin):
+#   codex exec --model gpt-5.2-codex --full-auto - < docs/codex_runbook.txt
+#
+# Notes:
+# - This runbook assumes you have already added AGENTS.md and the skill folder:
+#     .codex/skills/tcco2-python-port/SKILL.md
+# - Do NOT edit Code/Legacy/ or Drafts/.
+# - If Stata behavior conflicts with Conway paper/supplement or docs/SPEC.md, implement the intended behavior and document in docs/DECISIONS.md.
+#
+# Each prompt below should result in:
+#   (a) pytest passing for that milestone
+#   (b) updated artifacts/ (small summaries only)
+#   (c) a git commit
+
+================================================================================
+PROMPT 1 — Milestone 0: scaffold + docs + Conway Table 1 fixtures (no modeling)
+================================================================================
+$tcco2-python-port
+
+Milestone 0 ONLY: create Python project scaffolding + documentation skeleton + Conway Table 1 fixtures.
+
+Do:
+1) Create docs/: SPEC.md, PLAN.md, DECISIONS.md, VALIDATION.md.
+2) Create python/ packaging scaffold (pyproject.toml, src/tcco2_accuracy, pytest config).
+3) Create tests/fixtures/conway_table1.csv by extracting Table 1 rows from `Conway Meta/Thorax 2019 TcCO2 metaanalysis.pdf` (at minimum: main analysis + key subgroups you will use: ICU, acute respiratory failure, and outpatients requiring lung function tests).
+4) Add a minimal pytest that loads the fixture and checks basic column integrity + that LoA bounds are present.
+
+Do NOT implement meta-analysis estimation yet.
+Run pytest, then commit with message:
+  "scaffold python port + docs + Conway Table 1 fixtures"
+
+================================================================================
+PROMPT 2 — Milestone 1: LoA utilities + Table 1 LoA reproduction tests
+================================================================================
+$tcco2-python-port
+
+Milestone 1 ONLY: implement Bland–Altman LoA utilities and reproduce Conway Table 1 LoA for the main analysis row.
+
+Requirements:
+- Use Conway’s sign convention and define d = PaCO2 − TcCO2 in docs/SPEC.md and code.
+- Implement SD_total = sqrt(sigma^2 + tau^2) and LoA = delta ± 2*SD_total.
+- Add tests that match Table 1 LoAL/LoAU for main analysis within rounding tolerance (use tests/fixtures/conway_table1.csv).
+- Write artifacts/meta_loa_check.md summarizing the checks.
+
+Run pytest and commit:
+  "add LoA utilities + Table 1 LoA tests"
+
+================================================================================
+PROMPT 3 — Milestone 2: Recompute δ, σ², τ² from Conway data (not just fixtures)
+================================================================================
+$tcco2-python-port
+
+Milestone 2 ONLY: recompute Conway δ, σ², τ² from the provided Conway datasets (prefer `Conway Meta/data.dta`) and validate against Table 1.
+
+Steps:
+1) Identify the exact study-level inputs used in the Conway meta-analysis (bias/mean diff, within-study variance/SD, repeated-measures adjustment inputs, subgroup flags).
+2) Implement the Conway estimation approach in Python:
+   - repeated-measures adjustment per Supplementary File 1 Step 1
+   - WLS estimation for δ and σ²
+   - robust variance estimation clustered by study
+   - method-of-moments estimator for τ²
+3) Add tests comparing recomputed main analysis (and at least 2 subgroups) to Table 1 within tolerance.
+4) If any mismatch remains, add a concrete explanation and a decision in docs/DECISIONS.md (with file/line references to the Rmd or supplement).
+
+Run pytest and commit:
+  "reproduce Conway meta-analysis estimates from data"
+
+================================================================================
+PROMPT 4 — Milestone 3: Route-1 study-level bootstrap parameter uncertainty
+================================================================================
+$tcco2-python-port
+
+Milestone 3 ONLY: implement study-level (cluster) bootstrap to propagate uncertainty in δ, σ², τ².
+
+Requirements:
+- Resample studies with replacement; recompute δ, σ², τ² each replicate.
+- Save bootstrap draws (per subgroup) to artifacts/bootstrap_params.parquet (or csv if easier).
+- Provide bootstrap intervals for LoA and compare scale to Conway’s reported outer CI bounds (document differences).
+- Add tests:
+  - bootstrap outputs are reproducible with fixed seed
+  - LoA distribution is sane (non-NaN, finite; tau2 >= 0 truncation rule documented)
+- Write artifacts/bootstrap_summary.md.
+
+Run pytest and commit:
+  "add study-level bootstrap for parameter uncertainty"
+
+================================================================================
+PROMPT 5 — Milestone 4: PaCO2 distribution ingestion + subgroup definitions (ED included)
+================================================================================
+$tcco2-python-port
+
+Milestone 4 ONLY: implement ingestion of the in-silico PaCO2 distribution from `Data/In Silico TCCO2 Database.dta` (or configurable input path) and define subgroups, including ED.
+
+Requirements:
+- Subgroup definitions must come from docs/SPEC.md (not legacy Stata). Include ED in the ED/Inp group by construction.
+- Do NOT commit patient-level extracts; create small derived fixtures for tests (counts + key quantiles per subgroup).
+- Add artifact summary markdown with subgroup counts + key quantiles: artifacts/paco2_distribution_summary.md.
+- Add tests validating:
+  - required columns present
+  - PaCO2 in mmHg (or conversion documented and tested)
+  - subgroup membership is mutually exclusive if that is the intended spec
+
+Run pytest and commit:
+  "add PaCO2 distribution ingestion + subgroup summaries"
+
+================================================================================
+PROMPT 6 — Milestone 5: Forward simulation with uncertainty propagation
+================================================================================
+$tcco2-python-port
+
+Milestone 5 ONLY: implement forward simulation over the PaCO2 distribution with parameter uncertainty propagation.
+
+Requirements:
+- For each subgroup:
+  - sample PaCO2 from the subgroup empirical distribution
+  - sample (δ, σ², τ²) from bootstrap draws
+  - generate d = PaCO2 − TcCO2 using the implied model; then TcCO2 = PaCO2 − d
+- Prefer an analytical expected-metrics mode (Normal CDF integration) for stable outputs; optionally implement Monte Carlo mode behind a flag.
+- Compute and summarize:
+  - simulated d moments (mean, SD, 2.5/97.5th)
+  - expected LoA in the simulated population
+  - classification metrics at configurable thresholds
+- Add tests for invariants:
+  - mean(d) matches δ (within tolerance in fixed-parameter mode)
+  - var(d) matches σ²+τ²
+- Write artifacts/simulation_summary.md.
+
+Run pytest and commit:
+  "add forward simulation engine with uncertainty propagation"
+
+================================================================================
+PROMPT 7 — Milestone 6: Inverse inference API (TcCO2 → PaCO2 interval)
+================================================================================
+$tcco2-python-port
+
+Milestone 6 ONLY: implement inverse inference: given TcCO2 and subgroup, return uncertainty-propagated interval for PaCO2.
+
+Requirements:
+- Support:
+  (a) likelihood-only inversion using d ~ Normal(δ, σ²+τ²) with bootstrap-mixture uncertainty
+  (b) optional prior-weighted posterior using the subgroup PaCO2 empirical distribution as prior
+- Return:
+  - posterior median
+  - 95% prediction interval for PaCO2
+  - P(PaCO2 >= 45) (and allow configurable thresholds)
+- Provide a small example artifact:
+  - posterior summaries for TcCO2 values [35, 45, 55] by subgroup
+  - artifacts/inference_demo.md
+- Add tests on synthetic data where posterior behavior is sanity-checkable (monotonicity, symmetry under known conditions).
+
+Run pytest and commit:
+  "add TcCO2→PaCO2 inference API"

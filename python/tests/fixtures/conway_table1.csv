@@ -1,0 +1,5 @@
+population,studies,n_pairs,n_participants,bias,sd,tau2,loa_l,loa_u,ci_l,ci_u
+Main analysis,73,7021,2817,-0.1,1.9,8.9,-7.1,6.9,-15.1,14.9
+ICU,16,2128,467,-0.6,2.0,1.9,-5.4,4.2,-7.3,6.1
+Acute respiratory failure,14,993,614,1.7,2.0,3.2,-3.7,7.1,-7.8,11.2
+Outpatients requiring lung function tests,4,555,535,-0.1,1.6,1.4,-4.0,3.9,-7.3,7.3
