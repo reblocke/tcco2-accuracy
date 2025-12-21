@@ -1,0 +1,46 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software, please cite the associated conference abstracts
+  (CHEST and ATS posters) and the archived software release (preferred once a DOI is minted).
+title: "TcCO₂ Accuracy"
+type: software
+authors:
+  - family-names: Locke
+    given-names: Brian
+    orcid: "https://orcid.org/0000-0000-0000-0000"  # TODO: replace with your ORCID
+repository-code: "https://github.com/reblocke/tcco2-accuracy"
+url: "https://github.com/reblocke/tcco2-accuracy"
+license: MIT
+keywords:
+  - transcutaneous CO2
+  - TcCO2
+  - PaCO2
+  - Bland-Altman
+  - limits of agreement
+  - respiratory failure
+  - monitoring
+abstract: >-
+  Analysis code and supporting artifacts for evaluating the accuracy of transcutaneous CO₂ (TcCO₂)
+  monitoring versus arterial PaCO₂ across clinical contexts. The repository currently supports
+  poster-presented results (CHEST and ATS) and a manuscript in preparation.
+references:
+  - type: other
+    title: "CHEST poster (Google Scholar entry)"
+    url: "https://scholar.google.com/citations?view_op=view_citation&hl=en&user=O1nydc8AAAAJ&sortby=pubdate&citation_for_view=O1nydc8AAAAJ:hC7cP41nSMkC"
+  - type: other
+    title: "ATS poster (Google Scholar entry)"
+    url: "https://scholar.google.com/citations?view_op=view_citation&hl=en&user=O1nydc8AAAAJ&sortby=pubdate&citation_for_view=O1nydc8AAAAJ:dhFuZR0502QC"
+  - type: article
+    title: "The accuracy and precision of transcutaneous carbon dioxide monitoring: a systematic review and meta-analysis"
+    authors:
+      - family-names: Conway
+        given-names: A.
+    journal: "Thorax"
+    year: 2019
+    doi: "10.1136/thoraxjnl-2018-212632"
+# TODOs:
+# - Add preferred software DOI once you mint a Zenodo release:
+#   doi: "10.5281/zenodo.XXXXXXX"
+# - Add release version and date for the exact artifact used in posters/manuscript:
+#   version: "v0.X"
+#   date-released: "YYYY-MM-DD"
