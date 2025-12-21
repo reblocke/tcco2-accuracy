@@ -13,3 +13,9 @@ python/src/tcco2_accuracy.egg-info/PKG-INFO
 python/src/tcco2_accuracy.egg-info/SOURCES.txt
 python/src/tcco2_accuracy.egg-info/dependency_links.txt
 python/src/tcco2_accuracy.egg-info/top_level.txt
+python/src/tcco2_accuracy/workflows/__init__.py
+python/src/tcco2_accuracy/workflows/bootstrap.py
+python/src/tcco2_accuracy/workflows/infer.py
+python/src/tcco2_accuracy/workflows/meta.py
+python/src/tcco2_accuracy/workflows/paco2.py
+python/src/tcco2_accuracy/workflows/sim.py
