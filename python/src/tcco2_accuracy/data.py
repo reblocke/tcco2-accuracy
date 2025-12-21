@@ -8,6 +8,8 @@ from typing import Iterable, Sequence
 import numpy as np
 import pandas as pd
 
+from .utils import quantile_key
+
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 CONWAY_DATA_PATH = REPO_ROOT / "Conway Meta" / "data.dta"
@@ -154,7 +156,7 @@ def paco2_subgroup_summary(
         prepared = prepare_paco2_distribution(data)
 
     quantile_list = list(quantiles)
-    quantile_columns = [_quantile_label(q) for q in quantile_list]
+    quantile_columns = [quantile_key("paco2", q) for q in quantile_list]
     rows: list[dict[str, float | int | str]] = []
     for group in PACO2_SUBGROUP_ORDER:
         subset = prepared[prepared["subgroup"] == group]
@@ -163,16 +165,10 @@ def paco2_subgroup_summary(
         q_values = subset["paco2"].quantile(quantile_list, interpolation="linear")
         row: dict[str, float | int | str] = {"group": group, "count": int(subset.shape[0])}
         for q in quantile_list:
-            row[_quantile_label(q)] = float(q_values.loc[q])
+            row[quantile_key("paco2", q)] = float(q_values.loc[q])
         rows.append(row)
 
     return pd.DataFrame(rows, columns=["group", "count", *quantile_columns])
-
-
-def _quantile_label(value: float) -> str:
-    return f"paco2_q{int(round(value * 1000)):03d}"
-
-
 def _validate_paco2_columns(data: pd.DataFrame) -> None:
     missing = PACO2_REQUIRED_COLUMNS - set(data.columns)
     if missing:

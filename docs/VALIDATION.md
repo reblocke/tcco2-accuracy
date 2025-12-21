@@ -2,31 +2,36 @@
 
 ## Conway Table 1
 - Fixtures extracted from `Conway Meta/Thorax 2019 TcCO2 metaanalysis.pdf`.
-- Initial checks: column integrity and LoA presence.
+- Invariants: `python/tests/test_conway_meta.py` validates bias/SD/τ²/LoA against Table 1.
 
 ## Workflow validation stages
 
 ### Meta-analysis reproduction
-- Stage: `workflows.meta.run_meta_checks`.
-- Evidence: recomputed bias/SD/τ²/LoA per subgroup against Conway inputs.
+- Purpose: recompute bias/SD/τ²/LoA per subgroup from Conway inputs.
+- Invariants: LoA identity checks in `python/src/tcco2_accuracy/workflows/meta.py` and tests in `python/tests/test_conway_meta.py`.
+- Artifacts: `artifacts/meta_loa_check.md`, `artifacts/conway_table1_fixture_summary.md`.
 - Scientific claim: Conway study-level synthesis reproduces Table 1 magnitudes.
 
 ### Bootstrap uncertainty propagation
-- Stage: `workflows.bootstrap.run_bootstrap`.
-- Evidence: study-level cluster bootstrap (route-1) yields stable LoA ranges.
+- Purpose: propagate δ/σ²/τ² uncertainty with study-level (route-1) bootstrap.
+- Invariants: reproducibility and τ² ≥ 0 checks in `python/tests/test_bootstrap.py`.
+- Artifacts: `artifacts/bootstrap_params.csv`, `artifacts/bootstrap_summary.md`.
 - Scientific claim: between-study uncertainty in δ, σ², τ² is propagated.
 
 ### PaCO2 distribution ingestion
-- Stage: `workflows.paco2.run_paco2_summary`.
-- Evidence: subgroup counts + quantiles (ED included in `ed_inp`).
+- Purpose: ingest PaCO2 distributions and assign mutually exclusive subgroups.
+- Invariants: subgroup assignment and quantile checks in `python/tests/test_paco2_distribution.py`.
+- Artifacts: `artifacts/paco2_distribution_summary.md`.
 - Scientific claim: empirical PaCO2 priors are correctly stratified.
 
 ### Forward simulation
-- Stage: `workflows.sim.run_forward_simulation_summary`.
-- Evidence: summary tables of d moments, LoA, and classification metrics.
+- Purpose: propagate bootstrap parameters through TcCO2 accuracy metrics.
+- Invariants: moment/interval checks in `python/tests/test_simulation.py`.
+- Artifacts: `artifacts/simulation_summary.md`.
 - Scientific claim: TcCO2 accuracy metrics propagate parameter uncertainty.
 
 ### Inverse inference
-- Stage: `workflows.infer.run_inference_demo`.
-- Evidence: posterior medians + 95% prediction intervals per subgroup.
+- Purpose: compute TcCO2 → PaCO2 posterior intervals and exceedance probabilities.
+- Invariants: likelihood/prior checks in `python/tests/test_inference.py` and determinism in `python/tests/test_workflows.py`.
+- Artifacts: `artifacts/inference_demo.md`.
 - Scientific claim: TcCO2 measurements map to PaCO2 intervals with uncertainty.

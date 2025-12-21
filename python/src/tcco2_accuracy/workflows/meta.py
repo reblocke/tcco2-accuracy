@@ -35,6 +35,24 @@ def run_meta_checks(
     data_by_group: Iterable[tuple[str, pd.DataFrame]] | None = None,
     out_dir: Path | None = None,
 ) -> MetaWorkflowResult:
+    """Run Conway meta-analysis checks by subgroup.
+
+    Reads:
+        - Conway study-level data from ``conway_path`` when provided, otherwise
+          the bundled `Conway Meta/data.dta`.
+
+    Writes:
+        - ``meta_loa_check.md`` in ``out_dir`` when provided.
+
+    Returns:
+        ``MetaWorkflowResult`` containing a summary DataFrame with columns
+        ``group``, ``population``, ``studies``, ``n_pairs``, ``n_participants``,
+        ``bias``, ``sd``, ``tau2``, ``loa_l``, ``loa_u``, ``ci_l``, and ``ci_u``.
+
+    Determinism:
+        Deterministic; no random sampling is used.
+    """
+
     group_map = groups or CONWAY_GROUPS
     provided_groups = data_by_group is not None
     if data_by_group is None:
