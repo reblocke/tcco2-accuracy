@@ -2,6 +2,7 @@
 
 ## Core definitions
 - Difference (bias) is defined as PaCO2 − TcCO2 (mmHg), per Conway 2019.
+- Let d = PaCO2 − TcCO2 (mmHg) to match Conway notation.
 
 ## Scope
 - This document will capture intended behavior for the Python port.
