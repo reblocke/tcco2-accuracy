@@ -1,0 +1,8 @@
+-e ./python
+numpy
+pandas
+scipy
+streamlit
+plotly
+openpyxl
+pyreadr

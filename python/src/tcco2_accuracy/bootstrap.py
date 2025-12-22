@@ -47,9 +47,9 @@ def bootstrap_conway_parameters(
     for replicate in range(n_boot):
         sampled_ids = rng.choice(study_ids, size=study_ids.size, replace=True)
         boot = pd.concat([cluster_map[study] for study in sampled_ids], ignore_index=True)
-        # Study resampling captures between-study selection variability.
+        # Cluster bootstrap resampling captures between-study selection variability.
         if bootstrap_mode == "cluster_plus_withinstudy":
-            # Within-study perturbations reflect sampling error in bias/log-variance inputs.
+            # Within-study perturbations propagate finite-sample uncertainty in bias/log-variance inputs.
             # We assume independence between bias and log-variance perturbations per study.
             bias = rng.normal(boot["bias"].to_numpy(), np.sqrt(boot["v_bias"].to_numpy()))
             logs2 = rng.normal(boot["logs2"].to_numpy(), np.sqrt(boot["v_logs2"].to_numpy()))

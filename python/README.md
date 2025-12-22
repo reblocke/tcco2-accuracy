@@ -8,8 +8,8 @@
 - Run: `pytest`
 
 ## Deterministic workflow runner
-- Regenerate artifacts: `python python/scripts/run_all_workflows.py --out artifacts --seed 202401 --n-boot 1000 --mode analytic`
-- Override data root: `python python/scripts/run_all_workflows.py --input-path /path/to/repo-root`
+- Regenerate artifacts: `python scripts/rebuild_artifacts.py --out artifacts --seed 202401 --n-boot 1000 --thresholds 45`
+- Override study table: `python scripts/rebuild_artifacts.py --input-study-table Data/conway_studies.xlsx`
 
 ## Notebooks
 - Launch: `jupyter lab`
@@ -19,4 +19,4 @@
 ## Streamlit UI
 - Docs: `docs/UI.md`
 - Install extras: `python -m pip install -e ".[ui]"`
-- Run: `streamlit run app/streamlit_app.py`
+- Run: `streamlit run streamlit_app.py`

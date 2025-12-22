@@ -113,12 +113,14 @@ def _likelihood_summary(
     thresholds: Sequence[float],
 ) -> dict[str, float]:
     means = tcco2 + deltas
+    # Mixture quantiles form the prediction interval (PI), not a CI.
     quantiles = _mixture_quantiles(DEFAULT_INFERENCE_QUANTILES, means, sd_total)
     summary = {
         "paco2_q025": float(quantiles[0]),
         "paco2_q500": float(quantiles[1]),
         "paco2_q975": float(quantiles[2]),
     }
+    # Posterior mass at/above the threshold P(PaCO2 ≥ threshold).
     probs = _mixture_survival(np.asarray(thresholds, dtype=float), means, sd_total)
     summary.update(_threshold_prob_map(thresholds, probs))
     return summary
@@ -134,12 +136,14 @@ def _prior_weighted_summary(
     paco2_values = np.asarray(paco2_prior, dtype=float)
     log_weights = _prior_log_weights(tcco2, paco2_values, deltas, sd_total)
     weights = _normalize_log_weights(log_weights)
+    # Weighted quantiles form the prediction interval (PI), not a CI.
     quantiles = _weighted_quantile(paco2_values, weights, DEFAULT_INFERENCE_QUANTILES)
     summary = {
         "paco2_q025": float(quantiles[0]),
         "paco2_q500": float(quantiles[1]),
         "paco2_q975": float(quantiles[2]),
     }
+    # Posterior mass at/above the threshold P(PaCO2 ≥ threshold).
     probs = [float(np.sum(weights[paco2_values >= threshold])) for threshold in thresholds]
     summary.update(_threshold_prob_map(thresholds, probs))
     return summary

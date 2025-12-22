@@ -36,7 +36,7 @@ def run_bootstrap(
 
     Reads:
         - Conway study-level data from ``conway_path`` when provided, otherwise
-          the bundled `Conway Meta/data.dta`.
+          the bundled `Data/conway_studies.csv`.
 
     Writes:
         - ``bootstrap_params.csv`` and ``bootstrap_summary.md`` in ``out_dir`` when provided.

@@ -76,10 +76,10 @@ def prepare_conway_inputs(data: pd.DataFrame) -> pd.DataFrame:
         inputs["c"] = inputs["n"] / inputs["n_2"]
     inputs["c"] = inputs["c"].fillna(inputs["n"] / inputs["n_2"])
     inputs["s2_adj"] = repeated_measures_variance(inputs["s2"], inputs["n"], inputs["c"])
-    # v_bias captures the sampling variance of each study's bias estimate.
+    # v_bias captures finite-sample uncertainty in each study's bias estimate.
     inputs["v_bias"] = inputs["s2_adj"] / inputs["n_2"]
     inputs["logs2"] = np.log10(inputs["s2_adj"]) + 1 / (inputs["n_2"] - 1)
-    # v_logs2 captures uncertainty in each study's log-variance proxy.
+    # v_logs2 captures finite-sample uncertainty in each study's log-variance proxy.
     inputs["v_logs2"] = 2 / (inputs["n_2"] - 1)
     return inputs
 
