@@ -1,45 +1,31 @@
 - Goal (incl. success criteria):
-  - Harden Streamlit Cloud deployment and make Conway study inputs driven by canonical CSV/XLSX derived from `Conway Meta/data.Rdata`, with validated schema, editable template, rebuild artifacts runner, updated app upload flow, and pytest passing.
+  - Add/repair Conway RData exporter to build `Data/conway_studies.csv`/`.xlsx` from `data.Rdata` + `data.dta`, with tests/docs updated and pytest passing.
 - Constraints/Assumptions:
-  - Follow Conway difference definition (PaCO2 − TcCO2) and authority hierarchy (Conway paper → docs/SPEC.md/DECISIONS.md → Stata).
-  - Route-1 study-level bootstrap required for parameter uncertainty.
-  - Do not modify `Code/Legacy/` or `Drafts/` and avoid large/patient-level data.
-  - Use Python under `python/`, keep core math pure, update artifacts, run `pytest`, and prepare git add/commit commands.
+  - Follow Conway difference definition (PaCO2 − TcCO2); keep pipeline behavior intact.
+  - Exporter must read RData objects (`main`, `ICU`, `ARF`, `LFT`) and merge counts from `data.dta`.
+  - Do NOT modify `Code/Legacy/` or `Drafts/`.
+  - Add brief “why” comments for mapping/heuristics.
+  - End of task: run `pytest -q` and provide git add/commit commands (do not run git).
 - Key decisions:
-  - Canonical Conway inputs live in `Data/conway_studies.csv`/`.xlsx`, with export script using `data.Rdata` (pyreadr) and appending Bolliger 2007 ICU row if missing.
-  - Streamlit app recomputes bootstrap draws per subgroup from the canonical table (uploaded overrides) and uses root `streamlit_app.py` entrypoint.
+  - Exporter reads bias/S2 + subgroup membership from RData objects and merges counts from `data.dta`, with Bolliger ICU counts fallback (49/49/1) when missing.
 - State:
-  - Implemented canonical tables, export/validation/docs/scripts, Streamlit upload + caching, deployment scaffolding, tests, and regenerated artifacts; `pytest -q` fails in sandbox with no output.
+  - Implementation and tests complete; ready to summarize and hand off git commands.
 - Done:
-  - Created `Data/conway_studies.csv`/`.xlsx` and `Data/conway_studies_template.xlsx`.
-  - Added `scripts/export_conway_rdata.py` and `scripts/rebuild_artifacts.py`.
-  - Added `python/src/tcco2_accuracy/validate_inputs.py` and updated Conway loaders to use canonical tables + subgroup flags.
-  - Updated Streamlit app to allow uploads, cached bootstrap draws, and PI labeling; added root `streamlit_app.py` entrypoint.
-  - Added deployment/docs updates (`docs/CONWAY_DATA_SCHEMA.md`, `docs/ADDING_STUDIES.md`, `docs/DEPLOY_STREAMLIT_CLOUD.md`).
-  - Added requirements/config scaffolding and new tests for validation/export/upload behavior.
-  - Regenerated artifacts via `python scripts/rebuild_artifacts.py --seed 202401 --n-boot 1000`.
+  - Rewrote `scripts/export_conway_rdata.py` to use RData objects + dta counts, subgroup flags, and Bolliger ICU fallback.
+  - Updated `python/tests/test_export_conway_rdata.py` and `docs/DECISIONS.md`.
+  - Ran `pytest -q python/tests/test_export_conway_rdata.py` (pass) and `pytest -q` (pass).
+  - Rebuilt artifacts via `python scripts/rebuild_artifacts.py --seed 202401 --n-boot 1000 --thresholds 45`.
 - Now:
-  - Summarize changes and report pytest sandbox failure.
+  - Summarize changes and provide git add/commit commands.
 - Next:
-  - Provide git add/commit commands; user to rerun pytest if needed.
+  - User to review diffs and run git commands.
 - Open questions (UNCONFIRMED if needed):
-  - Whether `pyreadr` wheels install cleanly on Streamlit Cloud.
+  - None.
 - Working set (files/ids/commands):
-  - `Data/conway_studies.csv`
-  - `Data/conway_studies.xlsx`
-  - `Data/conway_studies_template.xlsx`
+  - `http://CONTINUITY.md`
   - `scripts/export_conway_rdata.py`
-  - `scripts/rebuild_artifacts.py`
-  - `python/src/tcco2_accuracy/data.py`
-  - `python/src/tcco2_accuracy/validate_inputs.py`
-  - `app/streamlit_app.py`
-  - `streamlit_app.py`
-  - `requirements.txt`
-  - `.streamlit/config.toml`
-  - `docs/CONWAY_DATA_SCHEMA.md`
-  - `docs/ADDING_STUDIES.md`
-  - `docs/DEPLOY_STREAMLIT_CLOUD.md`
-  - `python/tests/test_validate_inputs.py`
   - `python/tests/test_export_conway_rdata.py`
-  - `python/tests/test_uploaded_table.py`
-  - `artifacts/*`
+  - `docs/DECISIONS.md`
+  - `python scripts/rebuild_artifacts.py --seed 202401 --n-boot 1000 --thresholds 45`
+  - `pytest -q python/tests/test_export_conway_rdata.py`
+  - `pytest -q`

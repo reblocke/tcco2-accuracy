@@ -1,0 +1,174 @@
+$tcco2-python-port
+
+TICKET: Add/repair Conway RData exporter using Conway raw files (data.Rdata + data.dta + TcCO2 meta-analysis.Rmd)
+
+Goal
+- Provide a deterministic script that converts Conway’s published meta-analysis inputs into our canonical editable table:
+  Data/conway_studies.csv and Data/conway_studies.xlsx
+- The script MUST work on the real Conway files shipped in this repo:
+  - data.Rdata (R workspace)
+  - data.dta (Stata dataset)
+  - TcCO2 meta-analysis.Rmd (documents object names/columns)
+- This is specifically to avoid “hand-maintained” conway_studies.csv and to allow future study additions via the XLSX.
+
+Non-negotiables / invariants
+- Difference definition remains PaCO2 − TcCO2.
+- Keep existing pipeline behavior and tests intact; only change exporter + its tests/docs unless a test is clearly wrong.
+- Add brief comments explaining “why” each mapping/heuristic exists.
+
+Read first
+- Read AGENTS.md and update CONTINUITY.md before and after the work.
+
+Current issue to solve
+- The exporter logic (or missing exporter) assumes the RData contains raw columns like:
+    study, n, n_2, bias, s2
+  But Conway’s Rmd indicates the RData contains objects like:
+    main, ICU, ARF, LFT
+  with columns like:
+    bias, V_bias, logs2, V_logs2, S2
+  and study labels may be stored as rownames/index.
+- Therefore the exporter must NOT require n/n_2 inside the RData.
+  Instead, it should:
+    (1) pull bias/S2 (and subgroup membership) from RData objects,
+    (2) pull n/n_2/c from data.dta (which clearly contains them),
+    (3) merge these sources by study label,
+    (4) apply known special-case fixes needed to match Table 1 + current canonical pipeline.
+
+A) Locate or create exporter
+1) Search the repo for any existing exporter:
+   - scripts/export_conway_rdata.py
+   - python/scripts/export_conway_rdata.py
+   - any “export_conway” scripts
+   If none exist, CREATE:
+     scripts/export_conway_rdata.py
+
+2) The script must be runnable as:
+   python scripts/export_conway_rdata.py --input <path-to-data.Rdata> --out-dir <dir> --overwrite
+   Add optional flags:
+   --dta <path-to-data.dta>    (if not provided, auto-discover)
+   --strict                    (default True; if strict and any required fields can’t be built, exit nonzero)
+   --allow-missing-counts      (only if needed; default False)
+
+B) Reverse engineer the data model from TcCO2 meta-analysis.Rmd + raw files
+3) Use TcCO2 meta-analysis.Rmd as the authoritative hint for RData structure:
+   - RData must contain a “main” object used like:
+       main$bias, main$V_bias, main$logs2, main$V_logs2, main$S2
+   - ICU/ARF/LFT membership sets exist via objects ICU, ARF, LFT with the same columns.
+   Add a comment in code referencing that this mapping was inferred from the Rmd.
+
+4) Implement robust RData reading with pyreadr:
+   - Load all objects, list their keys and types.
+   - Assert that objects needed for our pipeline exist:
+       main, ICU, ARF, LFT
+     If not, fail with an informative error listing keys and dataframe columns.
+
+5) Extract study identifiers correctly:
+   - Many R exports put study labels in rownames.
+   - Ensure the exporter produces a “study_id” string column for each row:
+       - if pyreadr provides a “row.names” column, use it
+       - else if the dataframe index looks like labels, use index
+   Normalize study_id:
+       - strip whitespace
+       - preserve exact parentheses text because the repo uses that as a stable identifier
+
+C) Build the canonical table (what we commit and what the pipeline uses)
+6) Canonical output schema must match our current pipeline expectations exactly:
+   Columns (in this order):
+     study_id, bias, sd, s2, n_pairs, n_participants, c, is_icu, is_arf, is_lft
+
+7) Populate bias / s2 / sd from RData (main object):
+   - bias = main.bias
+   - s2   = main.S2 (note case; Rmd uses S2)
+   - sd   = sqrt(s2)
+   Validate:
+   - bias finite
+   - s2 > 0
+
+8) Subgroup flags MUST come from RData membership (not from the Stata indicator columns):
+   - is_icu = 1 if study_id in ICU object
+   - is_arf = 1 if study_id in ARF object
+   - is_lft = 1 if study_id in LFT object
+   Default 0 otherwise.
+   This automatically captures subgroup membership that may be missing or NaN in the Stata indicators.
+
+9) Obtain n_pairs / n_participants / c from data.dta
+   - Auto-discover the Stata file:
+       1) if --dta provided, use it
+       2) else look in the same directory as the RData input for data.dta
+       3) else look in repo-standard locations:
+            Conway Meta/data.dta
+            Data/Conway Thorax supplement and code/data.dta
+   - Read via pandas.read_stata.
+   - Expect columns exist:
+       study, n, n_2, c   (these are known in Conway’s data.dta)
+   - Map:
+       study_id ← study
+       n_pairs ← n
+       n_participants ← n_2
+       c ← c
+   - Merge onto the RData-derived table by study_id (after normalization).
+   - Cast:
+       n_pairs, n_participants to int
+       flags to int (0/1)
+
+10) Handle known special cases for merge completeness
+   - There may be study_ids present in RData objects that are NOT present in data.dta
+     (example: supplemental ICU row).
+   - Implement a small constant dictionary for any missing counts that cannot be recovered from data.dta:
+       REQUIRED: “Bolliger 2007 (TOSCA - ICU)” must be supported.
+       If missing after merge, fill:
+           n_pairs=49, n_participants=49, c=1.0
+       (bias/s2/sd still come from RData main or ICU object; if not present in main,
+        allow pulling bias/S2 from ICU object as fallback.)
+   - If any study_id still lacks counts after these steps and --strict is True: fail with a clear list.
+
+11) Write outputs deterministically
+   - Sort by study_id
+   - Write:
+       <out-dir>/conway_studies.csv
+       <out-dir>/conway_studies.xlsx
+   - If out-dir corresponds to repo Data/ directory, ensure:
+       Data/conway_studies.csv and Data/conway_studies.xlsx are updated.
+
+D) Tests: add/repair to match the intended behavior
+12) If python/tests/test_export_conway_rdata.py exists:
+   - Update it to reflect the intended exporter behavior:
+       - It should pass only --input <path-to-data.Rdata>
+       - The script should auto-find data.dta
+   If no such test exists, CREATE it.
+
+13) Acceptance tests for exporter (must be stable and meaningful)
+   The test should:
+   - run exporter via subprocess with:
+       sys.executable scripts/export_conway_rdata.py --input <repo-path-to-data.Rdata> --out-dir <tmp> --overwrite
+   - read exported CSV
+   - validate required columns exist and dtypes are sensible
+   - assert:
+       - row count >= 75
+       - “study_id” includes at least:
+           “Kim 2014 (hypotensive)” and is_arf == 1
+       - if “Bolliger 2007 (TOSCA - ICU)” appears, is_icu==1 and counts are non-missing
+       - no missing bias/s2
+       - no missing counts when strict mode is default
+
+14) Run:
+   pytest -q python/tests/test_export_conway_rdata.py
+   then:
+   pytest -q
+
+E) Documentation + comments
+15) Add a short doc note (one paragraph) in docs/DECISIONS.md:
+   - RData objects contain bias/S2 and subgroup membership sets but not raw N/n; we merge counts from data.dta.
+   - Note the supplemental ICU row count fallback and why it exists.
+16) Add brief inline comments in exporter:
+   - why membership is derived from RData ICU/ARF/LFT objects
+   - why counts come from Stata dta
+   - why special-case fallback exists
+
+End-of-task requirements
+- Run pytest -q and ensure suite passes.
+- Print exact git add/commit commands (do NOT run git here).
+- Keep diffs minimal outside exporter/tests/docs.
+
+Suggested commit message
+"fix: robust Conway data.Rdata export using dta counts + subgroup membership"
