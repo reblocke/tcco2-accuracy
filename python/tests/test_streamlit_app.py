@@ -10,7 +10,7 @@ def test_streamlit_app_imports() -> None:
     pytest.importorskip("streamlit")
     pytest.importorskip("plotly")
     root = Path(__file__).resolve().parents[2]
-    app_path = root / "app" / "streamlit_app.py"
+    app_path = root / "streamlit_app.py"
     if not app_path.exists():
         pytest.skip("Streamlit app not found.")
     spec = importlib.util.spec_from_file_location("streamlit_app", app_path)

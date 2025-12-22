@@ -84,7 +84,7 @@ def predict_paco2_from_tcco2(
         # Prior-weighted updates the empirical PaCO2 pretest prior with the TcCO2 likelihood.
         log_weights = _prior_log_weights(float(tcco2), paco2_values, deltas, sd_total)
         weights = _normalize_log_weights(log_weights)
-        # Prediction interval reflects parameter uncertainty + measurement variability.
+        # Prediction interval (PI) reflects parameter uncertainty + measurement variability.
         paco2_interval = _weighted_quantile(paco2_values, weights, quantiles)
         # Threshold probability is posterior mass at/above the chosen hypercapnia cutoff.
         p_ge_threshold = float(np.sum(weights[paco2_values >= float(threshold)]))
@@ -99,7 +99,7 @@ def predict_paco2_from_tcco2(
         )
     elif mode == "likelihood_only":
         means = float(tcco2) + deltas
-        # Prediction interval reflects parameter uncertainty + measurement variability.
+        # Prediction interval (PI) reflects parameter uncertainty + measurement variability.
         paco2_interval = _mixture_quantiles(quantiles, means, sd_total)
         # Threshold probability is posterior mass at/above the chosen hypercapnia cutoff.
         p_ge_threshold = float(

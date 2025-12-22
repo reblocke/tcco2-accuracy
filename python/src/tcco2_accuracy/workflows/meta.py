@@ -39,7 +39,7 @@ def run_meta_checks(
 
     Reads:
         - Conway study-level data from ``conway_path`` when provided, otherwise
-          the bundled `Conway Meta/data.dta`.
+          the bundled `Data/conway_studies.csv`.
 
     Writes:
         - ``meta_loa_check.md`` in ``out_dir`` when provided.
@@ -103,7 +103,7 @@ def run_meta_checks(
     elif provided_groups:
         source = "in-memory"
     else:
-        source = "Conway Meta/data.dta"
+        source = "Data/conway_studies.csv"
     markdown = format_meta_summary(summary_frame, source=source)
     if out_dir is not None:
         _write_text(Path(out_dir) / "meta_loa_check.md", markdown)

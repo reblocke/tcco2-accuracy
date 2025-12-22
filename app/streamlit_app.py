@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from pathlib import Path
+import hashlib
+import io
 
 import numpy as np
 import pandas as pd
@@ -10,11 +12,15 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from tcco2_accuracy.data import load_paco2_distribution, prepare_paco2_distribution
+from tcco2_accuracy.data import prepare_conway_meta_inputs
+from tcco2_accuracy.bootstrap import BOOTSTRAP_MODES, bootstrap_conway_parameters
+from tcco2_accuracy.simulation import PACO2_TO_CONWAY_GROUP
+from tcco2_accuracy.validate_inputs import validate_conway_studies_df
 from tcco2_accuracy.ui_api import predict_paco2_from_tcco2
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_BOOTSTRAP_PATH = REPO_ROOT / "artifacts" / "bootstrap_params.csv"
+DEFAULT_STUDY_TABLE_PATH = REPO_ROOT / "Data" / "conway_studies.csv"
 DEFAULT_PACO2_PATH = REPO_ROOT / "Data" / "In Silico TCCO2 Database.dta"
 DEFAULT_BINNED_PRIOR_PATH = REPO_ROOT / "artifacts" / "paco2_prior_bins.csv"
 
@@ -26,8 +32,23 @@ SUBGROUP_LABELS = {
 
 
 @st.cache_data(show_spinner=False)
-def _load_bootstrap_params(path: str) -> pd.DataFrame:
-    return pd.read_csv(path)
+def _load_conway_studies(
+    file_bytes: bytes | None,
+    filename: str,
+    default_path: str,
+) -> pd.DataFrame:
+    if file_bytes is None:
+        data = pd.read_csv(default_path)
+    else:
+        buffer = io.BytesIO(file_bytes)
+        if filename.lower().endswith(".csv"):
+            data = pd.read_csv(buffer)
+        elif filename.lower().endswith((".xlsx", ".xls")):
+            data = pd.read_excel(buffer)
+        else:
+            raise ValueError("Uploaded study table must be CSV or XLSX.")
+    validate_conway_studies_df(data)
+    return data
 
 
 @st.cache_data(show_spinner=False)
@@ -38,6 +59,44 @@ def _load_paco2_distribution(path: str) -> pd.DataFrame:
 @st.cache_data(show_spinner=False)
 def _load_binned_prior(path: str) -> pd.DataFrame:
     return pd.read_csv(path)
+
+
+def _hash_study_table(studies: pd.DataFrame) -> str:
+    stable = studies.sort_values("study_id").reset_index(drop=True)
+    hashed = pd.util.hash_pandas_object(stable, index=True).to_numpy()
+    return hashlib.sha256(hashed.tobytes()).hexdigest()
+
+
+@st.cache_data(show_spinner=False)
+def _bootstrap_draws(
+    table_hash: str,
+    subgroup: str,
+    n_boot: int,
+    seed: int | None,
+    bootstrap_mode: str,
+    studies: pd.DataFrame,
+) -> pd.DataFrame:
+    group_key = PACO2_TO_CONWAY_GROUP.get(subgroup, subgroup)
+    if group_key == "icu":
+        subset = studies[studies["is_icu"].astype(bool)]
+    elif group_key == "arf":
+        subset = studies[studies["is_arf"].astype(bool)]
+    elif group_key == "lft":
+        subset = studies[studies["is_lft"].astype(bool)]
+    else:
+        subset = studies
+    if subset.empty:
+        raise ValueError(f"No studies available for Conway group '{group_key}'.")
+    conway_inputs = prepare_conway_meta_inputs(subset)
+    draws = bootstrap_conway_parameters(
+        conway_inputs,
+        n_boot=n_boot,
+        seed=seed,
+        bootstrap_mode=bootstrap_mode,
+        truncate_tau2=True,
+    )
+    _ = table_hash
+    return draws
 
 
 def _prior_values_for_subgroup(
@@ -140,7 +199,7 @@ def _build_posterior_plot(result) -> go.Figure:
 def main() -> None:
     st.set_page_config(page_title="TcCO2 → PaCO2 inference", layout="centered")
     st.title("TcCO2 → PaCO2 inference")
-    st.warning("Research tool. Not for clinical decision-making.")
+    st.warning("Research tool, not for clinical decision-making.")
 
     st.sidebar.header("Inputs")
     tcco2 = st.sidebar.number_input("TcCO2 (mmHg)", min_value=0.0, value=45.0, step=0.1)
@@ -151,17 +210,32 @@ def main() -> None:
         ["Prior-weighted", "Likelihood-only"],
         help="Prior-weighted uses the empirical PaCO2 distribution as a pretest prior.",
     )
-    interval = st.sidebar.select_slider(
-        "Prediction interval",
-        options=[0.90, 0.95, 0.99],
-        value=0.95,
+    interval = st.sidebar.selectbox(
+        "Prediction interval (PI)",
+        [0.95],
         format_func=lambda value: f"{value:.0%}",
+        help="PI is the expected range for a new PaCO2 value; CI is for the mean.",
     )
 
     with st.sidebar.expander("Advanced"):
-        params_path = st.text_input("Bootstrap params path", value=str(DEFAULT_BOOTSTRAP_PATH))
+        study_table_upload = st.file_uploader(
+            "Upload study table (CSV/XLSX)",
+            type=["csv", "xlsx", "xls"],
+        )
+        st.caption(f"Default study table: `{DEFAULT_STUDY_TABLE_PATH}`")
         paco2_path = st.text_input("PaCO2 prior path", value=str(DEFAULT_PACO2_PATH))
         binned_path = st.text_input("Fallback binned prior path", value=str(DEFAULT_BINNED_PRIOR_PATH))
+        n_boot = st.number_input(
+            "Bootstrap draws per subgroup",
+            min_value=100,
+            value=1000,
+            step=100,
+        )
+        bootstrap_mode = st.selectbox(
+            "Bootstrap mode",
+            list(BOOTSTRAP_MODES),
+            index=1,
+        )
         n_param_draws_input = st.number_input(
             "Parameter draws (0 = all)",
             min_value=0,
@@ -176,10 +250,28 @@ def main() -> None:
     n_param_draws = int(n_param_draws_input) if n_param_draws_input > 0 else None
     seed = int(seed_input) if seed_input > 0 else None
 
+    upload_bytes = study_table_upload.getvalue() if study_table_upload else None
+    upload_name = study_table_upload.name if study_table_upload else ""
     try:
-        params_draws = _load_bootstrap_params(params_path)
+        studies = _load_conway_studies(upload_bytes, upload_name, str(DEFAULT_STUDY_TABLE_PATH))
     except Exception as exc:
-        st.error(f"Failed to load bootstrap parameter draws: {exc}")
+        st.error(f"Study table validation failed: {exc}")
+        st.stop()
+    table_hash = _hash_study_table(studies)
+    study_source = study_table_upload.name if study_table_upload else DEFAULT_STUDY_TABLE_PATH.name
+    st.caption(f"Study table source: `{study_source}` ({studies.shape[0]} studies).")
+
+    try:
+        params_draws = _bootstrap_draws(
+            table_hash=table_hash,
+            subgroup=subgroup,
+            n_boot=int(n_boot),
+            seed=seed,
+            bootstrap_mode=str(bootstrap_mode),
+            studies=studies,
+        )
+    except Exception as exc:
+        st.error(f"Failed to generate bootstrap parameter draws: {exc}")
         st.stop()
 
     paco2_prior_values = None

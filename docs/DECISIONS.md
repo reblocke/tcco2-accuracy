@@ -15,3 +15,4 @@
 - Simulation/inference parameter validation requires finite numeric values with non-negative σ² and τ² in `python/src/tcco2_accuracy/utils.py:40`.
 - When subgroup-specific parameters are missing, simulation and inference fall back to using all parameters (with a warning) rather than dropping the subgroup in `python/src/tcco2_accuracy/simulation.py:48` and `python/src/tcco2_accuracy/inference.py:85`.
 - `format_inference_demo` only supports a single threshold and raises a ValueError otherwise in `python/src/tcco2_accuracy/workflows/infer.py:123`.
+- Canonical Conway study exports append the Bolliger 2007 (TOSCA - ICU) row from `Code/1_conway_tcco2_cleaning_do.do:13-24` when absent in `data.Rdata`, to preserve Table 1 reproduction in `scripts/export_conway_rdata.py:18`.

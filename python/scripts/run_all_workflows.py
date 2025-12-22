@@ -41,18 +41,30 @@ def resolve_input_paths(input_path: Path | None) -> tuple[Path | None, Path | No
     if input_path is None:
         return None, None
     if input_path.is_dir():
-        conway_path = input_path / "Conway Meta" / "data.dta"
+        conway_path = _resolve_conway_table(input_path)
         paco2_path = input_path / "Data" / "In Silico TCCO2 Database.dta"
         _validate_path(conway_path, "Conway meta-analysis data")
         _validate_path(paco2_path, "In-silico PaCO2 data")
         return conway_path, paco2_path
     if input_path.is_file():
-        if input_path.name == "data.dta":
+        if input_path.suffix.lower() in {".csv", ".xlsx", ".xls", ".dta"}:
             _validate_path(input_path, "Conway meta-analysis data")
             return input_path, None
         _validate_path(input_path, "In-silico PaCO2 data")
         return None, input_path
     raise FileNotFoundError(f"Input path not found: {input_path}")
+
+
+def _resolve_conway_table(root: Path) -> Path:
+    candidates = [
+        root / "data" / "conway_studies.csv",
+        root / "data" / "conway_studies.xlsx",
+        root / "Data" / "data.dta",
+    ]
+    for path in candidates:
+        if path.exists():
+            return path
+    raise FileNotFoundError("No Conway study table found under data/ or Data/.")
 
 
 def _validate_path(path: Path, label: str) -> None:
