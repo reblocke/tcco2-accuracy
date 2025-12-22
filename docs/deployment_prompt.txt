@@ -1,0 +1,187 @@
+$tcco2-python-port
+
+IMPLEMENTATION TICKET
+Title: Streamlit Cloud deployment hardening + Conway RData-driven study inputs (editable CSV/XLSX)
+
+Goal
+1) Streamlit app can be deployed on Streamlit Community Cloud directly from GitHub.
+2) Meta-analysis + bootstrap parameter draws are computed from Conway’s `Conway Meta/data.Rdata` OR from an exported/editable study-input spreadsheet (CSV/XLSX) derived from that RData.
+3) External users can add studies by editing the spreadsheet (and optionally uploading it in the app), without editing code.
+4) All scientific invariants remain intact:
+   - d = PaCO2 − TcCO2
+   - UI outputs are 95% prediction intervals (PI), not CI
+   - Table 1 reproduction tests still pass.
+
+Read/obey repo instructions
+- Follow AGENTS.md conventions. Maintain/refresh the continuity ledger if required by this repo. Do not rely on chat history unless recorded in the ledger. (AGENTS.md exists at repo root.)
+
+A) Data source: Conway RData → canonical editable table
+1) Add a canonical editable dataset under a stable path, e.g.:
+   - data/conway_studies.csv
+   - data/conway_studies.xlsx
+   These MUST be small (study-level only), commit-safe, and the single source of truth for meta analysis inputs in the Python pipeline.
+
+2) Add a script that exports Conway’s RData into the canonical table:
+   - scripts/export_conway_rdata.py
+   Requirements for this script:
+   - Input: Conway Meta/data.Rdata
+   - Output: data/conway_studies.csv and data/conway_studies.xlsx
+   - Deterministic ordering (sort by stable study id)
+   - Include a README-like header comment in code explaining:
+     - which object(s) in the RData are used
+     - how columns map to Conway’s analysis inputs
+   - Add an option: --out-dir and --overwrite
+
+3) Choose one Python strategy to read RData without requiring R:
+   - Prefer pyreadr (add to requirements).
+   If pyreadr is not feasible on Streamlit Cloud, fall back to: commit only CSV/XLSX and treat RData export as a dev-only step. (But still keep the export script for reproducibility.)
+
+4) Define a clear schema for the canonical table, document it, and validate it:
+   - docs/CONWAY_DATA_SCHEMA.md
+   - python/src/tcco2_accuracy/validate_inputs.py with validate_conway_studies_df(df) -> None
+   Schema requirements (minimum):
+   - study_id (string)
+   - bias (float) = PaCO2 − TcCO2 (or columns that can be transformed into bias)
+   - sd (float) OR s2 (float) (within-study SD or variance of differences)
+   - n_pairs (int) and n_participants (int) (needed for v_bias and v_logs2 logic)
+   - subgroup flags or labels sufficient to reproduce:
+       main (all)
+       icu
+       arf
+       lft
+     Preferred: boolean columns is_icu, is_arf, is_lft (and main is implicit).
+   Validation must enforce:
+   - required columns present
+   - numeric columns are finite and non-negative where appropriate
+   - n_pairs and n_participants positive integers
+   - bias numeric
+   - sd>0 (or s2>0)
+   - subgroup flags are boolean-like
+
+5) Update existing Conway loaders to use the canonical table by default:
+   - If current code reads Conway Meta/data.dta or hardcoded subgroup lists, refactor so:
+     - default loader reads data/conway_studies.csv (or .xlsx)
+     - subgroup filters use the subgroup columns in the table
+     - main = all studies; subgroup sets are subsets based on flags
+   Keep backward compatibility if necessary, but the UI and workflows must use the canonical table.
+
+6) Add an explicit mechanism for “add a study”:
+   - Provide data/conway_studies_template.xlsx (same schema, with column descriptions in the first row or a separate sheet named “README”).
+   - docs/ADDING_STUDIES.md with step-by-step instructions:
+     - where bias/sd/n come from
+     - how to assign subgroup flags
+     - how to rerun validation and regenerate artifacts locally
+
+B) Pipeline adjustments: recompute parameters from canonical table
+7) Ensure these pipeline stages can run from the canonical table alone:
+   - meta check (Table 1 reproduction)
+   - bootstrap parameter draws (cluster_plus_withinstudy recommended default)
+   - simulation summary
+   - inference demo
+   - conditional classification curves (true-PaCO2-conditioned artifact)
+
+8) Add/update a single “rebuild artifacts” runner:
+   - scripts/rebuild_artifacts.py (or python -m entrypoint) that generates:
+     - artifacts/meta_loa_check.md
+     - artifacts/bootstrap_params.csv
+     - artifacts/bootstrap_summary.md
+     - artifacts/simulation_summary.md
+     - artifacts/inference_demo.md
+     - artifacts/conditional_classification_t{threshold}.csv and .md
+   It should accept:
+     --seed
+     --n_boot
+     --thresholds (comma list)
+     --input-study-table (optional path; default canonical)
+
+9) Insert comments in code (short, 1–3 lines) at each key propagation point:
+   - Where v_bias and v_logs2 are computed (finite-sample uncertainty)
+   - Where bootstrap resampling + within-study perturbation happens
+   - Where PI is computed vs CI (explicitly say “PI”)
+   - Where P(PaCO2 ≥ threshold) is computed (posterior mass)
+   Ensure comments are meaning-bearing, not restating the line of code.
+
+C) Streamlit app: allow canonical + user-uploaded study tables
+10) Update the Streamlit app so it can run in two modes:
+   - Default mode: uses committed canonical study table (data/conway_studies.csv or xlsx)
+   - Advanced mode: user can upload a CSV/XLSX study table that overrides the default for that session
+     - validate uploaded table (show friendly errors)
+     - recompute parameter draws (cached) for that uploaded dataset
+
+11) Caching/performance requirements for Streamlit:
+   - Cache study-table load + validation.
+   - Cache parameter-draw generation keyed by:
+       (hash of study-table contents, subgroup, n_boot, seed, bootstrap_mode)
+   - Do not recompute draws on every widget change (only when inputs that affect draws change).
+
+12) UI copy requirements:
+   - Always label interval outputs as “Prediction interval (PI)”.
+   - Provide a brief, non-technical definition of PI vs CI in an info tooltip.
+   - Provide a warning banner: “Research tool, not for clinical decision-making.”
+
+D) Streamlit Community Cloud deployment scaffolding (repo-root oriented)
+13) Add repo-root requirements.txt (explicit deps)
+   - Create requirements.txt at repo root and ensure Streamlit Cloud can install and run app.
+   - The requirements MUST include:
+     - streamlit
+     - numpy, pandas, scipy
+     - statsmodels (if used)
+     - plotly (if used for charts)
+     - openpyxl (for xlsx)
+     - pyreadr (if using RData import in production)
+   - If the core library lives under ./python, include an install line:
+       -e ./python
+     (and ensure this works on a clean install).
+
+14) Add repo-root Streamlit config:
+   - .streamlit/config.toml
+   Minimal: server settings suitable for cloud, and consistent theme defaults (optional).
+
+15) Add a repo-root Streamlit entrypoint for ease of cloud setup:
+   - streamlit_app.py at repo root that imports and runs the real app module.
+   - This avoids confusion about working directory and makes Cloud configuration trivial.
+
+16) Add deployment documentation:
+   - docs/DEPLOY_STREAMLIT_CLOUD.md containing:
+     - how to deploy from GitHub on Streamlit Community Cloud
+     - entrypoint path (streamlit_app.py)
+     - how to update canonical study table and redeploy
+     - how to test locally exactly as cloud runs:
+         pip install -r requirements.txt
+         streamlit run streamlit_app.py
+
+E) Tests (acceptance tests)
+All tests must run with pytest and not require network access.
+
+17) Input schema validation tests:
+   - Load canonical table and validate_conway_studies_df passes.
+   - Create a minimal invalid dataframe (missing sd, negative n_pairs, etc.) and assert validation raises with clear message.
+
+18) RData export round-trip (skip if pyreadr missing OR RData missing)
+   - If Conway Meta/data.Rdata exists and pyreadr is installed:
+     - run export script to a temp dir
+     - load exported CSV
+     - validate schema
+     - assert row count > 50 and unique study_id >= 50 (sanity, not exact)
+
+19) Table 1 reproduction remains intact:
+   - Run existing conway meta tests using canonical table.
+   - Ensure artifacts/meta_loa_check.md outputs still match the fixture summary within tolerance.
+
+20) Streamlit app import smoke test:
+   - Ensure importing streamlit_app.py does not crash.
+   - Heavy computations must not run at import time.
+
+21) “Uploaded table” behavior unit test (compute layer, not Streamlit):
+   - Given a canonical table, modify it by adding a synthetic study row (valid schema).
+   - Ensure meta outputs change (direction not asserted; just “different from baseline”).
+   - Ensure pipeline still runs and returns finite results.
+
+F) End-of-task instructions
+- Run: pytest -q
+- Print a concise summary of changes.
+- Print exact git add/commit commands (do not run git here).
+- Do NOT add additional dependency files (no environment.yml, no uv.lock) unless explicitly requested; Streamlit Cloud should clearly use requirements.txt.
+
+Commit message suggestion
+"Streamlit Cloud deploy + Conway RData canonical inputs (CSV/XLSX) + rebuild scripts + tests"

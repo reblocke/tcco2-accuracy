@@ -1,34 +1,45 @@
 - Goal (incl. success criteria):
-  - Implement Streamlit UI + compute API for TcCO2→PaCO2 inference (PI + P(threshold)) with posterior visualization, tests, docs, and pytest passing.
+  - Harden Streamlit Cloud deployment and make Conway study inputs driven by canonical CSV/XLSX derived from `Conway Meta/data.Rdata`, with validated schema, editable template, rebuild artifacts runner, updated app upload flow, and pytest passing.
 - Constraints/Assumptions:
-  - Follow Conway difference definition (PaCO2 − TcCO2).
-  - Use bootstrap parameter draws; keep compute layer pure and UI layer separate.
-  - Do not modify `Code/Legacy/` or `Drafts/`; no large patient-level data.
-  - Add UI deps as optional extras; run pytest; print git add/commit commands only.
+  - Follow Conway difference definition (PaCO2 − TcCO2) and authority hierarchy (Conway paper → docs/SPEC.md/DECISIONS.md → Stata).
+  - Route-1 study-level bootstrap required for parameter uncertainty.
+  - Do not modify `Code/Legacy/` or `Drafts/` and avoid large/patient-level data.
+  - Use Python under `python/`, keep core math pure, update artifacts, run `pytest`, and prepare git add/commit commands.
 - Key decisions:
-  - UNCONFIRMED
+  - Canonical Conway inputs live in `Data/conway_studies.csv`/`.xlsx`, with export script using `data.Rdata` (pyreadr) and appending Bolliger 2007 ICU row if missing.
+  - Streamlit app recomputes bootstrap draws per subgroup from the canonical table (uploaded overrides) and uses root `streamlit_app.py` entrypoint.
 - State:
-  - Implemented UI compute layer, Streamlit app, docs, tests, and optional deps; pytest full run blocked by sandbox.
+  - Implemented canonical tables, export/validation/docs/scripts, Streamlit upload + caching, deployment scaffolding, tests, and regenerated artifacts; `pytest -q` fails in sandbox with no output.
 - Done:
-  - Created `http:/CONTINUITY.md` ledger.
-  - Reviewed `python/src/tcco2_accuracy/inference.py`, `data.py`, and existing tests.
-  - Added `python/src/tcco2_accuracy/ui_api.py` compute API + histogram helper.
-  - Added `app/streamlit_app.py` Streamlit UI.
-  - Added UI docs, tests, optional deps, and artifact update.
-  - Ran `python -c "import pytest; ..."` for `python/tests/test_ui_api.py` and `python/tests/test_inference.py` (passed).
-  - Attempted full `pytest -q` (blocked by sandbox; likely temp dir restrictions).
+  - Created `Data/conway_studies.csv`/`.xlsx` and `Data/conway_studies_template.xlsx`.
+  - Added `scripts/export_conway_rdata.py` and `scripts/rebuild_artifacts.py`.
+  - Added `python/src/tcco2_accuracy/validate_inputs.py` and updated Conway loaders to use canonical tables + subgroup flags.
+  - Updated Streamlit app to allow uploads, cached bootstrap draws, and PI labeling; added root `streamlit_app.py` entrypoint.
+  - Added deployment/docs updates (`docs/CONWAY_DATA_SCHEMA.md`, `docs/ADDING_STUDIES.md`, `docs/DEPLOY_STREAMLIT_CLOUD.md`).
+  - Added requirements/config scaffolding and new tests for validation/export/upload behavior.
+  - Regenerated artifacts via `python scripts/rebuild_artifacts.py --seed 202401 --n-boot 1000`.
 - Now:
-  - Summarize changes and report pytest sandbox issue.
+  - Summarize changes and report pytest sandbox failure.
 - Next:
-  - Provide git add/commit commands.
+  - Provide git add/commit commands; user to rerun pytest if needed.
 - Open questions (UNCONFIRMED if needed):
-  - None.
+  - Whether `pyreadr` wheels install cleanly on Streamlit Cloud.
 - Working set (files/ids/commands):
-  - `python/src/tcco2_accuracy/ui_api.py`
+  - `Data/conway_studies.csv`
+  - `Data/conway_studies.xlsx`
+  - `Data/conway_studies_template.xlsx`
+  - `scripts/export_conway_rdata.py`
+  - `scripts/rebuild_artifacts.py`
+  - `python/src/tcco2_accuracy/data.py`
+  - `python/src/tcco2_accuracy/validate_inputs.py`
   - `app/streamlit_app.py`
-  - `python/tests/test_ui_api.py`
-  - `python/tests/test_streamlit_app.py`
-  - `docs/UI.md`
-  - `python/README.md`
-  - `pyproject.toml`
-  - `artifacts/ui_overview.md`
+  - `streamlit_app.py`
+  - `requirements.txt`
+  - `.streamlit/config.toml`
+  - `docs/CONWAY_DATA_SCHEMA.md`
+  - `docs/ADDING_STUDIES.md`
+  - `docs/DEPLOY_STREAMLIT_CLOUD.md`
+  - `python/tests/test_validate_inputs.py`
+  - `python/tests/test_export_conway_rdata.py`
+  - `python/tests/test_uploaded_table.py`
+  - `artifacts/*`
