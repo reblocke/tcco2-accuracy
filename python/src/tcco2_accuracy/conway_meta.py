@@ -227,6 +227,36 @@ def loa_summary(bias, v_bias, logs2, v_logs2, truncate_tau2: bool = False) -> Lo
     )
 
 
+def _conway_descriptive_counts(data: pd.DataFrame) -> tuple[int, int, int]:
+    studies = int(data.shape[0])
+    n_pairs = float(pd.to_numeric(data["n"], errors="coerce").sum())
+    n_participants = float(pd.to_numeric(data["n_2"], errors="coerce").sum())
+    if data.attrs.get("group") not in {"main", "all"} or "study_base" not in data.columns:
+        return studies, int(round(n_pairs)), int(round(n_participants))
+
+    # Main-analysis counts group multi-row citations by base study ID to mirror Table 1.
+    # Identical bias entries imply overlapping cohorts, so we keep max counts for that base.
+    # This only changes descriptive totals; pooled estimates still use all rows.
+    grouped = data.groupby("study_base", dropna=False)
+    studies = int(grouped.ngroups)
+    n_pairs = 0.0
+    n_participants = 0.0
+    for _, group in grouped:
+        if group.shape[0] == 1:
+            n_pairs += float(group["n"].iloc[0])
+            n_participants += float(group["n_2"].iloc[0])
+            continue
+        bias_values = pd.to_numeric(group["bias"], errors="coerce").to_numpy(dtype=float)
+        bias_span = np.nanmax(bias_values) - np.nanmin(bias_values)
+        if np.isfinite(bias_span) and bias_span <= 1e-8:
+            n_pairs += float(group["n"].max())
+            n_participants += float(group["n_2"].max())
+        else:
+            n_pairs += float(group["n"].sum())
+            n_participants += float(group["n_2"].sum())
+    return studies, int(round(n_pairs)), int(round(n_participants))
+
+
 def conway_group_summary(data, truncate_tau2: bool = False) -> ConwayGroupSummary:
     """Summarize Conway meta-analysis outputs for a subgroup.
 
@@ -248,10 +278,11 @@ def conway_group_summary(data, truncate_tau2: bool = False) -> ConwayGroupSummar
         inputs["v_logs2"],
         truncate_tau2=truncate_tau2,
     )
+    studies, n_pairs, n_participants = _conway_descriptive_counts(data)
     return ConwayGroupSummary(
-        studies=int(inputs.shape[0]),
-        n_pairs=int(round(float(inputs["n"].sum()))),
-        n_participants=int(round(float(inputs["n_2"].sum()))),
+        studies=studies,
+        n_pairs=n_pairs,
+        n_participants=n_participants,
         bias=loa.bias,
         sd=loa.sd,
         tau2=loa.tau2,

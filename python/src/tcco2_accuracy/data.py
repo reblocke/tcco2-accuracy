@@ -57,7 +57,9 @@ def load_conway_data(path: Path | None = None) -> pd.DataFrame:
     """Return Conway study-level inputs for meta-analysis."""
 
     studies = load_conway_studies(path)
-    return _to_conway_analysis(studies)
+    analysis = _to_conway_analysis(studies)
+    analysis.attrs["group"] = "main"
+    return analysis
 
 
 def prepare_conway_meta_inputs(studies: pd.DataFrame) -> pd.DataFrame:
@@ -74,12 +76,16 @@ def load_conway_group(group: str, path: Path | None = None) -> pd.DataFrame:
     key = group.strip().lower()
     studies = load_conway_studies(path)
     if key in {"main", "all"}:
-        return _to_conway_analysis(studies)
+        analysis = _to_conway_analysis(studies)
+        analysis.attrs["group"] = "main"
+        return analysis
     if key not in CONWAY_SUBGROUP_FLAGS:
         raise ValueError(f"Unknown Conway subgroup: {group}")
     flag = CONWAY_SUBGROUP_FLAGS[key]
     subset = studies[studies[flag].astype(bool)]
-    return _to_conway_analysis(subset)
+    analysis = _to_conway_analysis(subset)
+    analysis.attrs["group"] = key
+    return analysis
 
 
 def _canonicalize_conway_table(data: pd.DataFrame) -> pd.DataFrame:
@@ -107,6 +113,15 @@ def _canonicalize_conway_table(data: pd.DataFrame) -> pd.DataFrame:
         canonical["sd"] = np.sqrt(pd.to_numeric(canonical["s2"], errors="coerce"))
     if "s2" not in canonical.columns and "sd" in canonical.columns:
         canonical["s2"] = pd.to_numeric(canonical["sd"], errors="coerce") ** 2
+
+    if "study_id" in canonical.columns:
+        # Strip cohort qualifiers so main-analysis counts align to Table 1 citations.
+        canonical["study_base"] = (
+            canonical["study_id"]
+            .astype(str)
+            .str.replace(r"\s*\([^)]*\)\s*$", "", regex=True)
+            .str.strip()
+        )
 
     return canonical
 
