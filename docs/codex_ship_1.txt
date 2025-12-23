@@ -1,0 +1,135 @@
+TITLE: Streamlit: ship default PaCO2 priors + add “All” setting + set UI defaults (TcCO2=50, threshold=45, PI=95%, prior-weighted)
+
+CONTEXT
+	•	The deployed Streamlit Cloud app shows: “PaCO2 prior data not found. Provide the in-silico database or a binned prior CSV.”
+	•	Our empirical priors were derived from Data/In Silico TCCO2 Database.dta with subgroup counts/quantiles already summarized in artifacts/paco2_distribution_summary.md (pft, ed_inp, icu). The app should work without any uploads on first load.
+	•	We also want a new UI setting “All” that uses all information:
+	•	Measurement/agreement parameters: Conway main meta-analysis (all studies).
+	•	PaCO2 prior: pooled empirical prior across all in-silico groups (mixture weighted by group counts).
+	•	Default UI on load:
+	•	TcCO2 = 50 mmHg
+	•	Threshold = 45 mmHg
+	•	Prediction interval = 95%
+	•	Inference mode = prior-weighted
+	•	Setting = All
+
+GOALS
+	1.	Streamlit Cloud (clean clone, no uploaded files) shows results immediately and does not show the “prior not found” error.
+	2.	“All” is selectable and is the default.
+	3.	Defaults as specified are used on initial page load.
+	4.	Add tests so this doesn’t regress.
+	5.	Insert explanatory comments throughout the pipeline (data loading → inference → UI), describing what changed and why (scientific meaning, not just mechanics).
+
+CONSTRAINTS
+	•	Prefer a small committed prior (CSV/XLSX) over shipping the full .dta (even if no PHI). The .dta can remain supported as an optional source.
+	•	Code should work on Linux (Streamlit Cloud), so avoid macOS-only path assumptions.
+	•	Tests must not depend on the .dta existing.
+
+⸻
+
+TASKS
+
+A) Add a canonical binned prior file to the repo
+	1.	Create Data/paco2_prior_bins.csv (and optionally Data/paco2_prior_bins.xlsx) containing a binned empirical PaCO2 prior.
+	2.	Required schema (CSV):
+	•	group (one of: pft, ed_inp, icu, all)
+	•	paco2_bin (integer bin center or integer value)
+	•	count (int)
+	•	weight (float; normalized so weights sum to 1 within each group)
+	3.	Generate group="all" as a pooled mixture of pft, ed_inp, icu weighted by their total counts (counts already implied by the dataset; do not hardcode if avoidable).
+	4.	Add a small script to generate/rebuild this file from the in-silico .dta when available (e.g., scripts/build_paco2_prior_bins.py) but ensure the app does not require this script at runtime.
+	5.	Add comments in the script explaining:
+	•	why we ship a binned prior in the repo (portability + Streamlit deployment)
+	•	how “all” pooling works
+
+B) Make prior loading robust and deterministic
+	1.	In the Python package (likely python/src/tcco2_accuracy/data.py or python/src/tcco2_accuracy/ui_api.py), implement a single “source of truth” loader for priors with this precedence:
+	1.	user-uploaded prior CSV (if provided in UI)
+	2.	Data/paco2_prior_bins.csv (repo-shipped default)
+	3.	Data/In Silico TCCO2 Database.dta (optional fallback if present)
+	4.	otherwise return a structured “missing prior” error object with clear message
+	2.	Ensure repo-root resolution does not depend on cwd. Use Path(__file__).resolve() and walk up to the repo root reliably.
+	3.	Add validation:
+	•	required columns exist
+	•	no negative counts
+	•	weights sum to 1 per group within tolerance
+	•	groups include required set (must include all)
+	4.	Add comments explaining scientific meaning: these weights are the empirical PaCO2 pre-test distribution used for prior-weighted inference.
+
+C) Add “All” setting end-to-end
+	1.	Update the setting enum/list used by the UI to include All.
+	2.	Define semantics:
+	•	For Conway parameters: use main (all studies) draws/summary.
+	•	For PaCO2 prior: use group="all" prior.
+	3.	Ensure All works for:
+	•	inverse inference (TcCO2 → posterior/PI for PaCO2)
+	•	probability P(PaCO2 ≥ threshold)
+	4.	Insert comments where mapping happens, explicitly stating:
+	•	why Conway main is used for “All”
+	•	why the pooled prior is used for “All”
+
+D) Update Streamlit UI defaults + behavior
+	1.	In app/streamlit_app.py (or equivalent), set widget defaults:
+	•	TcCO2 input default 50.0
+	•	threshold default 45.0
+	•	PI default 95%
+	•	inference mode default prior-weighted
+	•	setting default “All”
+	2.	On first load, the app should automatically:
+	•	load the default Conway study table
+	•	load the default prior (repo-shipped binned prior)
+	•	run inference and show outputs without user interaction
+	3.	Add a small optional “Debug” expander (Advanced) that shows:
+	•	which prior source was used (uploaded vs default bins vs dta fallback)
+	•	the resolved file paths checked
+This is specifically for troubleshooting Streamlit deployments.
+
+E) Tests (must pass locally and in CI-like environments)
+Add/adjust pytest tests so that no .dta is required:
+	1.	test_default_prior_bins_load:
+	•	verifies loader finds Data/paco2_prior_bins.csv
+	•	verifies required groups exist and weights sum to ~1
+	2.	test_all_setting_maps_to_main_params:
+	•	verifies “All” routes to Conway main parameter set (not subgroup-specific)
+	3.	test_ui_api_inference_smoke_all:
+	•	uses default priors + “All”
+	•	asserts returned PI bounds are finite and ordered (low < high)
+	•	asserts probability is within [0, 1]
+	4.	Streamlit import smoke test:
+	•	fix/extend existing test so streamlit_app.py imports in test context
+	•	no reliance on working directory
+
+F) Docs updates
+Update docs so external users understand how to update priors:
+	1.	docs/UI.md:
+	•	describe “All” semantics
+	•	describe default prior behavior
+	•	describe how to upload a custom binned prior CSV
+	2.	docs/ADDING_STUDIES.md / docs/CONWAY_DATA_SCHEMA.md (if relevant):
+	•	note priors are separate from Conway study table
+	3.	docs/DEPLOY_STREAMLIT_CLOUD.md:
+	•	note that Data/paco2_prior_bins.csv is the default shipped prior
+	•	note optional .dta fallback (not required)
+
+⸻
+
+ACCEPTANCE CRITERIA
+	1.	Fresh clone → streamlit run streamlit_app.py shows results immediately and no “prior not found” warning (because it loads Data/paco2_prior_bins.csv by default).
+	2.	UI defaults on load:
+	•	TcCO2 = 50, threshold = 45, PI = 95%, mode = prior-weighted, setting = All.
+	3.	pytest -q passes without the in-silico .dta file.
+	4.	Code contains new comments explaining the scientific meaning of:
+	•	prior weighting and what the prior represents
+	•	why “All” uses Conway main and pooled prior
+	•	why binned priors are shipped for deployment portability
+
+⸻
+
+EXECUTION
+	•	Implement changes.
+	•	Run pytest -q.
+	•	Print exact git add ... and git commit -m "..."
+	•	Do not run git in restricted environments; just print the commands.
+
+Suggested commit message:
+"fix(ui): ship default PaCO2 priors + add All setting + Streamlit defaults + tests"

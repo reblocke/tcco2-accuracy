@@ -31,3 +31,4 @@ The table is the single source of truth for meta-analysis, bootstrap draws, and 
 - Main analysis is the full table; subgroups are selected by the `is_*` flags.
 - ARF subgroup includes both Kim 2014 cohorts (normotensive + hypotensive).
 - `sd` and `s2` should be internally consistent (`s2 ≈ sd²`) if both are provided.
+- PaCO2 priors used for prior-weighted inference are maintained separately in `Data/paco2_prior_bins.csv`.

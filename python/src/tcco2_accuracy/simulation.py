@@ -22,6 +22,8 @@ PACO2_TO_CONWAY_GROUP: dict[str, str] = {
     "pft": "lft",
     "ed_inp": "arf",
     "icu": "icu",
+    # "All" uses Conway main-analysis parameters (all studies).
+    "all": "main",
 }
 
 

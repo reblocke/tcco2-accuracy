@@ -1,20 +1,19 @@
 - Goal (incl. success criteria):
-  - Add/repair Conway RData exporter to build `Data/conway_studies.csv`/`.xlsx` from `data.Rdata` + `data.dta`, with tests/docs updated and pytest passing.
+  - Streamlit app ships default PaCO2 priors, adds “All” setting, and loads with new UI defaults; pytest passes without .dta; docs/tests updated.
 - Constraints/Assumptions:
-  - Follow Conway difference definition (PaCO2 − TcCO2); keep pipeline behavior intact.
-  - Exporter must read RData objects (`main`, `ICU`, `ARF`, `LFT`) and merge counts from `data.dta`.
+  - Follow Conway difference definition (PaCO2 − TcCO2).
+  - Maintain authority hierarchy (Conway paper, docs/SPEC.md + docs/DECISIONS.md, then Stata).
   - Do NOT modify `Code/Legacy/` or `Drafts/`.
-  - Add brief “why” comments for mapping/heuristics.
-  - End of task: run `pytest -q` and provide git add/commit commands (do not run git).
+  - Prefer shipped binned prior CSV; .dta is optional fallback.
+  - Tests must not require the .dta; run `pytest -q` and provide git add/commit commands (do not run git).
 - Key decisions:
-  - Exporter reads bias/S2 + subgroup membership from RData objects and merges counts from `data.dta`, with Bolliger ICU counts fallback (49/49/1) when missing.
+  - Default PaCO2 prior loader uses uploaded CSV → Data/paco2_prior_bins.csv → optional .dta, with pooled “all” prior and Conway main parameters.
 - State:
-  - Implementation and tests complete; ready to summarize and hand off git commands.
+  - Implementation complete; pytest -q passed.
 - Done:
-  - Rewrote `scripts/export_conway_rdata.py` to use RData objects + dta counts, subgroup flags, and Bolliger ICU fallback.
-  - Updated `python/tests/test_export_conway_rdata.py` and `docs/DECISIONS.md`.
-  - Ran `pytest -q python/tests/test_export_conway_rdata.py` (pass) and `pytest -q` (pass).
-  - Rebuilt artifacts via `python scripts/rebuild_artifacts.py --seed 202401 --n-boot 1000 --thresholds 45`.
+  - Added Data/paco2_prior_bins.csv + build script; implemented prior loader/validation and “All” mapping.
+  - Updated Streamlit defaults, debug expander, tests, and docs/artifacts.
+  - Ran `pytest -q`.
 - Now:
   - Summarize changes and provide git add/commit commands.
 - Next:
@@ -23,9 +22,18 @@
   - None.
 - Working set (files/ids/commands):
   - `http://CONTINUITY.md`
-  - `scripts/export_conway_rdata.py`
-  - `python/tests/test_export_conway_rdata.py`
-  - `docs/DECISIONS.md`
-  - `python scripts/rebuild_artifacts.py --seed 202401 --n-boot 1000 --thresholds 45`
-  - `pytest -q python/tests/test_export_conway_rdata.py`
+  - `Data/paco2_prior_bins.csv`
+  - `scripts/build_paco2_prior_bins.py`
+  - `python/src/tcco2_accuracy/data.py`
+  - `python/src/tcco2_accuracy/ui_api.py`
+  - `python/src/tcco2_accuracy/simulation.py`
+  - `app/streamlit_app.py`
+  - `python/tests/test_paco2_prior_bins.py`
+  - `python/tests/test_ui_api.py`
+  - `python/tests/test_streamlit_app.py`
+  - `docs/UI.md`
+  - `docs/ADDING_STUDIES.md`
+  - `docs/CONWAY_DATA_SCHEMA.md`
+  - `docs/DEPLOY_STREAMLIT_CLOUD.md`
+  - `artifacts/ui_overview.md`
   - `pytest -q`
