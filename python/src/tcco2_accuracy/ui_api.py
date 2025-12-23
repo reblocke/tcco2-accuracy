@@ -24,7 +24,7 @@ from .inference import (
 from .simulation import PACO2_TO_CONWAY_GROUP
 from .utils import validate_params_df
 
-SubgroupLabel = Literal["pft", "ed_inp", "icu"]
+SubgroupLabel = Literal["pft", "ed_inp", "icu", "all"]
 InferenceMode = Literal["prior_weighted", "likelihood_only"]
 
 
@@ -149,6 +149,7 @@ def _select_group_params(params_draws: pd.DataFrame, subgroup: str) -> pd.DataFr
     if "group" not in params.columns:
         return params.reset_index(drop=True)
     available_groups = set(params["group"].astype(str))
+    # "All" uses Conway main-analysis parameters (all studies).
     group_key = subgroup if subgroup in available_groups else PACO2_TO_CONWAY_GROUP.get(subgroup, subgroup)
     group_params = params[params["group"] == group_key]
     if group_params.empty:

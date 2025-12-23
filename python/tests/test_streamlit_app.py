@@ -6,9 +6,10 @@ from pathlib import Path
 import pytest
 
 
-def test_streamlit_app_imports() -> None:
+def test_streamlit_app_imports(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     pytest.importorskip("streamlit")
     pytest.importorskip("plotly")
+    monkeypatch.chdir(tmp_path)
     root = Path(__file__).resolve().parents[2]
     app_path = root / "streamlit_app.py"
     if not app_path.exists():

@@ -8,7 +8,12 @@ import pandas as pd
 import pytest
 from scipy import stats
 
-from tcco2_accuracy.data import load_paco2_distribution, prepare_paco2_distribution
+from tcco2_accuracy.data import (
+    PACO2_PRIOR_BINS_PATH,
+    load_paco2_distribution,
+    load_paco2_prior,
+    prepare_paco2_distribution,
+)
 from tcco2_accuracy.ui_api import predict_paco2_from_tcco2
 
 
@@ -104,6 +109,52 @@ def test_decision_label_probabilities() -> None:
     assert negative.p_true_negative + negative.p_false_negative == pytest.approx(1.0)
     assert negative.p_true_positive == 0.0
     assert negative.p_false_positive == 0.0
+
+
+def test_all_setting_maps_to_main_params() -> None:
+    params = pd.DataFrame(
+        {
+            "group": ["main", "lft", "arf", "icu"],
+            "delta": [0.0, 10.0, 20.0, 30.0],
+            "sigma2": [1.0, 1.0, 1.0, 1.0],
+            "tau2": [0.0, 0.0, 0.0, 0.0],
+        }
+    )
+
+    result = predict_paco2_from_tcco2(
+        tcco2=50.0,
+        subgroup="all",
+        threshold=45.0,
+        mode="likelihood_only",
+        params_draws=params,
+    )
+
+    assert result.subgroup == "all"
+    assert result.paco2_median == pytest.approx(50.0, abs=1e-6)
+
+
+def test_ui_api_inference_smoke_all() -> None:
+    root = Path(__file__).resolve().parents[2]
+    params_path = root / "artifacts" / "bootstrap_params.csv"
+    params = pd.read_csv(params_path)
+
+    prior_result = load_paco2_prior("all", default_bins_path=PACO2_PRIOR_BINS_PATH)
+    assert prior_result.error is None
+    assert prior_result.values is not None
+
+    result = predict_paco2_from_tcco2(
+        tcco2=50.0,
+        subgroup="all",
+        threshold=45.0,
+        mode="prior_weighted",
+        params_draws=params,
+        paco2_prior_values=prior_result.values,
+    )
+
+    assert np.isfinite(result.paco2_q_low)
+    assert np.isfinite(result.paco2_q_high)
+    assert result.paco2_q_low < result.paco2_q_high
+    assert 0.0 <= result.p_ge_threshold <= 1.0
 
 
 def test_inference_demo_regression_optional() -> None:

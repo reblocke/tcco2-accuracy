@@ -11,20 +11,26 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from tcco2_accuracy.data import load_paco2_distribution, prepare_paco2_distribution
-from tcco2_accuracy.data import prepare_conway_meta_inputs
+from tcco2_accuracy.data import (
+    INSILICO_PACO2_PATH,
+    PACO2_PRIOR_BINS_PATH,
+    REPO_ROOT,
+    PriorLoadResult,
+    load_paco2_prior,
+    prepare_conway_meta_inputs,
+)
 from tcco2_accuracy.bootstrap import BOOTSTRAP_MODES, bootstrap_conway_parameters
 from tcco2_accuracy.simulation import PACO2_TO_CONWAY_GROUP
 from tcco2_accuracy.validate_inputs import validate_conway_studies_df
 from tcco2_accuracy.ui_api import predict_paco2_from_tcco2
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_STUDY_TABLE_PATH = REPO_ROOT / "Data" / "conway_studies.csv"
-DEFAULT_PACO2_PATH = REPO_ROOT / "Data" / "In Silico TCCO2 Database.dta"
-DEFAULT_BINNED_PRIOR_PATH = REPO_ROOT / "artifacts" / "paco2_prior_bins.csv"
+DEFAULT_PACO2_PATH = INSILICO_PACO2_PATH
+DEFAULT_BINNED_PRIOR_PATH = PACO2_PRIOR_BINS_PATH
 
 SUBGROUP_LABELS = {
+    "All": "all",
     "Ambulatory / PFT": "pft",
     "ED / Inpatient": "ed_inp",
     "ICU": "icu",
@@ -52,13 +58,21 @@ def _load_conway_studies(
 
 
 @st.cache_data(show_spinner=False)
-def _load_paco2_distribution(path: str) -> pd.DataFrame:
-    return prepare_paco2_distribution(load_paco2_distribution(Path(path)))
-
-
-@st.cache_data(show_spinner=False)
-def _load_binned_prior(path: str) -> pd.DataFrame:
-    return pd.read_csv(path)
+def _load_prior_values(
+    subgroup: str,
+    uploaded_bytes: bytes | None,
+    uploaded_name: str,
+    default_bins_path: str,
+    insilico_path: str,
+) -> PriorLoadResult:
+    # Prior weights encode the empirical PaCO2 pretest distribution for inference.
+    return load_paco2_prior(
+        subgroup=subgroup,
+        uploaded_bytes=uploaded_bytes,
+        uploaded_name=uploaded_name,
+        default_bins_path=Path(default_bins_path),
+        insilico_path=Path(insilico_path),
+    )
 
 
 def _hash_study_table(studies: pd.DataFrame) -> str:
@@ -76,6 +90,7 @@ def _bootstrap_draws(
     bootstrap_mode: str,
     studies: pd.DataFrame,
 ) -> pd.DataFrame:
+    # "All" uses Conway main-analysis parameters (all studies).
     group_key = PACO2_TO_CONWAY_GROUP.get(subgroup, subgroup)
     if group_key == "icu":
         subset = studies[studies["is_icu"].astype(bool)]
@@ -99,33 +114,16 @@ def _bootstrap_draws(
     return draws
 
 
-def _prior_values_for_subgroup(
-    subgroup: str,
-    paco2_path: str,
-    binned_path: str,
-) -> np.ndarray:
-    if Path(paco2_path).exists():
-        prepared = _load_paco2_distribution(paco2_path)
-        values = prepared.loc[prepared["subgroup"] == subgroup, "paco2"].to_numpy(dtype=float)
-        if values.size == 0:
-            raise ValueError(f"No PaCO2 values found for subgroup '{subgroup}'.")
-        return values
-    if Path(binned_path).exists():
-        binned = _load_binned_prior(binned_path)
-        required = {"subgroup", "paco2_bin", "count"}
-        missing = required - set(binned.columns)
-        if missing:
-            raise ValueError(f"Binned prior missing columns: {sorted(missing)}")
-        subset = binned.loc[binned["subgroup"] == subgroup]
-        if subset.empty:
-            raise ValueError(f"No binned priors available for subgroup '{subgroup}'.")
-        return np.repeat(
-            subset["paco2_bin"].to_numpy(dtype=float),
-            subset["count"].to_numpy(dtype=int),
-        )
-    raise FileNotFoundError(
-        "PaCO2 prior data not found. Provide the in-silico database or a binned prior CSV."
-    )
+def _format_prior_source(result: PriorLoadResult | None, mode: str) -> str:
+    if mode != "prior_weighted":
+        return "Likelihood-only (prior not used)"
+    if result is None:
+        return "Prior not loaded"
+    return {
+        "uploaded": "Uploaded CSV",
+        "default_bins": "Repo-shipped binned prior",
+        "insilico_dta": "In-silico .dta fallback",
+    }.get(result.source or "", "Unknown")
 
 
 def _format_interval(result) -> str:
@@ -202,12 +200,14 @@ def main() -> None:
     st.warning("Research tool, not for clinical decision-making.")
 
     st.sidebar.header("Inputs")
-    tcco2 = st.sidebar.number_input("TcCO2 (mmHg)", min_value=0.0, value=45.0, step=0.1)
-    subgroup_label = st.sidebar.selectbox("Setting", list(SUBGROUP_LABELS.keys()))
+    tcco2 = st.sidebar.number_input("TcCO2 (mmHg)", min_value=0.0, value=50.0, step=0.1)
+    subgroup_labels = list(SUBGROUP_LABELS.keys())
+    subgroup_label = st.sidebar.selectbox("Setting", subgroup_labels, index=0)
     threshold = st.sidebar.number_input("Hypercapnia threshold (mmHg)", value=45.0, step=0.5)
     mode_label = st.sidebar.radio(
         "Inference mode",
         ["Prior-weighted", "Likelihood-only"],
+        index=0,
         help="Prior-weighted uses the empirical PaCO2 distribution as a pretest prior.",
     )
     interval = st.sidebar.selectbox(
@@ -223,6 +223,11 @@ def main() -> None:
             type=["csv", "xlsx", "xls"],
         )
         st.caption(f"Default study table: `{DEFAULT_STUDY_TABLE_PATH}`")
+        prior_upload = st.file_uploader(
+            "Upload binned PaCO2 prior (CSV/XLSX)",
+            type=["csv", "xlsx", "xls"],
+        )
+        st.caption(f"Default binned prior: `{DEFAULT_BINNED_PRIOR_PATH}`")
         paco2_path = st.text_input("PaCO2 prior path", value=str(DEFAULT_PACO2_PATH))
         binned_path = st.text_input("Fallback binned prior path", value=str(DEFAULT_BINNED_PRIOR_PATH))
         n_boot = st.number_input(
@@ -275,9 +280,23 @@ def main() -> None:
         st.stop()
 
     paco2_prior_values = None
+    prior_result = None
     if mode == "prior_weighted":
         try:
-            paco2_prior_values = _prior_values_for_subgroup(subgroup, paco2_path, binned_path)
+            upload_bytes = prior_upload.getvalue() if prior_upload else None
+            upload_name = prior_upload.name if prior_upload else None
+            # "All" uses the pooled prior across subgroups, matching Conway main-analysis parameters.
+            prior_result = _load_prior_values(
+                subgroup=subgroup,
+                uploaded_bytes=upload_bytes,
+                uploaded_name=upload_name or "prior.csv",
+                default_bins_path=binned_path,
+                insilico_path=paco2_path,
+            )
+            if prior_result.error is not None:
+                st.error(prior_result.error.message)
+                st.stop()
+            paco2_prior_values = prior_result.values
         except Exception as exc:
             st.error(str(exc))
             st.stop()
@@ -320,6 +339,16 @@ def main() -> None:
     st.subheader("Posterior distribution")
     st.plotly_chart(_build_posterior_plot(result), use_container_width=True)
     st.caption(f"Posterior mass above threshold: {result.p_ge_threshold:.1%}.")
+
+    with st.sidebar.expander("Debug"):
+        st.write(f"Prior source: {_format_prior_source(prior_result, mode)}")
+        if prior_result is not None and prior_result.paths_checked:
+            checked_paths = [str(path) for path in prior_result.paths_checked]
+        else:
+            checked_paths = [str(Path(binned_path)), str(Path(paco2_path))]
+        st.write("Paths checked:")
+        for path in checked_paths:
+            st.write(f"- `{path}`")
 
 
 if __name__ == "__main__":

@@ -22,6 +22,11 @@ Use the canonical spreadsheet as the single source of truth:
 - `n_pairs`: total number of paired measurements.
 - `n_participants`: number of participants contributing pairs.
 
+## PaCO2 priors
+PaCO2 priors for prior-weighted inference live separately in `Data/paco2_prior_bins.csv`.
+Updating the Conway study table does not change these priors; use the prior build
+script if the in-silico distribution changes.
+
 ## Validate the table locally
 ```bash
 python - <<'PY'

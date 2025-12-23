@@ -20,3 +20,5 @@ streamlit run streamlit_app.py
 ## Notes
 - The app defaults to the canonical table; users may upload a CSV/XLSX to override it.
 - Streamlit Cloud installs dependencies from `requirements.txt`.
+- PaCO2 priors default to `Data/paco2_prior_bins.csv` (shipped in the repo for portability).
+- If the in-silico `.dta` is present, it can be used as a fallback prior source.
