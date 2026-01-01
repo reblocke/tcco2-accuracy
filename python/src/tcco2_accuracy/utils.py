@@ -66,3 +66,19 @@ def safe_ratio(numerator: float, denominator: float) -> float:
     """Return numerator/denominator or NaN if denominator is non-positive."""
 
     return float(numerator / denominator) if denominator > 0 else float("nan")
+
+
+def safe_ratio_inf(numerator: float, denominator: float) -> float:
+    """Return numerator/denominator, using inf when denominator is zero.
+
+    Likelihood ratios are undefined when the denominator is zero; we surface this
+    as infinity to match clinical reporting conventions.
+    """
+
+    if not np.isfinite(numerator) or not np.isfinite(denominator):
+        return float("nan")
+    if denominator == 0:
+        return float("inf")
+    if denominator < 0:
+        return float("nan")
+    return float(numerator / denominator)

@@ -237,33 +237,63 @@ def format_simulation_summary(
             + " |"
         )
 
+    classification_metrics = [
+        ("prevalence", "Prevalence", 3),
+        ("sensitivity", "Sensitivity", 3),
+        ("specificity", "Specificity", 3),
+        ("ppv", "PPV", 3),
+        ("npv", "NPV", 3),
+        ("accuracy", "Accuracy", 3),
+    ]
+    if "lr_pos_q500" in summary.columns and "lr_neg_q500" in summary.columns:
+        classification_metrics.extend([("lr_pos", "LR+", 2), ("lr_neg", "LR-", 2)])
     lines.extend(
         [
             "",
             "## Classification metrics",
             "",
-            "| Group | Threshold | Prevalence | Sensitivity | Specificity | PPV | NPV | Accuracy |",
-            "| --- | --- | --- | --- | --- | --- | --- | --- |",
+            "| Group | Threshold | " + " | ".join(metric[1] for metric in classification_metrics) + " |",
+            "| --- | --- | " + " | ".join(["---"] * len(classification_metrics)) + " |",
         ]
     )
 
     for _, row in summary.iterrows():
+        formatted_metrics = [
+            _format_interval(row, metric, precision=precision) for metric, _, precision in classification_metrics
+        ]
         lines.append(
             "| "
-            + " | ".join(
-                [
-                    str(row["group"]),
-                    f"{row['threshold']:.0f}",
-                    _format_interval(row, "prevalence", precision=3),
-                    _format_interval(row, "sensitivity", precision=3),
-                    _format_interval(row, "specificity", precision=3),
-                    _format_interval(row, "ppv", precision=3),
-                    _format_interval(row, "npv", precision=3),
-                    _format_interval(row, "accuracy", precision=3),
-                ]
-            )
+            + " | ".join([str(row["group"]), f"{row['threshold']:.0f}", *formatted_metrics])
             + " |"
         )
+
+    if "misclass_rate_q500" in summary.columns:
+        lines.extend(
+            [
+                "",
+                "## Misclassification burden",
+                "",
+                "| Group | Threshold | FP rate | FN rate | Misclass rate | FP/1000 | FN/1000 | Misclass/1000 |",
+                "| --- | --- | --- | --- | --- | --- | --- | --- |",
+            ]
+        )
+        for _, row in summary.iterrows():
+            lines.append(
+                "| "
+                + " | ".join(
+                    [
+                        str(row["group"]),
+                        f"{row['threshold']:.0f}",
+                        _format_interval(row, "fp_rate", precision=3),
+                        _format_interval(row, "fn_rate", precision=3),
+                        _format_interval(row, "misclass_rate", precision=3),
+                        _format_interval(row, "fp_per_1000", precision=1),
+                        _format_interval(row, "fn_per_1000", precision=1),
+                        _format_interval(row, "misclass_per_1000", precision=1),
+                    ]
+                )
+                + " |"
+            )
 
     return "\n".join(lines)
 
