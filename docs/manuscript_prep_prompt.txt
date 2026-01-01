@@ -1,0 +1,244 @@
+TITLE
+Manuscript-ready reporting outputs: tables/figures/snippets for the TcCO2→PaCO2 simulation pipeline
+
+CONTEXT
+This repo contains a validated Python port of the TcCO2 vs PaCO2 agreement simulation pipeline:
+- Conway meta-analysis ingestion + multi-level meta parameterization (bias δ, within-study σ², between-study τ²)
+- Bootstrap-based parameter uncertainty propagation (cluster_only and cluster_plus_withinstudy)
+- Forward simulation + diagnostic classification metrics
+- Inverse inference (TcCO2 → PaCO2 PI + P(PaCO2≥threshold)) with likelihood-only vs prior-weighted
+- Streamlit UI
+
+There is a draft manuscript “12_30 DAB TcCO2 Letter.docx” with explicit bracketed placeholders in Results for:
+(1) reporting Conway-derived parameters used (μ/δ, σ², τ², marginal LoA + uncertainty),
+(2) “two-stage strategy” zone summaries and interval likelihood ratios,
+(3) TcCO2→PaCO2 prediction interval examples and probability of hypercapnia, including likelihood-only vs prior-weighted.
+
+Current artifacts (bootstrap_summary.md, simulation_summary.md, inference_demo.md, etc.) are close but not sufficient for publication-ready reporting. We need a hardened “reporting layer” that outputs manuscript-ready tables and figure-data consistently, deterministically, and with clear labeling of interval types (CI/UI/PI).
+
+GOAL
+Add a manuscript reporting workflow that produces:
+- parameter summaries (δ, σ², τ², LoA) with uncertainty intervals
+- operating characteristics as point estimates + 95% bootstrap percentile intervals by setting + overall
+- confusion-matrix expected counts (and per-1000 translation) by setting + overall
+- two-stage (zone/reflex) strategy results: zone proportions, interval LRs, zone-specific post-test P(hypercapnia), ABG reflex fraction, residual misclassification if ABG only used in reflex zone
+- TcCO2→PaCO2 prediction interval table for TcCO2 = 35, 40, 45, 50, 55 with P(PaCO2≥T) for at least T=45 (support multiple thresholds too)
+- figure-ready data for (A) PaCO2 distribution by setting and (B) misclassification probability vs true PaCO2
+- short “results snippet” markdown that can be pasted into the manuscript to fill the bracketed placeholders
+All of the above must be reproducible, tested, and documented.
+
+NON-GOALS
+- Do not automatically edit the Word .docx. Generate artifacts/snippets to paste.
+- Do not change scientific conventions already established (Conway sign convention: d = PaCO2 − TcCO2; TcCO2 = PaCO2 − d).
+- Do not break the Streamlit app or existing workflows; extend them.
+
+REQUIREMENTS / DELIVERABLES
+
+A) Extend classification metrics to include full diagnostic-accuracy reporting elements
+1) In the forward simulation code (likely `python/src/tcco2_accuracy/simulation.py`), extend the per-threshold metric calculations to include:
+   - tp_rate, fp_rate, tn_rate, fn_rate (expected fractions over the subgroup population)
+   - misclass_rate = fp_rate + fn_rate
+   - LR+ and LR− (lr_pos, lr_neg) computed from sens/spec:
+       lr_pos = sens / (1 - spec)
+       lr_neg = (1 - sens) / spec
+     Use safe division: if denominator is 0, return np.inf (or np.nan) but document and test.
+   - expected counts (not just rates) for a specified N:
+       tp_count = tp_rate * N, etc.
+     Also compute “per 1000 tested” equivalents:
+       tp_per_1000 = tp_rate * 1000, etc.
+2) Ensure these metrics are carried through the existing quantile summarization so outputs provide median + [2.5, 97.5] percentiles (bootstrap percentile interval).
+3) Update the simulation summary formatter (likely `python/src/tcco2_accuracy/io.py`) to optionally include LR+/LR− and misclassification burden lines without breaking existing markdown tests.
+
+B) Implement the “two-stage strategy” reporting (zone-based reflex ABG strategy)
+Definitions:
+- True hypercapnia threshold: default 45 mmHg (user-configurable).
+- Two-stage TcCO2 zones: default
+    Zone 1 (rule-out): TcCO2 < 40
+    Zone 2 (reflex ABG): 40 ≤ TcCO2 ≤ 50
+    Zone 3 (rule-in): TcCO2 > 50
+- If ABG is obtained for Zone 2, assume perfect classification within Zone 2; residual errors arise only from Zones 1 and 3.
+
+Implement:
+1) Add a new module (suggest: `python/src/tcco2_accuracy/two_stage.py`) with:
+   - a small dataclass `TwoStagePolicy(lower: float, upper: float, true_threshold: float)`
+   - functions that, for a vector of true PaCO2 values and one parameter draw (delta, sd_total), compute:
+       * zone probabilities per record using Normal CDF
+       * expected zone proportions overall: P(zone)
+       * conditional zone probabilities given hypercapnia/non-hypercapnia:
+            P(zone | PaCO2 ≥ true_threshold)
+            P(zone | PaCO2 < true_threshold)
+       * interval LR for each zone:
+            LR_zone = P(zone|pos) / P(zone|neg)
+       * zone-specific post-test probability:
+            P(pos | zone) = P(pos & zone) / P(zone)
+       * reflex ABG fraction: P(zone2)
+       * residual misclassification under reflex strategy:
+            FN_residual = P(zone1 & pos)
+            FP_residual = P(zone3 & neg)
+            total_residual_misclass = FN_residual + FP_residual
+       * translate residuals to per-1000
+   - an aggregator that runs this across bootstrap parameter draws and returns quantile summaries per group/setting and per zone (q025/q50/q975).
+2) Provide outputs for each subgroup setting (pft, ed_inp, icu) and pooled overall (“all”).
+3) Write artifact(s):
+   - `artifacts/two_stage_summary.csv`
+   - `artifacts/two_stage_summary.md`
+   These should be manuscript-ready and clearly labeled as “bootstrap percentile interval”.
+
+C) Manuscript Table outputs
+Create a reporting workflow that writes *publication-ready tables* as CSV + Markdown.
+
+1) Table: “Error-model parameters used”
+   Output file(s):
+   - `artifacts/manuscript_parameters.csv`
+   - `artifacts/manuscript_parameters.md`
+   Content:
+   - For each group (pft, ed_inp, icu, all OR mapped to manuscript labels):
+     * delta (bias) median [q025, q975]
+     * sigma2 median [q025, q975] (or SD sigma)
+     * tau2 median [q025, q975] (or SD tau)
+     * sd_total median [q025, q975]
+     * LoA lower/upper median [q025, q975]
+     * (optional) LoA width median [q025, q975]
+   Ensure language matches manuscript: uncertainty in (μ/δ, σ², τ²) propagated downstream.
+
+2) Table 1: “Cohort + operating characteristics by setting”
+   Output file(s):
+   - `artifacts/manuscript_table1.csv`
+   - `artifacts/manuscript_table1.md`
+   Rows: Ambulatory (pft), ED/Inpatient (ed_inp), ICU (icu), Overall (all)
+   Columns (minimum):
+   - N encounters (and N patients if available; otherwise omit with explicit NA)
+   - PaCO2 median (IQR) from empirical pretest distribution
+   - Hypercapnia prevalence at true threshold (default 45): P(PaCO2≥45)
+   - Diagnostic performance at TcCO2 ≥ 45:
+       sens, spec, lr_pos, lr_neg, ppv, npv
+     Each reported as: point estimate (median) with [q025, q975]
+   - Misclassification burden:
+       fp_rate, fn_rate, misclass_rate (with [q025, q975])
+       per-1000 equivalents
+   Also include a compact confusion matrix section (either in table columns or a separate `manuscript_confusion_matrix.csv`):
+   - TP/FP/FN/TN expected per 1000 (with intervals)
+
+3) Table 2 (if journal allows; otherwise “supplement”):
+   - `artifacts/manuscript_table2_two_stage.csv`
+   - `artifacts/manuscript_table2_two_stage.md`
+   Include:
+   - zone proportions (<40, 40–50, >50)
+   - LR for each zone
+   - post-test P(PaCO2≥45) in each zone
+   - reflex ABG fraction (zone 2)
+   - residual misclassification per 1000 if ABG only in zone 2
+
+4) Table 3: “TcCO2→PaCO2 prediction intervals”
+   - `artifacts/manuscript_table3_prediction_intervals.csv`
+   - `artifacts/manuscript_table3_prediction_intervals.md`
+   TcCO2 values: 35, 40, 45, 50, 55
+   For each TcCO2:
+   - PaCO2 median and 95% PI [q025, q975]
+   - P(PaCO2 ≥ 45)
+   Provide BOTH:
+   - likelihood-only (mixture PI)
+   - prior-weighted (empirical prior) side-by-side
+   Support multiple thresholds in the CSV (e.g., 45 and 52) even if markdown defaults to 45.
+
+D) Figure-ready data exports (do not over-focus on plotting aesthetics)
+Produce CSVs that can be used to generate manuscript figures reliably.
+
+1) PaCO2 distribution by setting:
+   - `artifacts/figure_paco2_distribution_bins.csv`
+   Should include for each group:
+     bin_center (e.g., 1-mmHg bins), count, density/weight
+   Include metadata: true_threshold=45 and a suggested “borderline region” 40–50 (as columns or in a companion md).
+
+2) Misclassification vs true PaCO2:
+   - `artifacts/figure_misclassification_vs_paco2.csv`
+   Use existing conditional curves workflow and add derived columns:
+     misclass_q025 = fp_q025 + fn_q025
+     misclass_q50  = fp_q50  + fn_q50
+     misclass_q975 = fp_q975 + fn_q975
+   (Optionally include separate fp/fn curves too.)
+
+E) Results snippets for the manuscript placeholders
+Write:
+- `artifacts/manuscript_results_snippets.md`
+This file should contain short, copy-pastable blocks labeled:
+1) “Error-model parameters used” paragraph: report δ/σ²/τ² and marginal LoA with uncertainty
+2) “Operating characteristics” paragraph: report Se/Sp/LR+/LR− and FP/FN burden with uncertainty (overall + by setting)
+3) “Two-stage strategy” paragraph: report zone proportions, reflex ABG %, residual misclassifications
+4) “Prediction intervals” paragraph: include the 5 TcCO2 examples, PI, and P(hypercapnia); mention likelihood-only vs prior-weighted
+
+Important: label intervals correctly:
+- Meta/bootstrap parameter uncertainty: “95% uncertainty interval (bootstrap percentile)”
+- Forward classification metrics: “95% CI (bootstrap percentile)” (or “UI” if you want consistent terminology, but choose ONE and document it)
+- Inference intervals: “95% prediction interval (PI)”
+
+F) Workflow + script integration
+1) Add a new workflow module, e.g. `python/src/tcco2_accuracy/workflows/manuscript.py` with `run_manuscript_outputs(...)` that:
+   - loads bootstrap params (or accepts them)
+   - loads PaCO2 distribution (or accepts it)
+   - builds/writes all artifacts in (C)-(E)
+   - returns dataframes + markdown strings for programmatic use
+2) Wire it into the existing “run all workflows” entrypoint (e.g. `python/scripts/run_all_workflows.py` and/or `scripts/rebuild_artifacts.py` if present in repo root).
+   - Add CLI flags:
+       --true-threshold (default 45)
+       --two-stage-lower (default 40)
+       --two-stage-upper (default 50)
+       --tcco2-values "35,40,45,50,55"
+       --thresholds "45,52" (for inference probability columns)
+   - Default to generating the manuscript artifacts under `artifacts/` without breaking existing artifact names.
+
+G) Tests (must be fast; use synthetic fixtures when full data are missing)
+1) Add unit tests:
+   - LR computation behaves sensibly (finite where expected; inf where denom=0)
+   - two-stage zone probabilities sum to 1 per record (within floating tolerance)
+   - two-stage post-test probabilities are in [0,1]
+   - prediction interval medians are monotone nondecreasing with TcCO2 (for fixed group in a synthetic test)
+2) Add workflow smoke test:
+   - run `run_manuscript_outputs` with:
+       * synthetic Conway group data (like existing tests do)
+       * synthetic PaCO2 distribution (like existing tests do)
+       * small n_boot (e.g., 25) and fixed seed
+   - assert artifact files exist in tmp_path
+   - assert required columns present and no NaNs in mandatory outputs
+3) Ensure existing tests still pass (do not regress current 40-test suite).
+
+H) Documentation
+1) Update `python/README.md` and/or root README with a “Manuscript outputs” section:
+   - exact command(s) to build the manuscript artifacts
+   - where the outputs appear
+2) Add `docs/MANUSCRIPT_OUTPUTS.md` describing:
+   - artifact filenames
+   - which manuscript placeholder each artifact fills
+   - definition of CI/UI/PI used and how computed (bootstrap percentile)
+3) Add short notes to `docs/VALIDATION.md` mapping new artifacts to scientific claims.
+
+CODE QUALITY / STYLE
+- Add docstrings for new public functions.
+- Insert comments explaining *why* calculations are defined as they are (especially two-stage strategy math and LR definitions).
+- Keep functions pure where possible; separate “compute” from “format/write”.
+- Ensure deterministic behavior for fixed seed.
+- Avoid slow loops over large arrays when a vectorized approach exists; use scipy.stats.norm.cdf for analytic integrals.
+
+RUNBOOK / ACCEPTANCE
+1) `pytest` passes locally (full suite).
+2) Running the workflow produces the new artifacts without errors:
+   Example:
+     python python/scripts/run_all_workflows.py --seed 202401 --n-boot 1000
+     (or the repo’s canonical rebuild script)
+3) Artifacts exist:
+   - artifacts/manuscript_parameters.csv + .md
+   - artifacts/manuscript_table1.csv + .md
+   - artifacts/manuscript_table2_two_stage.csv + .md
+   - artifacts/manuscript_table3_prediction_intervals.csv + .md
+   - artifacts/figure_paco2_distribution_bins.csv
+   - artifacts/figure_misclassification_vs_paco2.csv
+   - artifacts/manuscript_results_snippets.md
+4) Outputs clearly label interval types and match the manuscript’s sign convention and thresholds.
+
+EXECUTION REQUIREMENTS FOR THIS SESSION
+- Implement in small coherent commits (but do not run git here; print exact `git add`/`git commit` commands).
+- Run pytest at the end and report results.
+- If you need to adjust existing artifact formatting, update tests accordingly.
+
+END
+Proceed to implement the above. Keep existing workflows stable; extend them. Include inline comments explaining the meaning of each new output in the context of the manuscript.
