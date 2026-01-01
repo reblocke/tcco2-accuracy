@@ -22,6 +22,10 @@ DEFAULT_RDATA_CANDIDATES = (
     REPO_ROOT / "Data" / "data.Rdata",
     REPO_ROOT / "Data" / "Conway Thorax supplement and code" / "data.Rdata",
 )
+DEFAULT_COUNTS_CSV_CANDIDATES = (
+    REPO_ROOT / "Data" / "data_counts.csv",
+    REPO_ROOT / "Data" / "Conway Thorax supplement and code" / "data_counts.csv",
+)
 
 REQUIRED_RDATA_OBJECTS = ("main", "ICU", "ARF", "LFT")
 ROWNAME_COLUMNS = ("row.names", "row_names", "rownames")
@@ -59,6 +63,12 @@ def parse_args() -> argparse.Namespace:
         help="Optional path to Conway data.dta (counts).",
     )
     parser.add_argument(
+        "--counts-csv",
+        type=Path,
+        default=None,
+        help="Optional path to Conway data_counts.csv (counts fallback).",
+    )
+    parser.add_argument(
         "--out-dir",
         type=Path,
         default=REPO_ROOT / "Data",
@@ -94,7 +104,10 @@ def main() -> None:
     canonical = _ensure_fallback_studies(canonical, rdata_frames, args.strict)
 
     # Counts live in data.dta rather than the RData objects.
-    counts = _load_counts_table(_discover_dta_path(args.input, args.dta), args.strict)
+    counts = _load_counts_table(
+        _discover_counts_path(args.input, args.dta, args.counts_csv),
+        args.strict,
+    )
     canonical = _merge_counts(
         canonical,
         counts,
@@ -318,18 +331,26 @@ def _validate_bias_s2(bias: pd.Series, s2: pd.Series, strict: bool) -> None:
         _ensure(False, "S2 values must be positive in RData.", strict)
 
 
-def _discover_dta_path(rdata_path: Path, explicit: Path | None) -> Path:
+def _discover_counts_path(
+    rdata_path: Path,
+    explicit_dta: Path | None,
+    explicit_csv: Path | None,
+) -> Path:
     candidates: list[Path] = []
-    if explicit is not None:
-        candidates.append(explicit)
-    else:
+    if explicit_csv is not None:
+        candidates.append(explicit_csv)
+    if explicit_dta is not None:
+        candidates.append(explicit_dta)
+    if explicit_csv is None and explicit_dta is None:
         candidates.append(rdata_path.with_name("data.dta"))
         candidates.append(REPO_ROOT / "Conway Meta" / "data.dta")
         candidates.append(REPO_ROOT / "Data" / "Conway Thorax supplement and code" / "data.dta")
+        candidates.extend(DEFAULT_COUNTS_CSV_CANDIDATES)
+        candidates.append(rdata_path.with_name("data_counts.csv"))
     for candidate in candidates:
         if candidate.exists():
             return candidate
-    message = "Unable to locate data.dta. Looked in: " + ", ".join(
+    message = "Unable to locate Conway counts file. Looked in: " + ", ".join(
         str(path) for path in candidates
     )
     raise FileNotFoundError(message)
@@ -337,21 +358,32 @@ def _discover_dta_path(rdata_path: Path, explicit: Path | None) -> Path:
 
 def _load_counts_table(path: Path, strict: bool) -> pd.DataFrame:
     if not path.exists():
-        raise FileNotFoundError(f"data.dta not found: {path}")
-    data = pd.read_stata(path)
-    required = {"study", "n", "n_2", "c"}
-    missing = required - set(data.columns)
-    if missing:
-        message = f"data.dta is missing required columns: {sorted(missing)}"
+        raise FileNotFoundError(f"Counts file not found: {path}")
+    if path.suffix.lower() == ".csv":
+        data = pd.read_csv(path)
+    elif path.suffix.lower() == ".dta":
+        data = pd.read_stata(path)
+    else:
+        raise ValueError(f"Unsupported counts format: {path.suffix}")
+
+    if {"study", "n", "n_2", "c"}.issubset(data.columns):
+        counts = data.loc[:, ["study", "n", "n_2", "c"]].copy()
+        counts["study_id"] = counts["study"].astype(str).map(_normalize_study_id)
+        counts = counts.rename(columns={"n": "n_pairs", "n_2": "n_participants"})
+        counts = counts.drop(columns="study")
+    elif {"study_id", "n_pairs", "n_participants", "c"}.issubset(data.columns):
+        counts = data.loc[:, ["study_id", "n_pairs", "n_participants", "c"]].copy()
+        counts["study_id"] = counts["study_id"].astype(str).map(_normalize_study_id)
+    else:
+        message = (
+            "Counts file is missing required columns. Expected either "
+            "{study, n, n_2, c} or {study_id, n_pairs, n_participants, c}."
+        )
         _ensure(False, message, strict)
         raise ValueError(message)
-    # Stata counts are the source of truth for n/n_2/c.
-    counts = data.loc[:, ["study", "n", "n_2", "c"]].copy()
-    counts["study_id"] = counts["study"].astype(str).map(_normalize_study_id)
-    counts = counts.rename(columns={"n": "n_pairs", "n_2": "n_participants"})
-    counts = counts.drop(columns="study")
+
     if counts["study_id"].duplicated().any():
-        message = "Duplicate study IDs detected in data.dta."
+        message = "Duplicate study IDs detected in counts file."
         _ensure(False, message, strict)
     return counts
 

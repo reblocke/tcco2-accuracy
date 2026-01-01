@@ -245,9 +245,8 @@ def build_paco2_prior_bins(
 ) -> pd.DataFrame:
     """Return binned PaCO2 priors for each subgroup plus pooled "all".
 
-    The binned prior is shipped with the repo for portability in Streamlit
-    deployments; it captures the empirical pretest PaCO2 distribution without
-    requiring the full in-silico .dta at runtime.
+    The binned prior is shipped with the repo for deployment/CI portability so
+    the Streamlit UI does not require the large in-silico .dta at runtime.
     """
 
     if bin_width <= 0:
@@ -320,6 +319,24 @@ def load_paco2_prior_bins_bytes(file_bytes: bytes, filename: str) -> pd.DataFram
     return _validate_paco2_prior_bins(data)
 
 
+def load_default_paco2_prior(
+    subgroup: str,
+    bins_path: Path | None = None,
+) -> np.ndarray:
+    """Load the repo-shipped binned prior for a subgroup.
+
+    The default bins CSV exists to keep the UI and CI portable without
+    depending on the full in-silico .dta.
+    """
+
+    bins_path = bins_path or PACO2_PRIOR_BINS_PATH
+    if not bins_path.exists():
+        raise FileNotFoundError(f"Default PaCO2 prior bins not found: {bins_path}")
+    bins = load_paco2_prior_bins(bins_path)
+    # "all" is a pooled prior weighted by subgroup sample sizes.
+    return _prior_values_from_bins(bins, subgroup.strip().lower())
+
+
 def load_paco2_prior(
     subgroup: str,
     uploaded_bytes: bytes | None = None,
@@ -349,6 +366,7 @@ def load_paco2_prior(
     if bins_path.exists():
         # Binned weights represent the empirical PaCO2 pretest distribution.
         bins = load_paco2_prior_bins(bins_path)
+        # "all" is a pooled prior weighted by subgroup sample sizes.
         values = _prior_values_from_bins(bins, subgroup_key)
         return PriorLoadResult(
             values=values,

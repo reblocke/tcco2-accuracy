@@ -6,7 +6,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from tcco2_accuracy.data import load_paco2_distribution, prepare_paco2_distribution
+from tcco2_accuracy.data import (
+    PACO2_PRIOR_BINS_PATH,
+    PACO2_SUBGROUP_ORDER,
+    load_paco2_prior_bins,
+)
 from tcco2_accuracy.simulation import (
     expected_classification_metrics,
     simulate_forward,
@@ -17,6 +21,28 @@ from tcco2_accuracy.simulation import (
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BOOTSTRAP_PATH = REPO_ROOT / "artifacts" / "bootstrap_params.csv"
+
+
+def _sample_prior_values(
+    bins: pd.DataFrame,
+    group: str,
+    n_samples: int,
+    random_state: np.random.Generator,
+) -> np.ndarray:
+    subset = bins.loc[bins["group"] == group]
+    values = subset["paco2_bin"].to_numpy(dtype=float)
+    weights = subset["weight"].to_numpy(dtype=float)
+    return random_state.choice(values, size=n_samples, replace=True, p=weights)
+
+
+def _sample_paco2_prior(seed: int = 202401, n_samples: int = 200) -> pd.DataFrame:
+    bins = load_paco2_prior_bins(PACO2_PRIOR_BINS_PATH)
+    random_state = np.random.default_rng(seed)
+    frames = []
+    for group in PACO2_SUBGROUP_ORDER:
+        values = _sample_prior_values(bins, group, n_samples, random_state)
+        frames.append(pd.DataFrame({"paco2": values, "subgroup": group}))
+    return pd.concat(frames, ignore_index=True)
 
 
 def test_fixed_parameter_d_moments_match_delta_and_variance() -> None:
@@ -31,7 +57,7 @@ def test_fixed_parameter_d_moments_match_delta_and_variance() -> None:
 
 
 def test_bootstrap_intervals_are_non_degenerate() -> None:
-    paco2_data = prepare_paco2_distribution(load_paco2_distribution())
+    paco2_data = _sample_paco2_prior()
     params = pd.read_csv(BOOTSTRAP_PATH)
 
     metrics = simulate_forward(paco2_data, params, thresholds=[45.0], mode="analytic", seed=202401, n_draws=50)
