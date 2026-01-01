@@ -63,3 +63,13 @@ def test_inference_missing_group_params_falls_back() -> None:
         result = infer_paco2_by_subgroup([40.0], paco2_data, params, thresholds=[45.0])
 
     assert set(result["group"]) == {"pft", "ed_inp", "icu"}
+
+
+def test_inference_by_subgroup_medians_monotone() -> None:
+    paco2_data = pd.DataFrame({"paco2": [35.0, 45.0, 55.0], "subgroup": ["pft", "pft", "pft"]})
+    params = pd.DataFrame({"group": ["lft"], "delta": [1.0], "sigma2": [1.0], "tau2": [0.0]})
+
+    result = infer_paco2_by_subgroup([35.0, 45.0, 55.0], paco2_data, params, thresholds=[45.0])
+
+    medians = result["paco2_q500"].to_numpy()
+    assert np.all(np.diff(medians) >= 0)
