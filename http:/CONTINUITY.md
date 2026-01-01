@@ -1,39 +1,42 @@
 - Goal (incl. success criteria):
-  - Streamlit app ships default PaCO2 priors, adds “All” setting, and loads with new UI defaults; pytest passes without .dta; docs/tests updated.
+  - Add manuscript-ready reporting outputs (tables, figure data, snippets) with a manuscript workflow, tests, docs, and updated artifacts; `pytest` passes.
 - Constraints/Assumptions:
-  - Follow Conway difference definition (PaCO2 − TcCO2).
-  - Maintain authority hierarchy (Conway paper, docs/SPEC.md + docs/DECISIONS.md, then Stata).
-  - Do NOT modify `Code/Legacy/` or `Drafts/`.
-  - Prefer shipped binned prior CSV; .dta is optional fallback.
-  - Tests must not require the .dta; run `pytest -q` and provide git add/commit commands (do not run git).
+  - Follow Conway difference definition (PaCO2 − TcCO2) and authority hierarchy.
+  - Do NOT modify `Code/Legacy/` or `Drafts/`; do NOT edit the Word manuscript.
+  - Parameter uncertainty via route-1 study bootstrap; deterministic for fixed seed.
+  - New Python code lives under `python/`; keep compute pure and I/O separate.
+  - Add docstrings and comments explaining why calculations are defined.
+  - End milestone with `pytest` run, artifacts updated, and provide git add/commit commands (do not run git).
 - Key decisions:
-  - Default PaCO2 prior loader uses uploaded CSV → Data/paco2_prior_bins.csv → optional .dta, with pooled “all” prior and Conway main parameters.
+  - Classification/two-stage intervals labeled as 95% CI (bootstrap percentile); parameter intervals labeled as 95% uncertainty interval; inference uses 95% PI.
 - State:
-  - Implementation complete; pytest -q passed.
+  - Manuscript reporting code/tests/docs implemented; pytest passed and artifacts regenerated.
 - Done:
-  - Added Data/paco2_prior_bins.csv + build script; implemented prior loader/validation and “All” mapping.
-  - Updated Streamlit defaults, debug expander, tests, and docs/artifacts.
-  - Ran `pytest -q`.
+  - Extended simulation metrics (LRs, misclassification, counts) and formatting.
+  - Added `two_stage.py` and manuscript workflow module with tables/figure data/snippets.
+  - Wired manuscript outputs into workflow scripts and added tests/docs.
+  - Regenerated artifacts via `python scripts/rebuild_artifacts.py ...` and ran `pytest`.
 - Now:
   - Summarize changes and provide git add/commit commands.
 - Next:
-  - User to review diffs and run git commands.
+  - User review and run git commands.
 - Open questions (UNCONFIRMED if needed):
   - None.
 - Working set (files/ids/commands):
   - `http://CONTINUITY.md`
-  - `Data/paco2_prior_bins.csv`
-  - `scripts/build_paco2_prior_bins.py`
-  - `python/src/tcco2_accuracy/data.py`
-  - `python/src/tcco2_accuracy/ui_api.py`
   - `python/src/tcco2_accuracy/simulation.py`
-  - `app/streamlit_app.py`
-  - `python/tests/test_paco2_prior_bins.py`
-  - `python/tests/test_ui_api.py`
-  - `python/tests/test_streamlit_app.py`
-  - `docs/UI.md`
-  - `docs/ADDING_STUDIES.md`
-  - `docs/CONWAY_DATA_SCHEMA.md`
-  - `docs/DEPLOY_STREAMLIT_CLOUD.md`
-  - `artifacts/ui_overview.md`
-  - `pytest -q`
+  - `python/src/tcco2_accuracy/io.py`
+  - `python/src/tcco2_accuracy/two_stage.py`
+  - `python/src/tcco2_accuracy/workflows/manuscript.py`
+  - `python/scripts/run_all_workflows.py`
+  - `scripts/rebuild_artifacts.py`
+  - `python/tests/test_simulation.py`
+  - `python/tests/test_inference.py`
+  - `python/tests/test_two_stage.py`
+  - `python/tests/test_manuscript_workflow.py`
+  - `python/README.md`
+  - `docs/MANUSCRIPT_OUTPUTS.md`
+  - `docs/VALIDATION.md`
+  - `artifacts/`
+  - `python scripts/rebuild_artifacts.py --out artifacts --seed 202401 --n-boot 1000 --thresholds 45 --true-threshold 45 --two-stage-lower 40 --two-stage-upper 50 --tcco2-values 35,40,45,50,55`
+  - `pytest`
