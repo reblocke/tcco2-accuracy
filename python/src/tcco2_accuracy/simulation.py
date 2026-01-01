@@ -12,7 +12,7 @@ from scipy import stats
 
 from .bland_altman import loa_bounds, total_sd
 from .data import PACO2_SUBGROUP_ORDER, prepare_paco2_distribution
-from .utils import quantile_key, safe_ratio, validate_params_df
+from .utils import quantile_key, safe_ratio, safe_ratio_inf, validate_params_df
 
 
 DEFAULT_CLASSIFICATION_THRESHOLDS: tuple[float, ...] = (45.0,)
@@ -145,6 +145,7 @@ def expected_classification_metrics(
     delta: float,
     sd_total: float,
     threshold_value: float,
+    population_n: int | None = None,
 ) -> dict[str, float]:
     paco2_values = np.asarray(paco2_values, dtype=float)
     if paco2_values.size == 0:
@@ -156,6 +157,10 @@ def expected_classification_metrics(
     positive_mask = paco2_values >= threshold_value
     negative_mask = ~positive_mask
     total_count = paco2_values.size
+    population_n = int(population_n) if population_n is not None else int(total_count)
+    if population_n <= 0:
+        raise ValueError("Population size must be positive for expected counts.")
+    # Expected fractions across the subgroup distribution integrate measurement error analytically.
     true_positive = prob_positive[positive_mask].sum() / total_count
     false_negative = (1 - prob_positive[positive_mask]).sum() / total_count
     false_positive = prob_positive[negative_mask].sum() / total_count
@@ -166,6 +171,17 @@ def expected_classification_metrics(
     ppv = safe_ratio(true_positive, true_positive + false_positive)
     npv = safe_ratio(true_negative, true_negative + false_negative)
     accuracy = true_positive + true_negative
+    tp_rate = true_positive
+    fp_rate = false_positive
+    tn_rate = true_negative
+    fn_rate = false_negative
+    misclass_rate = fp_rate + fn_rate
+    lr_pos = safe_ratio_inf(sensitivity, 1 - specificity)
+    lr_neg = safe_ratio_inf(1 - sensitivity, specificity)
+    tp_count = tp_rate * population_n
+    fp_count = fp_rate * population_n
+    tn_count = tn_rate * population_n
+    fn_count = fn_rate * population_n
     return {
         "prevalence": float(prevalence),
         "sensitivity": float(sensitivity),
@@ -173,6 +189,22 @@ def expected_classification_metrics(
         "ppv": float(ppv),
         "npv": float(npv),
         "accuracy": float(accuracy),
+        "tp_rate": float(tp_rate),
+        "fp_rate": float(fp_rate),
+        "tn_rate": float(tn_rate),
+        "fn_rate": float(fn_rate),
+        "misclass_rate": float(misclass_rate),
+        "lr_pos": float(lr_pos),
+        "lr_neg": float(lr_neg),
+        "tp_count": float(tp_count),
+        "fp_count": float(fp_count),
+        "tn_count": float(tn_count),
+        "fn_count": float(fn_count),
+        "tp_per_1000": float(tp_rate * 1000),
+        "fp_per_1000": float(fp_rate * 1000),
+        "tn_per_1000": float(tn_rate * 1000),
+        "fn_per_1000": float(fn_rate * 1000),
+        "misclass_per_1000": float(misclass_rate * 1000),
     }
 
 
@@ -200,6 +232,22 @@ def summarize_simulation_metrics(
             "ppv",
             "npv",
             "accuracy",
+            "tp_rate",
+            "fp_rate",
+            "tn_rate",
+            "fn_rate",
+            "misclass_rate",
+            "lr_pos",
+            "lr_neg",
+            "tp_count",
+            "fp_count",
+            "tn_count",
+            "fn_count",
+            "tp_per_1000",
+            "fp_per_1000",
+            "tn_per_1000",
+            "fn_per_1000",
+            "misclass_per_1000",
         )
         if column in metrics.columns
     ]
@@ -278,6 +326,13 @@ def _sample_classification_metrics(
     ppv = safe_ratio(true_positive, true_positive + false_positive)
     npv = safe_ratio(true_negative, true_negative + false_negative)
     accuracy = safe_ratio(true_positive + true_negative, total_count)
+    tp_rate = safe_ratio(true_positive, total_count)
+    fp_rate = safe_ratio(false_positive, total_count)
+    tn_rate = safe_ratio(true_negative, total_count)
+    fn_rate = safe_ratio(false_negative, total_count)
+    misclass_rate = fp_rate + fn_rate
+    lr_pos = safe_ratio_inf(sensitivity, 1 - specificity)
+    lr_neg = safe_ratio_inf(1 - sensitivity, specificity)
     return {
         "prevalence": float(prevalence / total_count),
         "sensitivity": float(sensitivity),
@@ -285,6 +340,22 @@ def _sample_classification_metrics(
         "ppv": float(ppv),
         "npv": float(npv),
         "accuracy": float(accuracy),
+        "tp_rate": float(tp_rate),
+        "fp_rate": float(fp_rate),
+        "tn_rate": float(tn_rate),
+        "fn_rate": float(fn_rate),
+        "misclass_rate": float(misclass_rate),
+        "lr_pos": float(lr_pos),
+        "lr_neg": float(lr_neg),
+        "tp_count": float(true_positive),
+        "fp_count": float(false_positive),
+        "tn_count": float(true_negative),
+        "fn_count": float(false_negative),
+        "tp_per_1000": float(tp_rate * 1000),
+        "fp_per_1000": float(fp_rate * 1000),
+        "tn_per_1000": float(tn_rate * 1000),
+        "fn_per_1000": float(fn_rate * 1000),
+        "misclass_per_1000": float(misclass_rate * 1000),
     }
 
 
