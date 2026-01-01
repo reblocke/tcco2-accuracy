@@ -1,0 +1,51 @@
+TICKET: Make CI + Streamlit robust by removing hard dependency on large in-silico .dta and ensuring Conway exporter has counts input
+
+Problem
+- CI fails because tests unconditionally load:
+  Data/In Silico TCCO2 Database.dta
+  which is not present in GitHub Actions clone.
+- Exporter test fails because scripts/export_conway_rdata.py cannot find a counts file (data.dta) in CI.
+
+Goals
+1) `pytest -q` passes in CI from a fresh clone with no large .dta files.
+2) Streamlit app can run with a default prior without requiring raw in-silico .dta.
+3) Conway exporter test passes reliably (either by committing Data/data.dta or by adding CSV fallback).
+
+Tasks
+A) Priors: add a repo-shipped default prior bins file
+- Create and commit Data/paco2_prior_bins.csv with schema:
+  group, paco2_bin, count, weight
+  Include groups: pft, ed_inp, icu, all
+  Weights must sum to ~1 per group.
+- Add loader load_paco2_prior_bins(path=...) and load_default_paco2_prior().
+- Update inference/simulation/UI to prefer:
+  1) uploaded bins CSV (if provided)
+  2) Data/paco2_prior_bins.csv (default)
+  3) Data/In Silico TCCO2 Database.dta only if present
+  4) else raise a clear error
+
+B) Tests: remove unconditional dependency on in-silico .dta
+- Update python/tests/test_paco2_distribution.py:
+  - Replace fixture that calls load_paco2_distribution() with a tiny synthetic dataframe generator.
+  - Add a separate integration test that loads real .dta only if it exists (skip otherwise).
+- Update python/tests/test_simulation.py to use load_default_paco2_prior() or the bins CSV fixture.
+
+C) Exporter: ensure counts file is available in CI
+Choose ONE approach:
+1) Commit Data/data.dta to the repo and ensure exporter searches it first; update docs.
+OR
+2) Add a CSV fallback:
+   - commit Data/data_counts.csv
+   - exporter accepts --counts-csv and/or auto-detects Data/data_counts.csv
+   - test passes in CI without .dta
+
+D) Add comments explaining:
+- why bins CSV is shipped (deployment + CI portability)
+- what “all” prior means (mixture weighted by subgroup counts)
+
+Acceptance tests
+- `pytest -q` passes in CI with no Data/In Silico TCCO2 Database.dta present.
+- `python scripts/export_conway_rdata.py --input Data/data.Rdata --out-dir <tmp> --overwrite` succeeds in CI.
+- Streamlit app no longer shows “prior not found” on first load.
+
+Run pytest at end and print git add/commit commands.
