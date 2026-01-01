@@ -12,3 +12,4 @@ Research-only Streamlit UI for TcCO2-based PaCO2 inference.
 | Prior source | `Data/paco2_prior_bins.csv` |
 
 The UI reports a PaCO2 prediction interval (PI), not a confidence interval (CI).
+The repo-shipped prior bins keep deployments portable (no in-silico .dta needed); "All" pools subgroups weighted by their counts.
