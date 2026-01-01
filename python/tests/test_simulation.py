@@ -55,6 +55,19 @@ def test_expected_classification_metrics_handles_prevalence_extremes() -> None:
     assert np.isnan(low_threshold["specificity"])
 
 
+def test_expected_classification_metrics_lr_handles_zero_denominator() -> None:
+    paco2_values = np.array([30.0, 60.0])
+    metrics = expected_classification_metrics(
+        paco2_values,
+        delta=0.0,
+        sd_total=1e-6,
+        threshold_value=45.0,
+    )
+
+    assert metrics["lr_pos"] == np.inf
+    assert metrics["lr_neg"] == pytest.approx(0.0)
+
+
 def test_simulation_missing_group_params_falls_back() -> None:
     paco2_data = pd.DataFrame(
         {"paco2": [35.0, 45.0, 55.0], "subgroup": ["pft", "ed_inp", "icu"]}

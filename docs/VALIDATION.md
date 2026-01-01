@@ -41,3 +41,11 @@
 - Invariants: probability mass and branching checks in `python/tests/test_hybrid_bootstrap_and_conditional.py`.
 - Artifacts: `artifacts/conditional_classification_t45.csv`, `artifacts/conditional_classification_t45.md`.
 - Scientific claim: conditional error rates vary smoothly with PaCO2 and include parameter uncertainty.
+
+### Manuscript reporting outputs
+- Purpose: generate manuscript-ready tables, figures, and results snippets.
+- Invariants: smoke test in `python/tests/test_manuscript_workflow.py`.
+- Artifacts: `artifacts/manuscript_table1.csv`, `artifacts/manuscript_table2_two_stage.csv`,
+  `artifacts/manuscript_table3_prediction_intervals.csv`, `artifacts/manuscript_results_snippets.md`.
+- Scientific claim: reported operating characteristics, two-stage strategy metrics, and prediction intervals
+  are reproducible from the bootstrap parameter uncertainty model.
