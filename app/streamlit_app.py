@@ -322,7 +322,7 @@ def main() -> None:
         )
 
     st.subheader("Posterior distribution")
-    st.plotly_chart(_build_posterior_plot(result), use_container_width=True)
+    st.plotly_chart(_build_posterior_plot(result), width="stretch")
     st.caption(f"Posterior mass above threshold: {result.p_ge_threshold:.1%}.")
 
     with st.sidebar.expander("Debug"):
