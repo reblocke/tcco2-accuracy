@@ -3,6 +3,17 @@
 ## Open decisions
 - None yet.
 
+## Workflow and monorepo stabilization
+- The repository remains a monorepo for this wave: Python package, Streamlit app, source/reference
+  data, artifacts, and manuscript drafts stay in one repository with nested `AGENTS.md` guardrails
+  where rules differ.
+- `requirements.txt` and `requirements-dev.txt` remain authoritative. `uv` may be used with
+  `--no-project` for ephemeral verification, but `uv.lock` is not adopted in this wave.
+- Generated `.pytest_tmp/`, `.tmp/`, and `*.egg-info/` outputs are not source artifacts and should
+  not be tracked.
+- Malformed continuity-ledger paths are retired; durable project decisions belong in this file or
+  `docs/adr/`.
+
 ## Logged divergences
 - `logs2` inputs are recomputed as `log10(S2*) + 1/(n_2 - 1)` with `v_logs2 = 2/(n_2 - 1)` to match `Conway Meta/data.dta`, even though `Code/3_tcco2_uncertainty_and_simulation_do.do:94` describes `logs2` as a natural log.
 - Bootstrap τ² draws are truncated at 0 to enforce non-negative between-study variance for simulation/inference draws in `python/src/tcco2_accuracy/bootstrap.py:66`.
