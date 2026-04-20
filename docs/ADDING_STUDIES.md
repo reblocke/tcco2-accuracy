@@ -29,7 +29,7 @@ script if the in-silico distribution changes.
 
 ## Validate the table locally
 ```bash
-python - <<'PY'
+uv run python - <<'PY'
 import pandas as pd
 from tcco2_accuracy.validate_inputs import validate_conway_studies_df
 
@@ -41,17 +41,20 @@ PY
 
 ## Regenerate artifacts
 ```bash
-python scripts/rebuild_artifacts.py --input-study-table Data/conway_studies.xlsx \
+uv run python scripts/rebuild_artifacts.py --input-study-table Data/conway_studies.xlsx \
   --seed 202401 --n-boot 1000 --thresholds 45
 ```
 
 ## Run tests
 ```bash
-pytest -q
+uv run pytest -q
 ```
 
-If `pytest` is not installed in the active shell, use the documented ephemeral check:
-
+## Refresh static app assets
 ```bash
-uv run --no-project --with-requirements requirements.txt --with-requirements requirements-dev.txt pytest -q
+make stage-web
+make verify
 ```
+
+The browser app uses staged CSV assets, so run `make stage-web` after changing
+canonical study inputs or bootstrap artifacts.

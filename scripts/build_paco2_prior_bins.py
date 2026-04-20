@@ -1,4 +1,4 @@
-"""Build binned PaCO2 prior distributions for Streamlit deployments."""
+"""Build binned PaCO2 prior distributions for browser and CI deployments."""
 
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ def main() -> None:
     prior_bins = build_paco2_prior_bins(data, bin_width=float(args.bin_width))
     prior_bins = prior_bins.sort_values(["group", "paco2_bin"]).reset_index(drop=True)
 
-    # Store a compact binned prior so Streamlit Cloud can run without the full .dta.
+    # Store a compact binned prior so the static app can run without the full .dta.
     args.output.parent.mkdir(parents=True, exist_ok=True)
     prior_bins.to_csv(args.output, index=False)
 

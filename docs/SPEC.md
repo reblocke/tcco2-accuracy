@@ -18,9 +18,10 @@
   between-study variance non-negative (Table 1 reproduction uses untruncated τ²).
 
 ## In-silico PaCO2 distribution
-- Source file: `Data/In Silico TCCO2 Database.dta` by package default, or an explicitly supplied `.dta`
+- Source file: `Data/In Silico TCCO2 Database.dta` by package default, with
+  `Data/in_silico_tcco2_db.dta` accepted as a local alias, or an explicitly supplied `.dta`
   path in workflow loaders.
-- Streamlit deployments use `Data/paco2_prior_bins.csv` by default so the app can run without the full `.dta`.
+- The static browser app uses `Data/paco2_prior_bins.csv` by default so it can run without the full `.dta`.
 - Use rows with non-missing `paco2`; PaCO2 values are in mmHg.
 - Treat `is_amb`, `is_emer`, `is_inp`, `cc_time` as binary flags (missing → 0).
 - Subgroup assignment is mutually exclusive, applied in order:

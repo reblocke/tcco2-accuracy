@@ -1,159 +1,113 @@
-# TcCO₂ Accuracy
+# TcCO2 Accuracy
 
-> Research code and materials for studying agreement between transcutaneous CO₂ (TcCO₂) monitoring and arterial PaCO₂ across clinical contexts. This repository contains the Python package, Streamlit app, validation artifacts, and manuscript-support workflows.
+Research code and materials for studying agreement between transcutaneous CO2
+(TcCO2) monitoring and arterial PaCO2 across clinical contexts. The repository
+now ships a static GitHub Pages app that runs the Python numerical model in the
+browser with Pyodide.
 
-**Project status:** Presented as posters at CHEST and ATS. Manuscript in preparation. This is research software and is not intended for clinical decision-making.
+**Project status:** Presented as posters at CHEST and ATS. Manuscript in
+preparation. This is research software and is not intended for clinical
+decision-making.
 
----
+## Links
 
-## Links & Persistent Identifiers
-
-- **Streamlit App** https://tcco2-accuracy-2025-12-22.streamlit.app/
+- **Static app:** https://reblocke.github.io/tcco2-accuracy/
 - **Repository:** https://github.com/reblocke/tcco2-accuracy
 - **CHEST poster:** https://scholar.google.com/citations?view_op=view_citation&hl=en&user=O1nydc8AAAAJ&sortby=pubdate&citation_for_view=O1nydc8AAAAJ:hC7cP41nSMkC
 - **ATS poster:** https://scholar.google.com/citations?view_op=view_citation&hl=en&user=O1nydc8AAAAJ&sortby=pubdate&citation_for_view=O1nydc8AAAAJ:dhFuZR0502QC
-- **Related evidence synthesis:** Conway A, et al. *Thorax* (2019). Accuracy and precision of transcutaneous CO₂ monitoring.
-- **Public dataset / code archive (Conway et al.):** https://figshare.com/articles/dataset/Accuracy_of_TcCO2_monitoring_meta-analysis/6244058
-- **Release DOI:** *To be minted via Zenodo at v1.0*
-- **Exact analysis commit:** *<commit-hash to be pinned prior to submission>*
+- **Related evidence synthesis:** Conway A, et al. *Thorax* (2019). Accuracy and precision of transcutaneous CO2 monitoring.
+- **Public dataset / code archive:** https://figshare.com/articles/dataset/Accuracy_of_TcCO2_monitoring_meta-analysis/6244058
 
----
+## Quick Start
 
-## How to Cite
-
-Until journal publication, please cite the conference abstracts and this repository (tagged release):
-
-> Anderson-Bell D, Locke BW. *TcCO₂ Accuracy: code for evaluating transcutaneous CO₂ monitoring accuracy.* GitHub repository (version <tag>). <Zenodo DOI once minted>.
-
-Add a machine‑readable citation file at the repository root (`CITATION.cff`) prior to submission.
-
----
-
-## Quick Start (Reproduce Main Results)
-
-The active reproducible workflow is the Python package under `python/src/tcco2_accuracy/`. Stata files are retained as reference material.
-
-**Requirements:** Python ≥3.10
+Requirements: Python 3.11 and `uv`.
 
 ```bash
-python3 -m venv .venv
-. .venv/bin/activate  # Windows: .venv\\Scripts\\activate
-python -m pip install -r requirements.txt -r requirements-dev.txt
+uv sync --locked
+make verify
 ```
 
-Run tests:
+Serve the static app locally:
 
 ```bash
-pytest -q
+make serve
 ```
 
-Or run the documented ephemeral check without adopting `uv` as the project environment:
+Then open http://127.0.0.1:8000. The app loads staged Python from
+`web/assets/py/`, canonical data from `web/assets/data/`, and runs computations
+in a browser worker.
 
-```bash
-uv run --no-project --with-requirements requirements.txt --with-requirements requirements-dev.txt pytest -q
-```
+## Rebuild Outputs
 
 Regenerate review/manuscript artifacts:
 
 ```bash
-python scripts/rebuild_artifacts.py --out artifacts --seed 202401 --n-boot 1000 --thresholds 45
+uv run python scripts/rebuild_artifacts.py --out artifacts --seed 202401 --n-boot 1000 --thresholds 45
 ```
 
-The full artifact rebuild requires the in-silico PaCO₂ distribution at the configured package default path, `Data/In Silico TCCO2 Database.dta`. The Streamlit app and tests can run without that large file by using the shipped binned prior, `Data/paco2_prior_bins.csv`.
-
----
-
-## Data Access
-
-- Primary inputs derive from publicly available supplemental tables and code associated with Conway et al. (*Thorax*, 2019).
-- Canonical Conway study inputs are maintained in `Data/conway_studies.csv` and `Data/conway_studies.xlsx`.
-- PaCO₂ prior bins for app deployment are maintained in `Data/paco2_prior_bins.csv`.
-- **No patient‑level protected health information (PHI)** is included in this repository.
-
-If future analyses require restricted data, do **not** commit raw files. Instead, provide synthetic examples and access instructions here.
-
----
-
-## Computational Environment
-
-- **Operating systems tested:** macOS and Linux-style CI/runtime environments
-- **Languages:** Python, Stata
-- **Dependencies:** `requirements.txt` and `requirements-dev.txt` are authoritative for this wave; `pyproject.toml` provides package metadata and optional UI extras
-- **Hardware:** CPU‑only; no GPU required
-
----
+The full artifact rebuild may use the in-silico PaCO2 distribution at
+`Data/In Silico TCCO2 Database.dta` when that restricted local file is present.
+The static browser app does not require that `.dta`; it uses the shipped binned
+prior `Data/paco2_prior_bins.csv`.
 
 ## Repository Layout
 
-```
-├── app/                                 # Streamlit implementation
-├── streamlit_app.py                     # Streamlit Cloud entrypoint
-├── python/src/tcco2_accuracy/           # Importable Python package
-├── python/tests/                        # Unit and workflow tests
-├── scripts/                             # Artifact and data-prep commands
-├── Data/                                # Source/reference inputs and deployable prior bins
-├── artifacts/                           # Small generated review/manuscript outputs
-├── docs/                                # Specifications, validation notes, and runbooks
-├── Conway Meta/                         # Conway reference materials
-├── Code/                                # Stata reference code
-├── Drafts/                              # Manuscript/presentation drafts
-├── requirements.txt                     # Runtime dependencies
-├── requirements-dev.txt                 # Test dependencies
-├── pyproject.toml                       # Package metadata
-└── README.md
+```text
+├── src/tcco2_accuracy/        # Python numerical source of truth
+├── tests/                     # Unit, workflow, contract, and browser tests
+├── web/                       # Static GitHub Pages app
+├── scripts/                   # Staging, artifact, and data-prep commands
+├── Data/                      # Source/reference inputs and deployable prior bins
+├── artifacts/                 # Small generated review/manuscript outputs
+├── docs/                      # Architecture, deployment, validation, and decisions
+├── Code/                      # Stata reference code
+├── Drafts/                    # Manuscript/presentation drafts
+├── Makefile                   # Local command surface
+├── pyproject.toml             # Package and dependency metadata
+└── uv.lock                    # Locked Python environment
 ```
 
----
+## Static App Model
 
-## Workflow Overview
+- Python remains the single source of truth for computation.
+- JavaScript handles controls, uploads, worker messaging, and plotting.
+- Default calculations use repo-shipped canonical bootstrap parameters and prior
+  bins for responsiveness.
+- Custom study tables or changed bootstrap settings trigger in-browser
+  recomputation through the staged Python package.
+- User-entered values and uploads remain in the browser. The app has no backend,
+  telemetry, persistence, or patient-value URLs.
 
-1. Load canonical Conway study-level inputs.
-2. Reproduce Conway bias, SD, τ², and limits of agreement.
-3. Generate route-1 bootstrap parameter draws.
-4. Summarize empirical PaCO₂ priors by setting.
-5. Run forward simulation, inverse inference, conditional misclassification, and manuscript-reporting workflows.
-6. Export deterministic review/manuscript outputs to `artifacts/`.
+## Data Access
 
----
+- Canonical Conway study inputs are maintained in `Data/conway_studies.csv` and
+  `Data/conway_studies.xlsx`.
+- PaCO2 prior bins for app deployment are maintained in
+  `Data/paco2_prior_bins.csv`.
+- No patient-level protected health information (PHI) is included in this
+  repository.
 
-## Key Outputs
-
-- Validation summaries: `artifacts/meta_loa_check.md`, `artifacts/bootstrap_summary.md`, `artifacts/paco2_distribution_summary.md`, `artifacts/simulation_summary.md`, `artifacts/inference_demo.md`.
-- Manuscript tables/snippets: `artifacts/manuscript_table1.csv`, `artifacts/manuscript_table2_two_stage.csv`, `artifacts/manuscript_table3_prediction_intervals.csv`, `artifacts/manuscript_results_snippets.md`.
-- Figure data: `artifacts/figure_paco2_distribution_bins.csv`, `artifacts/figure_misclassification_vs_paco2.csv`.
-
----
+If future analyses require restricted data, do not commit raw files. Provide
+synthetic examples and access instructions instead.
 
 ## Quality Checks
 
-- `python/tests/test_conway_meta.py` validates Conway Table 1 reproduction.
-- `python/tests/test_workflows.py` checks workflow determinism.
-- `python/tests/test_manuscript_workflow.py` smoke-tests manuscript output generation.
-- App-facing behavior is covered by compute-layer tests and a Streamlit import smoke test.
+- `make test` runs Python unit, workflow, staging, and browser-contract tests.
+- `make e2e` stages the web app and runs Playwright browser smoke tests.
+- `make verify` runs staging, format check, lint, unit tests, and E2E tests.
+- Scientific validation targets are documented in `docs/VALIDATION.md`.
 
----
+## Citation
+
+Until journal publication, please cite the conference abstracts and this
+repository release:
+
+> Anderson-Bell D, Locke BW. *TcCO2 Accuracy: code for evaluating transcutaneous
+> CO2 monitoring accuracy.* GitHub repository (version `<tag>`).
+
+See `CITATION.cff` for machine-readable metadata.
 
 ## License
 
 - **Code:** MIT License (see `LICENSE`)
-- **Data:** Governed by original source licenses (e.g., Thorax supplemental materials)
-
----
-
-## Funding & Acknowledgements
-
-- **Funding:** *ATS ASPIRE Program, NIH T32, and the Intermountain Fund*
-
----
-
-## Contributing & Governance
-
-Contributions are welcome via GitHub issues and pull requests. See `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, and `SUPPORT.md`.
-
----
-
-## Maintainer & Contact
-
-- **Maintainer:** Brian Locke
-- **Contact:** Open an issue at https://github.com/reblocke/tcco2-accuracy/issues
-- **Maintenance status:** Active (poster phase; manuscript in preparation)
+- **Data:** Governed by original source licenses and access terms.
