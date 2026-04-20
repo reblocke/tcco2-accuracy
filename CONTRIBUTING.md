@@ -38,12 +38,19 @@ Suitable contributions include:
 
 ## Testing
 
-- If `pytest` tests exist:
-  ```bash
-  pytest
-  ```
-- If no tests exist yet, keep changes runnable on a small “smoke” dataset and describe the exact commands you used
-  in the PR description.
+Run the package tests before opening a PR:
+
+```bash
+pytest -q
+```
+
+If `pytest` is not installed in the active shell, use the documented ephemeral check:
+
+```bash
+uv run --no-project --with-requirements requirements.txt --with-requirements requirements-dev.txt pytest -q
+```
+
+For workflow or artifact changes, also describe any generated outputs and the exact rebuild command used.
 
 ## Style
 

@@ -3,6 +3,8 @@
 ## How to generate
 - Run: `python scripts/rebuild_artifacts.py --out artifacts --seed 202401 --n-boot 1000 --thresholds 45 --true-threshold 45 --two-stage-lower 40 --two-stage-upper 50 --tcco2-values 35,40,45,50,55`
 - Outputs are written under `artifacts/`.
+- The full rebuild needs the in-silico PaCO2 `.dta` at `Data/In Silico TCCO2 Database.dta`; app-only
+  workflows can use `Data/paco2_prior_bins.csv` without the full `.dta`.
 
 ## Artifacts and manuscript placeholders
 - Error-model parameters: `artifacts/manuscript_parameters.csv` + `artifacts/manuscript_parameters.md`

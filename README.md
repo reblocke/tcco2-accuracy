@@ -1,8 +1,8 @@
 # TcCO₂ Accuracy
 
-> Code and materials for studying the **accuracy of transcutaneous CO₂ (TcCO₂) monitoring** versus arterial PaCO₂ across clinical contexts. This repository hosts analysis code, data extraction assets, and artifacts supporting posters presented at **CHEST** and **ATS**; a manuscript is in preparation.
+> Research code and materials for studying agreement between transcutaneous CO₂ (TcCO₂) monitoring and arterial PaCO₂ across clinical contexts. This repository contains the Python package, Streamlit app, validation artifacts, and manuscript-support workflows.
 
-**Project status:** Presented as posters at CHEST and ATS. Manuscript in preparation.
+**Project status:** Presented as posters at CHEST and ATS. Manuscript in preparation. This is research software and is not intended for clinical decision-making.
 
 ---
 
@@ -31,43 +31,43 @@ Add a machine‑readable citation file at the repository root (`CITATION.cff`) p
 
 ## Quick Start (Reproduce Main Results)
 
-This project uses **Python** and **Stata**. Choose the path appropriate to the analysis you wish to reproduce.
-
-### A) Python
+The active reproducible workflow is the Python package under `python/src/tcco2_accuracy/`. Stata files are retained as reference material.
 
 **Requirements:** Python ≥3.10
 
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 . .venv/bin/activate  # Windows: .venv\\Scripts\\activate
-pip install -e .      # if pyproject.toml is configured
+python -m pip install -r requirements.txt -r requirements-dev.txt
 ```
 
-Run analyses (example; replace with finalized scripts):
+Run tests:
 
 ```bash
-python python/<analysis_script>.py --input data/ --out artifacts/
+pytest -q
 ```
 
-### B) Stata
+Or run the documented ephemeral check without adopting `uv` as the project environment:
 
-**Requirements:** Stata 17+ recommended
-
-From the Stata console:
-
-```stata
-cd "<repo_root>"
-do "Conway Meta/<main_do_file>.do"
+```bash
+uv run --no-project --with-requirements requirements.txt --with-requirements requirements-dev.txt pytest -q
 ```
 
-Outputs are written to `artifacts/`.
+Regenerate review/manuscript artifacts:
+
+```bash
+python scripts/rebuild_artifacts.py --out artifacts --seed 202401 --n-boot 1000 --thresholds 45
+```
+
+The full artifact rebuild requires the in-silico PaCO₂ distribution at the configured package default path, `Data/In Silico TCCO2 Database.dta`. The Streamlit app and tests can run without that large file by using the shipped binned prior, `Data/paco2_prior_bins.csv`.
 
 ---
 
 ## Data Access
 
 - Primary inputs derive from publicly available supplemental tables and code associated with Conway et al. (*Thorax*, 2019).
-- These materials are mirrored or referenced in `Data/ Conway Thorax supplement and code/` for convenience.
+- Canonical Conway study inputs are maintained in `Data/conway_studies.csv` and `Data/conway_studies.xlsx`.
+- PaCO₂ prior bins for app deployment are maintained in `Data/paco2_prior_bins.csv`.
 - **No patient‑level protected health information (PHI)** is included in this repository.
 
 If future analyses require restricted data, do **not** commit raw files. Instead, provide synthetic examples and access instructions here.
@@ -76,9 +76,9 @@ If future analyses require restricted data, do **not** commit raw files. Instead
 
 ## Computational Environment
 
-- **Operating systems tested:** macOS, Linux (confirm exact versions before release)
+- **Operating systems tested:** macOS and Linux-style CI/runtime environments
 - **Languages:** Python, Stata
-- **Dependencies:** Declared in `pyproject.toml` (Python) and within Stata `.do` file headers
+- **Dependencies:** `requirements.txt` and `requirements-dev.txt` are authoritative for this wave; `pyproject.toml` provides package metadata and optional UI extras
 - **Hardware:** CPU‑only; no GPU required
 
 ---
@@ -86,14 +86,20 @@ If future analyses require restricted data, do **not** commit raw files. Instead
 ## Repository Layout
 
 ```
-├── Conway Meta/                          # Meta‑analysis scripts and notes
-├── Data/ Conway Thorax supplement and code/  # Public supplemental data/code
-├── python/                              # Python analysis scripts and notebooks
-├── artifacts/                           # Generated figures and tables
-├── docs/                                # Project documentation
-├── Drafts/                              # Exploratory or working files
-├── pyproject.toml                       # Python project configuration
-├── LICENSE                              # MIT License
+├── app/                                 # Streamlit implementation
+├── streamlit_app.py                     # Streamlit Cloud entrypoint
+├── python/src/tcco2_accuracy/           # Importable Python package
+├── python/tests/                        # Unit and workflow tests
+├── scripts/                             # Artifact and data-prep commands
+├── Data/                                # Source/reference inputs and deployable prior bins
+├── artifacts/                           # Small generated review/manuscript outputs
+├── docs/                                # Specifications, validation notes, and runbooks
+├── Conway Meta/                         # Conway reference materials
+├── Code/                                # Stata reference code
+├── Drafts/                              # Manuscript/presentation drafts
+├── requirements.txt                     # Runtime dependencies
+├── requirements-dev.txt                 # Test dependencies
+├── pyproject.toml                       # Package metadata
 └── README.md
 ```
 
@@ -101,29 +107,29 @@ If future analyses require restricted data, do **not** commit raw files. Instead
 
 ## Workflow Overview
 
-1. Acquire public supplemental data (Conway et al.).
-2. Harmonize study‑level variables (device, site, temperature correction).
-3. Compute bias and limits of agreement (Bland–Altman).
-4. Perform subgroup and sensitivity analyses.
-5. Export tables and figures to `artifacts/`.
+1. Load canonical Conway study-level inputs.
+2. Reproduce Conway bias, SD, τ², and limits of agreement.
+3. Generate route-1 bootstrap parameter draws.
+4. Summarize empirical PaCO₂ priors by setting.
+5. Run forward simulation, inverse inference, conditional misclassification, and manuscript-reporting workflows.
+6. Export deterministic review/manuscript outputs to `artifacts/`.
 
 ---
 
-## Results Mapping
+## Key Outputs
 
-| Poster / Paper Item | Script / Notebook | Command | Output |
-|--------------------|-------------------|---------|--------|
-| Overall bias & LOA | `<script>` | `python <script>` | `artifacts/fig1.png` |
-| Subgroup analysis  | `<script>` | `python <script>` | `artifacts/fig2.png` |
-
-Replace placeholders with final filenames prior to release.
+- Validation summaries: `artifacts/meta_loa_check.md`, `artifacts/bootstrap_summary.md`, `artifacts/paco2_distribution_summary.md`, `artifacts/simulation_summary.md`, `artifacts/inference_demo.md`.
+- Manuscript tables/snippets: `artifacts/manuscript_table1.csv`, `artifacts/manuscript_table2_two_stage.csv`, `artifacts/manuscript_table3_prediction_intervals.csv`, `artifacts/manuscript_results_snippets.md`.
+- Figure data: `artifacts/figure_paco2_distribution_bins.csv`, `artifacts/figure_misclassification_vs_paco2.csv`.
 
 ---
 
 ## Quality Checks
 
-- Manual review of generated tables against source supplements
-- Optional future work: add smoke‑test dataset and automated checks
+- `python/tests/test_conway_meta.py` validates Conway Table 1 reproduction.
+- `python/tests/test_workflows.py` checks workflow determinism.
+- `python/tests/test_manuscript_workflow.py` smoke-tests manuscript output generation.
+- App-facing behavior is covered by compute-layer tests and a Streamlit import smoke test.
 
 ---
 
@@ -142,11 +148,7 @@ Replace placeholders with final filenames prior to release.
 
 ## Contributing & Governance
 
-Contributions are welcome via GitHub issues and pull requests. Please add the following prior to public release:
-
-- `CONTRIBUTING.md`
-- `CODE_OF_CONDUCT.md`
-- `SECURITY.md`
+Contributions are welcome via GitHub issues and pull requests. See `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, and `SUPPORT.md`.
 
 ---
 
@@ -155,4 +157,3 @@ Contributions are welcome via GitHub issues and pull requests. Please add the fo
 - **Maintainer:** Brian Locke
 - **Contact:** Open an issue at https://github.com/reblocke/tcco2-accuracy/issues
 - **Maintenance status:** Active (poster phase; manuscript in preparation)
-

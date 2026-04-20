@@ -49,3 +49,9 @@ python scripts/rebuild_artifacts.py --input-study-table Data/conway_studies.xlsx
 ```bash
 pytest -q
 ```
+
+If `pytest` is not installed in the active shell, use the documented ephemeral check:
+
+```bash
+uv run --no-project --with-requirements requirements.txt --with-requirements requirements-dev.txt pytest -q
+```
