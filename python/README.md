@@ -1,15 +1,19 @@
 # TcCO2 Accuracy — Python Workflows
 
 ## Install
-- From the repo root: `python -m pip install -e .`
+- From the repo root: `python -m pip install -r requirements.txt -r requirements-dev.txt`
 - Optional: create/activate a virtualenv first.
 
 ## Tests
-- Run: `pytest`
+- In an active environment: `pytest -q`
+- Ephemeral check without adopting `uv`: `uv run --no-project --with-requirements requirements.txt --with-requirements requirements-dev.txt pytest -q`
 
 ## Deterministic workflow runner
 - Regenerate artifacts: `python scripts/rebuild_artifacts.py --out artifacts --seed 202401 --n-boot 1000 --thresholds 45`
 - Override study table: `python scripts/rebuild_artifacts.py --input-study-table Data/conway_studies.xlsx`
+- Full artifact regeneration requires the in-silico PaCO2 `.dta` at the package default path,
+  `Data/In Silico TCCO2 Database.dta`. The app and most tests use the shipped binned prior
+  `Data/paco2_prior_bins.csv` when the large `.dta` is absent.
 
 ## Manuscript outputs
 - Generate manuscript-ready tables/figures/snippets:

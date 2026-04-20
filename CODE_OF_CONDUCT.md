@@ -35,8 +35,8 @@ This Code of Conduct applies within project spaces and in public spaces when an 
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the maintainer(s) via:
-- GitHub issues (if appropriate), or
-- Email: TODO (add a contact email if you want private reporting)
+- GitHub issues, if the report is appropriate for a public project space.
+- For reports that involve private or security-sensitive information, follow `SECURITY.md`.
 
 All complaints will be reviewed and investigated promptly and fairly.
 

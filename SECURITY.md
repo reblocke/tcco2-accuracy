@@ -15,7 +15,8 @@ Please do **not** open a public issue for security-sensitive reports.
 
 Preferred reporting paths:
 1. Use GitHub **Private Vulnerability Reporting** (Security tab → “Report a vulnerability”), if enabled.
-2. Otherwise email the maintainer: TODO (add an email address).
+2. If private vulnerability reporting is unavailable, contact the repository owner through GitHub before
+   sharing sensitive details.
 
 Include:
 - A clear description of the issue and potential impact

@@ -5,8 +5,8 @@
 - Let d = PaCO2 − TcCO2 (mmHg) to match Conway notation.
 
 ## Scope
-- This document will capture intended behavior for the Python port.
-- Meta-analysis, simulation, and inference details will be expanded as milestones land.
+- This document captures intended behavior for the Python package, workflows, and app-facing inference API.
+- Public-facing summaries should describe outputs as research estimates with uncertainty, not clinical validation.
 
 ## Bootstrap uncertainty propagation
 - Bootstrap modes: `cluster_only` (study-level resampling) and `cluster_plus_withinstudy`
@@ -18,7 +18,9 @@
   between-study variance non-negative (Table 1 reproduction uses untruncated τ²).
 
 ## In-silico PaCO2 distribution
-- Source file: `Data/In Silico TCCO2 Database.dta` (configurable path in loaders).
+- Source file: `Data/In Silico TCCO2 Database.dta` by package default, or an explicitly supplied `.dta`
+  path in workflow loaders.
+- Streamlit deployments use `Data/paco2_prior_bins.csv` by default so the app can run without the full `.dta`.
 - Use rows with non-missing `paco2`; PaCO2 values are in mmHg.
 - Treat `is_amb`, `is_emer`, `is_inp`, `cc_time` as binary flags (missing → 0).
 - Subgroup assignment is mutually exclusive, applied in order:

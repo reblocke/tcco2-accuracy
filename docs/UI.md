@@ -33,7 +33,8 @@ streamlit run streamlit_app.py
 - Canonical study table: `Data/conway_studies.csv` (or upload a CSV/XLSX).
 - PaCO2 priors (default): `Data/paco2_prior_bins.csv` with columns
   `group`, `paco2_bin`, `count`, `weight` (weights sum to 1 within each group).
-- Optional fallback: `Data/In Silico TCCO2 Database.dta` (not required for Streamlit Cloud).
+- Optional fallback: the full in-silico `.dta` at the configured package default path,
+  `Data/In Silico TCCO2 Database.dta` (not required for Streamlit Cloud).
 
 You can upload a custom binned prior CSV/XLSX in the Advanced panel; it must include
 all four groups (`pft`, `ed_inp`, `icu`, `all`) so the UI can serve any setting.
