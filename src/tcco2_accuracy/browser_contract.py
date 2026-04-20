@@ -8,7 +8,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from .data import _prior_values_from_bins, load_paco2_prior_bins_bytes
+from .data import load_paco2_prior_bins_bytes, prior_values_from_bins
 from .ui_api import build_subgroup_bootstrap_draws, predict_paco2_from_tcco2
 from .utils import validate_params_df
 from .validate_inputs import validate_conway_studies_df
@@ -28,7 +28,7 @@ def compute_ui_payload(payload: dict[str, Any]) -> dict[str, Any]:
     prior_source = "not_used"
     if mode == "prior_weighted":
         prior_bins = _required_frame(payload, "prior_bins")
-        prior_values = _prior_values_from_bins(prior_bins, subgroup)
+        prior_values = prior_values_from_bins(prior_bins, subgroup)
         prior_source = str(payload.get("prior_source") or "provided_bins")
 
     result = predict_paco2_from_tcco2(

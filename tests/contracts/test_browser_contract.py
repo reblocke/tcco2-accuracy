@@ -10,7 +10,7 @@ from tcco2_accuracy.browser_contract import build_bootstrap_payload, compute_ui_
 from tcco2_accuracy.data import PACO2_PRIOR_GROUPS
 from tcco2_accuracy.ui_api import predict_paco2_from_tcco2
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_browser_contract_matches_ui_api_canonical_prior_weighted() -> None:

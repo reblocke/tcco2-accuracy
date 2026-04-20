@@ -18,17 +18,19 @@
 - Seed = 202401
 
 ## Data Assets
-- `web/assets/data/conway_studies.csv` - staged canonical study table.
-- `web/assets/data/paco2_prior_bins.csv` - staged binned PaCO2 prior.
-- `web/assets/data/bootstrap_params.csv` - staged canonical bootstrap parameters.
-- `web/assets/py/tcco2_accuracy/` - staged Python package copied from `src/tcco2_accuracy/`.
+- `web/assets/data/conway_studies.csv` - generated staged canonical study table.
+- `web/assets/data/paco2_prior_bins.csv` - generated staged binned PaCO2 prior.
+- `web/assets/data/bootstrap_params.csv` - generated staged canonical bootstrap parameters.
+- `web/assets/py/tcco2_accuracy/` - generated staged Python package copied from the browser allowlist.
 
-Run `make stage-web` after changing Python browser-facing code or default data assets.
+Run `make stage-web` after changing Python browser-facing code or default data
+assets. Generated staged assets are not tracked.
 
 ## Browser Behavior
 - Default calculations use the staged canonical bootstrap parameters for responsiveness.
 - Uploaded study tables or changed bootstrap settings recompute bootstrap parameters in the browser worker using the same Python model.
 - Uploaded prior bins replace the staged default prior bins for prior-weighted inference.
+- The posterior chart uses a posterior-focused x-axis for readability; calculations still use the full posterior and prior support.
 - The browser app does not read local filesystem paths, store values, send user inputs to a backend, or encode patient values in URLs.
 
 ## Local Run

@@ -6,9 +6,12 @@
 - The importable Python package is `tcco2_accuracy` under `src/`.
 
 ## Repo Map
-- `src/tcco2_accuracy/` - Python package, numerical core, workflow modules, browser contract, and UI API.
-- `tests/` - package, workflow, staging, browser-contract, and E2E tests.
-- `web/` - static GitHub Pages app; staged Python lives under `web/assets/py/`.
+- `src/tcco2_accuracy/core/` - pure numerical/statistical code and input validation; no filesystem, web, artifact, or test dependencies.
+- `src/tcco2_accuracy/reporting/` - reviewer/manuscript table, figure-data, and snippet builders.
+- `src/tcco2_accuracy/workflows/` - workflow entry points and command-facing orchestration wrappers.
+- `src/tcco2_accuracy/` - compatibility wrappers, file/data I/O, browser contract, and UI API.
+- `tests/core/`, `tests/contracts/`, `tests/workflows/`, and `tests/e2e/` - purpose-specific QA/test code.
+- `web/` - static GitHub Pages app; generated staged Python/data assets are created under `web/assets/` by `make stage-web`.
 - `scripts/stage_web_python.py` - stages Python and data assets for the browser app.
 - `Data/` and `Conway Meta/` - source/reference data and supplements.
 - `artifacts/` - small derived outputs intended for review/manuscript workflows.
@@ -29,7 +32,7 @@
 1. Conway Thorax 2019 paper and supplementary methods/code in `Conway Meta/` and `Data/`.
 2. `docs/SPEC.md`, `docs/VALIDATION.md`, `docs/CONWAY_DATA_SCHEMA.md`, and `docs/DECISIONS.md`.
 3. Stata code in `Code/` as reference only; `Code/Legacy/` may contain bugs.
-4. Existing Python code, tests, browser contract tests, staged app assets, and artifacts.
+4. Existing Python code, tests, browser contract tests, and artifacts.
 
 When Stata conflicts with the paper or docs, implement the paper/docs and record the divergence in `docs/DECISIONS.md` or an ADR.
 
@@ -39,6 +42,7 @@ When Stata conflicts with the paper or docs, implement the paper/docs and record
 - Do not modify `Code/Legacy/` or `Drafts/` unless the user explicitly asks for that file family.
 - Do not commit patient-level or large raw extracts. Use small, de-identified fixtures under `tests/fixtures/`.
 - Keep core math pure and isolate I/O in package I/O, workflow modules, or the browser contract.
+- Do not edit generated `web/assets/py/` or `web/assets/data/` by hand; stage them from canonical sources.
 - Python remains the single numerical source of truth. JavaScript may manage UI state, uploads, worker calls, and plotting, but must not reimplement the statistical model.
 - Browser app changes must keep user-entered values client-side: no backend, telemetry, persistence, or PHI-bearing URLs unless explicitly approved.
 - Keep `pyproject.toml` and `uv.lock` authoritative for dependencies.

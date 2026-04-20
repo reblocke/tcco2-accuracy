@@ -5,13 +5,62 @@ from __future__ import annotations
 import io
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Sequence
 
 import numpy as np
 import pandas as pd
 
-from .utils import quantile_key
-from .validate_inputs import validate_conway_studies_df
+from .core.constants import (
+    CONWAY_SUBGROUP_FLAGS,
+    DEFAULT_PACO2_QUANTILES,
+    PACO2_PRIOR_GROUPS,
+    PACO2_PRIOR_REQUIRED_COLUMNS,
+    PACO2_REQUIRED_COLUMNS,
+    PACO2_SUBGROUP_ORDER,
+)
+from .core.paco2 import (
+    assign_paco2_subgroup,
+    build_paco2_prior_bins,
+    paco2_subgroup_summary,
+    prepare_paco2_distribution,
+    prior_values_from_bins,
+    validate_paco2_columns,
+    validate_paco2_prior_bins,
+)
+from .core.validate_inputs import validate_conway_studies_df
+
+__all__ = [
+    "CONWAY_DATA_PATH",
+    "CONWAY_LEGACY_DTA_PATH",
+    "CONWAY_SUBGROUP_FLAGS",
+    "CONWAY_XLSX_PATH",
+    "DEFAULT_PACO2_QUANTILES",
+    "INSILICO_PACO2_FALLBACK_PATHS",
+    "INSILICO_PACO2_PATH",
+    "PACO2_PRIOR_BINS_PATH",
+    "PACO2_PRIOR_BINS_XLSX_PATH",
+    "PACO2_PRIOR_GROUPS",
+    "PACO2_PRIOR_REQUIRED_COLUMNS",
+    "PACO2_REQUIRED_COLUMNS",
+    "PACO2_SUBGROUP_ORDER",
+    "PriorLoadError",
+    "PriorLoadResult",
+    "assign_paco2_subgroup",
+    "build_paco2_prior_bins",
+    "load_conway_data",
+    "load_conway_group",
+    "load_conway_studies",
+    "load_default_paco2_prior",
+    "load_paco2_distribution",
+    "load_paco2_prior",
+    "load_paco2_prior_bins",
+    "load_paco2_prior_bins_bytes",
+    "paco2_subgroup_summary",
+    "prepare_conway_meta_inputs",
+    "prepare_paco2_distribution",
+    "prior_values_from_bins",
+    "validate_paco2_columns",
+    "validate_paco2_prior_bins",
+]
 
 
 def _resolve_repo_root() -> Path:
@@ -32,18 +81,6 @@ INSILICO_PACO2_PATH = REPO_ROOT / "Data" / "In Silico TCCO2 Database.dta"
 INSILICO_PACO2_FALLBACK_PATHS = (REPO_ROOT / "Data" / "in_silico_tcco2_db.dta",)
 PACO2_PRIOR_BINS_PATH = REPO_ROOT / "Data" / "paco2_prior_bins.csv"
 PACO2_PRIOR_BINS_XLSX_PATH = REPO_ROOT / "Data" / "paco2_prior_bins.xlsx"
-
-CONWAY_SUBGROUP_FLAGS = {
-    "icu": "is_icu",
-    "arf": "is_arf",
-    "lft": "is_lft",
-}
-
-PACO2_REQUIRED_COLUMNS = {"paco2", "is_amb", "is_emer", "is_inp", "cc_time"}
-PACO2_SUBGROUP_ORDER = ("pft", "ed_inp", "icu")
-PACO2_PRIOR_GROUPS = ("pft", "ed_inp", "icu", "all")
-PACO2_PRIOR_REQUIRED_COLUMNS = {"group", "paco2_bin", "count", "weight"}
-DEFAULT_PACO2_QUANTILES: tuple[float, ...] = (0.025, 0.25, 0.5, 0.75, 0.975)
 
 
 @dataclass(frozen=True)
@@ -190,120 +227,6 @@ def load_paco2_distribution(path: Path | None = None) -> pd.DataFrame:
     return pd.read_stata(path, convert_categoricals=False)
 
 
-def prepare_paco2_distribution(data: pd.DataFrame) -> pd.DataFrame:
-    """Filter PaCO2 rows and assign subgroup labels."""
-
-    _validate_paco2_columns(data)
-    filtered = data.loc[data["paco2"].notna()].copy()
-    filtered["subgroup"] = assign_paco2_subgroup(filtered)
-    return filtered
-
-
-def assign_paco2_subgroup(data: pd.DataFrame) -> pd.Series:
-    """Assign mutually exclusive PaCO2 subgroup labels."""
-
-    _validate_paco2_columns(data)
-    is_amb = data["is_amb"].fillna(0).astype(int)
-    is_emer = data["is_emer"].fillna(0).astype(int)
-    is_inp = data["is_inp"].fillna(0).astype(int)
-    cc_time = data["cc_time"].fillna(0).astype(int)
-
-    pft_mask = is_amb == 1
-    icu_mask = (is_inp == 1) & (cc_time == 1) & (is_emer == 0) & (is_amb == 0)
-    ed_inp_mask = (is_emer == 1) | (is_inp == 1)
-
-    subgroup = pd.Series(
-        np.select([pft_mask, icu_mask, ed_inp_mask], ["pft", "icu", "ed_inp"], default=pd.NA),
-        index=data.index,
-        dtype="object",
-    )
-    if subgroup.isna().any():
-        raise ValueError("Unclassified PaCO2 records after subgroup assignment.")
-    return subgroup
-
-
-def paco2_subgroup_summary(
-    data: pd.DataFrame,
-    quantiles: Sequence[float] = DEFAULT_PACO2_QUANTILES,
-) -> pd.DataFrame:
-    """Summarize subgroup counts and PaCO2 quantiles."""
-
-    if "subgroup" in data.columns:
-        prepared = data.loc[data["paco2"].notna()].copy()
-    else:
-        prepared = prepare_paco2_distribution(data)
-
-    quantile_list = list(quantiles)
-    quantile_columns = [quantile_key("paco2", q) for q in quantile_list]
-    rows: list[dict[str, float | int | str]] = []
-    for group in PACO2_SUBGROUP_ORDER:
-        subset = prepared[prepared["subgroup"] == group]
-        if subset.empty:
-            continue
-        q_values = subset["paco2"].quantile(quantile_list, interpolation="linear")
-        row: dict[str, float | int | str] = {"group": group, "count": int(subset.shape[0])}
-        for q in quantile_list:
-            row[quantile_key("paco2", q)] = float(q_values.loc[q])
-        rows.append(row)
-
-    return pd.DataFrame(rows, columns=["group", "count", *quantile_columns])
-
-
-def build_paco2_prior_bins(
-    data: pd.DataFrame,
-    bin_width: float = 1.0,
-) -> pd.DataFrame:
-    """Return binned PaCO2 priors for each subgroup plus pooled "all".
-
-    The binned prior is shipped with the repo for deployment/CI portability so
-    the static browser app does not require the large in-silico .dta at runtime.
-    """
-
-    if bin_width <= 0:
-        raise ValueError("bin_width must be positive.")
-    prepared = data if "subgroup" in data.columns else prepare_paco2_distribution(data)
-    frames: list[pd.DataFrame] = []
-    binned_counts: dict[str, pd.Series] = {}
-    for group in PACO2_SUBGROUP_ORDER:
-        values = prepared.loc[prepared["subgroup"] == group, "paco2"].to_numpy(dtype=float)
-        if values.size == 0:
-            raise ValueError(f"No PaCO2 values available for subgroup '{group}'.")
-        bins = np.round(values / bin_width) * bin_width
-        counts = pd.Series(bins).value_counts().sort_index()
-        total = float(counts.sum())
-        frame = pd.DataFrame(
-            {
-                "group": group,
-                "paco2_bin": counts.index.astype(float),
-                "count": counts.to_numpy(dtype=int),
-                # Weights encode the empirical PaCO2 pretest distribution per subgroup.
-                "weight": counts.to_numpy(dtype=float) / total,
-            }
-        )
-        frames.append(frame)
-        binned_counts[group] = counts
-
-    # Pool subgroup bins weighted by subgroup sample sizes (equivalent to pooling raw data).
-    all_counts: pd.Series | None = None
-    for counts in binned_counts.values():
-        all_counts = counts if all_counts is None else all_counts.add(counts, fill_value=0)
-    if all_counts is None:
-        raise ValueError("Unable to pool PaCO2 prior bins across subgroups.")
-    all_total = float(all_counts.sum())
-    all_frame = pd.DataFrame(
-        {
-            "group": "all",
-            "paco2_bin": all_counts.index.astype(float),
-            "count": all_counts.to_numpy(dtype=int),
-            "weight": all_counts.to_numpy(dtype=float) / all_total,
-        }
-    )
-    frames.append(all_frame)
-
-    result = pd.concat(frames, ignore_index=True)
-    return _validate_paco2_prior_bins(result)
-
-
 def load_paco2_prior_bins(path: Path) -> pd.DataFrame:
     """Load a binned PaCO2 prior table from CSV/XLSX."""
 
@@ -313,7 +236,7 @@ def load_paco2_prior_bins(path: Path) -> pd.DataFrame:
         data = pd.read_excel(path)
     else:
         raise ValueError(f"Unsupported prior bin format: {path.suffix}")
-    return _validate_paco2_prior_bins(data)
+    return validate_paco2_prior_bins(data)
 
 
 def load_paco2_prior_bins_bytes(file_bytes: bytes, filename: str) -> pd.DataFrame:
@@ -326,7 +249,7 @@ def load_paco2_prior_bins_bytes(file_bytes: bytes, filename: str) -> pd.DataFram
         data = pd.read_excel(buffer)
     else:
         raise ValueError("Uploaded prior must be CSV/XLSX.")
-    return _validate_paco2_prior_bins(data)
+    return validate_paco2_prior_bins(data)
 
 
 def load_default_paco2_prior(
@@ -344,7 +267,7 @@ def load_default_paco2_prior(
         raise FileNotFoundError(f"Default PaCO2 prior bins not found: {bins_path}")
     bins = load_paco2_prior_bins(bins_path)
     # "all" is a pooled prior weighted by subgroup sample sizes.
-    return _prior_values_from_bins(bins, subgroup.strip().lower())
+    return prior_values_from_bins(bins, subgroup.strip().lower())
 
 
 def load_paco2_prior(
@@ -363,7 +286,7 @@ def load_paco2_prior(
 
     if uploaded_bytes is not None:
         bins = load_paco2_prior_bins_bytes(uploaded_bytes, uploaded_name or "prior.csv")
-        values = _prior_values_from_bins(bins, subgroup_key)
+        values = prior_values_from_bins(bins, subgroup_key)
         return PriorLoadResult(
             values=values,
             bins=bins,
@@ -377,7 +300,7 @@ def load_paco2_prior(
         # Binned weights represent the empirical PaCO2 pretest distribution.
         bins = load_paco2_prior_bins(bins_path)
         # "all" is a pooled prior weighted by subgroup sample sizes.
-        values = _prior_values_from_bins(bins, subgroup_key)
+        values = prior_values_from_bins(bins, subgroup_key)
         return PriorLoadResult(
             values=values,
             bins=bins,
@@ -416,48 +339,6 @@ def load_paco2_prior(
     )
 
 
-def _validate_paco2_prior_bins(data: pd.DataFrame) -> pd.DataFrame:
-    prior = data.copy()
-    if "group" not in prior.columns and "subgroup" in prior.columns:
-        prior = prior.rename(columns={"subgroup": "group"})
-    missing = PACO2_PRIOR_REQUIRED_COLUMNS - set(prior.columns)
-    if missing:
-        raise ValueError(f"Missing prior bin columns: {sorted(missing)}")
-    prior["group"] = prior["group"].astype(str).str.strip().str.lower()
-    prior["paco2_bin"] = pd.to_numeric(prior["paco2_bin"], errors="coerce")
-    prior["count"] = pd.to_numeric(prior["count"], errors="coerce")
-    prior["weight"] = pd.to_numeric(prior["weight"], errors="coerce")
-    if not np.all(np.isfinite(prior["paco2_bin"])):
-        raise ValueError("Non-finite PaCO2 bin values in prior.")
-    if not np.all(np.isfinite(prior["count"])):
-        raise ValueError("Non-finite counts in prior.")
-    if not np.all(np.isfinite(prior["weight"])):
-        raise ValueError("Non-finite weights in prior.")
-    if np.any(prior["count"] < 0):
-        raise ValueError("Prior counts must be non-negative.")
-    if np.any(prior["weight"] < 0):
-        raise ValueError("Prior weights must be non-negative.")
-    groups = set(prior["group"])
-    missing_groups = set(PACO2_PRIOR_GROUPS) - groups
-    if missing_groups:
-        raise ValueError(f"Prior bins missing groups: {sorted(missing_groups)}")
-    weight_sums = prior.groupby("group")["weight"].sum()
-    if not np.allclose(weight_sums.to_numpy(dtype=float), 1.0, atol=1e-6):
-        raise ValueError("Prior weights must sum to 1 within each group.")
-    return prior
-
-
-def _prior_values_from_bins(prior_bins: pd.DataFrame, group: str) -> np.ndarray:
-    subset = prior_bins.loc[prior_bins["group"] == group]
-    if subset.empty:
-        raise ValueError(f"No binned priors available for group '{group}'.")
-    return np.repeat(
-        subset["paco2_bin"].to_numpy(dtype=float),
-        subset["count"].to_numpy(dtype=int),
-    )
-
-
-def _validate_paco2_columns(data: pd.DataFrame) -> None:
-    missing = PACO2_REQUIRED_COLUMNS - set(data.columns)
-    if missing:
-        raise ValueError(f"Missing PaCO2 columns: {sorted(missing)}")
+_validate_paco2_prior_bins = validate_paco2_prior_bins
+_prior_values_from_bins = prior_values_from_bins
+_validate_paco2_columns = validate_paco2_columns

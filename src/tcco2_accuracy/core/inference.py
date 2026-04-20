@@ -35,7 +35,8 @@ from ._posterior import (
 from ._posterior import (
     weighted_quantile as _weighted_quantile,
 )
-from .data import PACO2_SUBGROUP_ORDER, prepare_paco2_distribution
+from .constants import PACO2_SUBGROUP_ORDER
+from .paco2 import prepare_paco2_distribution
 from .simulation import DEFAULT_CLASSIFICATION_THRESHOLDS
 from .utils import validate_params_df
 

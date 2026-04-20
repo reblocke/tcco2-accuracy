@@ -18,7 +18,7 @@ from tcco2_accuracy.simulation import (
     summarize_simulation_metrics,
 )
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 BOOTSTRAP_PATH = REPO_ROOT / "artifacts" / "bootstrap_params.csv"
 
 

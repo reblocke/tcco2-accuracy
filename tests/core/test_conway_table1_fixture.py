@@ -4,7 +4,7 @@ import csv
 import math
 from pathlib import Path
 
-FIXTURE_PATH = Path(__file__).parent / "fixtures" / "conway_table1.csv"
+FIXTURE_PATH = Path(__file__).resolve().parents[1] / "fixtures" / "conway_table1.csv"
 EXPECTED_COLUMNS = [
     "population",
     "studies",

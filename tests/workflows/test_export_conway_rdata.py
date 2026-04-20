@@ -12,7 +12,7 @@ from tcco2_accuracy.validate_inputs import validate_conway_studies_df
 
 def test_export_conway_rdata_roundtrip(tmp_path: Path) -> None:
     pytest.importorskip("pyreadr")
-    root = Path(__file__).resolve().parents[1]
+    root = Path(__file__).resolve().parents[2]
     rdata_path = root / "Data" / "data.Rdata"
     if not rdata_path.exists():
         pytest.skip("Conway data.Rdata not available.")
