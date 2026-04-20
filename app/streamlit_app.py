@@ -17,12 +17,10 @@ from tcco2_accuracy.data import (
     REPO_ROOT,
     PriorLoadResult,
     load_paco2_prior,
-    prepare_conway_meta_inputs,
 )
-from tcco2_accuracy.bootstrap import BOOTSTRAP_MODES, bootstrap_conway_parameters
-from tcco2_accuracy.simulation import PACO2_TO_CONWAY_GROUP
+from tcco2_accuracy.bootstrap import BOOTSTRAP_MODES
 from tcco2_accuracy.validate_inputs import validate_conway_studies_df
-from tcco2_accuracy.ui_api import predict_paco2_from_tcco2
+from tcco2_accuracy.ui_api import build_subgroup_bootstrap_draws, predict_paco2_from_tcco2
 
 
 DEFAULT_STUDY_TABLE_PATH = REPO_ROOT / "Data" / "conway_studies.csv"
@@ -90,25 +88,12 @@ def _bootstrap_draws(
     bootstrap_mode: str,
     studies: pd.DataFrame,
 ) -> pd.DataFrame:
-    # "All" uses Conway main-analysis parameters (all studies).
-    group_key = PACO2_TO_CONWAY_GROUP.get(subgroup, subgroup)
-    if group_key == "icu":
-        subset = studies[studies["is_icu"].astype(bool)]
-    elif group_key == "arf":
-        subset = studies[studies["is_arf"].astype(bool)]
-    elif group_key == "lft":
-        subset = studies[studies["is_lft"].astype(bool)]
-    else:
-        subset = studies
-    if subset.empty:
-        raise ValueError(f"No studies available for Conway group '{group_key}'.")
-    conway_inputs = prepare_conway_meta_inputs(subset)
-    draws = bootstrap_conway_parameters(
-        conway_inputs,
+    draws = build_subgroup_bootstrap_draws(
+        studies=studies,
+        subgroup=subgroup,
         n_boot=n_boot,
         seed=seed,
         bootstrap_mode=bootstrap_mode,
-        truncate_tau2=True,
     )
     _ = table_hash
     return draws

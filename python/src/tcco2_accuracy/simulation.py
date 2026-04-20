@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import math
-import warnings
 from typing import Sequence
 
 import numpy as np
 import pandas as pd
 from scipy import stats
 
+from ._params import PACO2_TO_CONWAY_GROUP as PACO2_TO_CONWAY_GROUP, select_group_params
 from .bland_altman import loa_bounds, total_sd
 from .data import PACO2_SUBGROUP_ORDER, prepare_paco2_distribution
 from .utils import quantile_key, safe_ratio, safe_ratio_inf, validate_params_df
@@ -18,13 +18,6 @@ from .utils import quantile_key, safe_ratio, safe_ratio_inf, validate_params_df
 DEFAULT_CLASSIFICATION_THRESHOLDS: tuple[float, ...] = (45.0,)
 DEFAULT_D_QUANTILES: tuple[float, ...] = (0.025, 0.975)
 DEFAULT_SUMMARY_QUANTILES: tuple[float, ...] = (0.025, 0.5, 0.975)
-PACO2_TO_CONWAY_GROUP: dict[str, str] = {
-    "pft": "lft",
-    "ed_inp": "arf",
-    "icu": "icu",
-    # "All" uses Conway main-analysis parameters (all studies).
-    "all": "main",
-}
 
 
 def simulate_forward(
@@ -38,21 +31,10 @@ def simulate_forward(
 ) -> pd.DataFrame:
     prepared = paco2_data if "subgroup" in paco2_data.columns else prepare_paco2_distribution(paco2_data)
     random_state = np.random.default_rng(seed)
-    available_groups = set(params["group"]) if "group" in params.columns else set()
     frames: list[pd.DataFrame] = []
     for subgroup in PACO2_SUBGROUP_ORDER:
         paco2_values = prepared.loc[prepared["subgroup"] == subgroup, "paco2"].to_numpy(dtype=float)
-        if "group" in params.columns:
-            group_key = subgroup if subgroup in available_groups else PACO2_TO_CONWAY_GROUP.get(subgroup, subgroup)
-            group_params = params[params["group"] == group_key]
-        else:
-            group_params = params
-        if group_params.empty:
-            warnings.warn(
-                f"No parameters found for subgroup '{subgroup}'; falling back to all params.",
-                UserWarning,
-            )
-            group_params = params
+        group_params = select_group_params(params, subgroup)
         if n_draws is not None and n_draws < group_params.shape[0]:
             chosen = random_state.choice(group_params.index.to_numpy(), size=n_draws, replace=True)
             group_params = group_params.loc[chosen].reset_index(drop=True)

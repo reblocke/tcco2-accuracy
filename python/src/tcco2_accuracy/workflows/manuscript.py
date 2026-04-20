@@ -9,6 +9,8 @@ from typing import Iterable, Sequence
 import numpy as np
 import pandas as pd
 
+from .._files import write_text
+from .._params import select_group_params
 from ..bland_altman import loa_bounds
 from ..conditional import conditional_classification_curves
 from ..data import PACO2_SUBGROUP_ORDER, load_paco2_distribution, prepare_paco2_distribution
@@ -16,7 +18,6 @@ from ..inference import infer_paco2, infer_paco2_by_subgroup
 from ..simulation import (
     DEFAULT_CLASSIFICATION_THRESHOLDS,
     DEFAULT_SUMMARY_QUANTILES,
-    PACO2_TO_CONWAY_GROUP,
     simulate_forward,
     simulate_forward_metrics,
     summarize_simulation_metrics,
@@ -175,20 +176,20 @@ def run_manuscript_outputs(
         out_dir = Path(out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
         _write_csv(out_dir / "manuscript_parameters.csv", parameters)
-        _write_text(out_dir / "manuscript_parameters.md", parameters_md)
+        write_text(out_dir / "manuscript_parameters.md", parameters_md)
         _write_csv(out_dir / "manuscript_table1.csv", table1)
-        _write_text(out_dir / "manuscript_table1.md", table1_md)
+        write_text(out_dir / "manuscript_table1.md", table1_md)
         _write_csv(out_dir / "manuscript_confusion_matrix.csv", confusion_matrix)
-        _write_text(out_dir / "manuscript_confusion_matrix.md", confusion_md)
+        write_text(out_dir / "manuscript_confusion_matrix.md", confusion_md)
         _write_csv(out_dir / "two_stage_summary.csv", two_stage_summary)
-        _write_text(out_dir / "two_stage_summary.md", two_stage_md)
+        write_text(out_dir / "two_stage_summary.md", two_stage_md)
         _write_csv(out_dir / "manuscript_table2_two_stage.csv", table2)
-        _write_text(out_dir / "manuscript_table2_two_stage.md", table2_md)
+        write_text(out_dir / "manuscript_table2_two_stage.md", table2_md)
         _write_csv(out_dir / "manuscript_table3_prediction_intervals.csv", prediction_intervals)
-        _write_text(out_dir / "manuscript_table3_prediction_intervals.md", table3_md)
+        write_text(out_dir / "manuscript_table3_prediction_intervals.md", table3_md)
         _write_csv(out_dir / "figure_paco2_distribution_bins.csv", paco2_bins)
         _write_csv(out_dir / "figure_misclassification_vs_paco2.csv", misclassification_curves)
-        _write_text(out_dir / "manuscript_results_snippets.md", snippets)
+        write_text(out_dir / "manuscript_results_snippets.md", snippets)
 
     invariants = {
         "groups": int(table1["group"].nunique()) if not table1.empty else 0,
@@ -277,8 +278,12 @@ def _simulate_with_all(
     )
 
     paco2_values = paco2_data["paco2"].to_numpy(dtype=float)
-    available_groups = set(params["group"]) if "group" in params.columns else set()
-    group_params = _select_group_params(params, "all", available_groups)
+    group_params = select_group_params(
+        params,
+        "all",
+        warn_on_fallback=False,
+        map_all_to_main=True,
+    )
     if n_draws is not None and n_draws < group_params.shape[0]:
         chosen = rng.choice(group_params.index.to_numpy(), size=n_draws, replace=True)
         group_params = group_params.loc[chosen].reset_index(drop=True)
@@ -384,14 +389,18 @@ def _build_two_stage_summary(
     seed: int | None,
 ) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
-    available_groups = set(params["group"]) if "group" in params.columns else set()
     frames: list[pd.DataFrame] = []
 
     for subgroup in PACO2_SUBGROUP_ORDER:
         paco2_values = prepared.loc[prepared["subgroup"] == subgroup, "paco2"].to_numpy(dtype=float)
         if paco2_values.size == 0:
             continue
-        group_params = _select_group_params(params, subgroup, available_groups)
+        group_params = select_group_params(
+            params,
+            subgroup,
+            warn_on_fallback=False,
+            map_all_to_main=True,
+        )
         summary = summarize_two_stage_draws(
             paco2_values,
             group_params,
@@ -403,7 +412,12 @@ def _build_two_stage_summary(
         frames.append(summary)
 
     paco2_values = prepared["paco2"].to_numpy(dtype=float)
-    all_params = _select_group_params(params, "all", available_groups)
+    all_params = select_group_params(
+        params,
+        "all",
+        warn_on_fallback=False,
+        map_all_to_main=True,
+    )
     all_summary = summarize_two_stage_draws(
         paco2_values,
         all_params,
@@ -433,7 +447,6 @@ def _build_prediction_table(
     include_prior: bool,
 ) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
-    available_groups = set(params["group"]) if "group" in params.columns else set()
     likelihood = infer_paco2_by_subgroup(
         tcco2_values,
         prepared,
@@ -456,7 +469,12 @@ def _build_prediction_table(
         )
 
     all_paco2 = prepared["paco2"].to_numpy(dtype=float)
-    all_params = _select_group_params(params, "all", available_groups)
+    all_params = select_group_params(
+        params,
+        "all",
+        warn_on_fallback=False,
+        map_all_to_main=True,
+    )
     all_likelihood = infer_paco2(
         tcco2_values,
         all_params,
@@ -535,13 +553,17 @@ def _build_misclassification_curves(
     seed: int | None,
 ) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
-    available_groups = set(params["group"]) if "group" in params.columns else set()
     frames: list[pd.DataFrame] = []
     for subgroup in PACO2_SUBGROUP_ORDER:
         paco2_values = prepared.loc[prepared["subgroup"] == subgroup, "paco2"].to_numpy(dtype=float)
         if paco2_values.size == 0:
             continue
-        group_params = _select_group_params(params, subgroup, available_groups)
+        group_params = select_group_params(
+            params,
+            subgroup,
+            warn_on_fallback=False,
+            map_all_to_main=True,
+        )
         curves = conditional_classification_curves(
             paco2_values,
             group_params,
@@ -554,7 +576,12 @@ def _build_misclassification_curves(
         frames.append(curves)
 
     all_paco2 = prepared["paco2"].to_numpy(dtype=float)
-    all_params = _select_group_params(params, "all", available_groups)
+    all_params = select_group_params(
+        params,
+        "all",
+        warn_on_fallback=False,
+        map_all_to_main=True,
+    )
     all_curves = conditional_classification_curves(
         all_paco2,
         all_params,
@@ -570,23 +597,6 @@ def _build_misclassification_curves(
     for label in ("q025", "q50", "q975"):
         curves[f"misclass_{label}"] = curves[f"fp_{label}"] + curves[f"fn_{label}"]
     return curves
-
-
-def _select_group_params(
-    params: pd.DataFrame,
-    subgroup: str,
-    available_groups: set[str],
-) -> pd.DataFrame:
-    if "group" not in params.columns:
-        return params
-    if subgroup == "all":
-        group_key = "main"
-    else:
-        group_key = subgroup if subgroup in available_groups else PACO2_TO_CONWAY_GROUP.get(subgroup, subgroup)
-    subset = params[params["group"] == group_key]
-    if subset.empty:
-        return params
-    return subset
 
 
 def _order_groups(df: pd.DataFrame) -> pd.DataFrame:
@@ -1012,8 +1022,3 @@ def _has_nan(values: Sequence[float | int | None]) -> bool:
 def _write_csv(path: Path, frame: pd.DataFrame) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     frame.to_csv(path, index=False)
-
-
-def _write_text(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content)

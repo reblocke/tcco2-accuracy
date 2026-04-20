@@ -8,6 +8,7 @@ from typing import Iterable
 
 import pandas as pd
 
+from .._files import write_text
 from ..bootstrap import bootstrap_group_draws
 from ..data import load_conway_group
 from ..io import CONWAY_GROUPS, bootstrap_loa_summary, format_bootstrap_summary, write_bootstrap_params
@@ -79,7 +80,7 @@ def run_bootstrap(
     if out_dir is not None:
         out_dir = Path(out_dir)
         write_bootstrap_params(out_dir / "bootstrap_params.csv", draws)
-        _write_text(out_dir / "bootstrap_summary.md", markdown)
+        write_text(out_dir / "bootstrap_summary.md", markdown)
     invariants = {
         "groups": int(summary.shape[0]),
         "n_boot": int(n_boot),
@@ -87,8 +88,3 @@ def run_bootstrap(
         "bootstrap_mode": bootstrap_mode,
     }
     return BootstrapWorkflowResult(draws=draws, summary=summary, invariants=invariants, markdown=markdown)
-
-
-def _write_text(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content)
