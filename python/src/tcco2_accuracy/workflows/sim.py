@@ -8,6 +8,7 @@ from typing import Sequence
 
 import pandas as pd
 
+from .._files import write_text
 from ..data import load_paco2_distribution
 from ..io import (
     DEFAULT_CLASSIFICATION_THRESHOLDS,
@@ -83,15 +84,10 @@ def run_forward_simulation_summary(
     n_boot_per_group = n_draws_per_group(params)
     markdown = format_simulation_summary(summary, thresholds=thresholds, n_boot=n_boot_per_group, mode=mode)
     if out_dir is not None:
-        _write_text(Path(out_dir) / "simulation_summary.md", markdown)
+        write_text(Path(out_dir) / "simulation_summary.md", markdown)
     invariants = {
         "groups": int(summary["group"].nunique()) if not summary.empty else 0,
         "thresholds": ",".join(f"{value:g}" for value in thresholds),
         "mode": mode,
     }
     return SimulationWorkflowResult(summary=summary, invariants=invariants, markdown=markdown)
-
-
-def _write_text(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content)

@@ -8,6 +8,7 @@ from typing import Sequence
 
 import pandas as pd
 
+from .._files import write_text
 from ..data import (
     DEFAULT_PACO2_QUANTILES,
     PACO2_SUBGROUP_ORDER,
@@ -61,7 +62,7 @@ def run_paco2_summary(
         source = "Data/In Silico TCCO2 Database.dta"
     markdown = format_paco2_summary(summary, source=source)
     if out_dir is not None:
-        _write_text(Path(out_dir) / "paco2_distribution_summary.md", markdown)
+        write_text(Path(out_dir) / "paco2_distribution_summary.md", markdown)
     counts = prepared["subgroup"].value_counts()
     invariants = {
         "total": int(prepared.shape[0]),
@@ -102,8 +103,3 @@ def _quantile_label(column: str) -> str:
     value = int(column.split("q")[1]) / 10
     label = f"{value:g}"
     return f"PaCO2 q{label}"
-
-
-def _write_text(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content)

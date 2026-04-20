@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
-import warnings
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
+from .._files import write_text
+from .._params import select_group_params
 from ..conditional import conditional_classification_curves
 from ..data import PACO2_SUBGROUP_ORDER, load_paco2_distribution, prepare_paco2_distribution
-from ..simulation import DEFAULT_SUMMARY_QUANTILES, PACO2_TO_CONWAY_GROUP
+from ..simulation import DEFAULT_SUMMARY_QUANTILES
 from ..utils import n_draws_per_group, threshold_label
 from . import bootstrap as bootstrap_workflow
 
@@ -63,23 +64,12 @@ def run_conditional_classification(
     prepared = paco2_data if "subgroup" in paco2_data.columns else prepare_paco2_distribution(paco2_data)
 
     rng = np.random.default_rng(seed)
-    available_groups = set(params["group"]) if "group" in params.columns else set()
     frames: list[pd.DataFrame] = []
     for subgroup in PACO2_SUBGROUP_ORDER:
         paco2_values = prepared.loc[prepared["subgroup"] == subgroup, "paco2"].to_numpy(dtype=float)
         if paco2_values.size == 0:
             continue
-        if "group" in params.columns:
-            group_key = subgroup if subgroup in available_groups else PACO2_TO_CONWAY_GROUP.get(subgroup, subgroup)
-            group_params = params[params["group"] == group_key]
-        else:
-            group_params = params
-        if group_params.empty:
-            warnings.warn(
-                f"No parameters found for subgroup '{subgroup}'; falling back to all params.",
-                UserWarning,
-            )
-            group_params = params
+        group_params = select_group_params(params, subgroup)
         group_seed = int(rng.integers(0, np.iinfo(np.uint32).max))
         curves = conditional_classification_curves(
             paco2_values,
@@ -109,7 +99,7 @@ def run_conditional_classification(
         out_dir.mkdir(parents=True, exist_ok=True)
         token = threshold_label(threshold)
         curves.to_csv(out_dir / f"conditional_classification_t{token}.csv", index=False)
-        _write_text(out_dir / f"conditional_classification_t{token}.md", markdown)
+        write_text(out_dir / f"conditional_classification_t{token}.md", markdown)
 
     invariants = {
         "groups": int(curves["group"].nunique()) if not curves.empty else 0,
@@ -154,8 +144,3 @@ def format_conditional_summary(
         ]
     )
     return "\n".join(lines)
-
-
-def _write_text(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content)

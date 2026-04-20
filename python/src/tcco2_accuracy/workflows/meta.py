@@ -9,6 +9,7 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
+from .._files import write_text
 from ..conway_meta import conway_group_summary
 from ..data import load_conway_group
 from ..io import CONWAY_GROUPS
@@ -106,7 +107,7 @@ def run_meta_checks(
         source = "Data/conway_studies.csv"
     markdown = format_meta_summary(summary_frame, source=source)
     if out_dir is not None:
-        _write_text(Path(out_dir) / "meta_loa_check.md", markdown)
+        write_text(Path(out_dir) / "meta_loa_check.md", markdown)
     return MetaWorkflowResult(summary=summary_frame, invariants=invariants, markdown=markdown)
 
 
@@ -158,8 +159,3 @@ def _meta_invariants(summary: pd.DataFrame) -> dict[str, float | int | str]:
         "max_loa_abs_error": max_abs_error,
         "total_pairs": int(summary["n_pairs"].sum()),
     }
-
-
-def _write_text(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content)

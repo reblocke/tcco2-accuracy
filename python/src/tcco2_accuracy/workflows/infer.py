@@ -8,6 +8,7 @@ from typing import Sequence
 
 import pandas as pd
 
+from .._files import write_text
 from ..data import PACO2_SUBGROUP_ORDER, load_paco2_distribution, prepare_paco2_distribution
 from ..inference import infer_paco2_by_subgroup
 from ..simulation import DEFAULT_CLASSIFICATION_THRESHOLDS
@@ -105,7 +106,7 @@ def run_inference_demo(
         paco2_data=paco2_data,
     )
     if out_dir is not None:
-        _write_text(Path(out_dir) / "inference_demo.md", markdown)
+        write_text(Path(out_dir) / "inference_demo.md", markdown)
     invariants = {
         "groups": int(summary["group"].nunique()) if not summary.empty else 0,
         "tcco2_values": ",".join(f"{value:g}" for value in tcco2_values),
@@ -207,8 +208,3 @@ def _combine_modes(likelihood: pd.DataFrame, prior: pd.DataFrame | None) -> pd.D
 
 def _format_interval(row: pd.Series) -> str:
     return f"{row['paco2_q500']:.2f} [{row['paco2_q025']:.2f}, {row['paco2_q975']:.2f}]"
-
-
-def _write_text(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(content)
