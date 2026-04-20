@@ -15,7 +15,7 @@ from tcco2_accuracy.data import (
     prepare_paco2_distribution,
 )
 
-FIXTURE_PATH = Path(__file__).resolve().parent / "fixtures" / "paco2_distribution_summary.csv"
+FIXTURE_PATH = Path(__file__).resolve().parents[1] / "fixtures" / "paco2_distribution_summary.csv"
 
 
 @pytest.fixture()

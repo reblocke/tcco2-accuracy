@@ -13,6 +13,35 @@ DEFAULT_DATA_ASSETS = {
     "bootstrap_params.csv": Path("artifacts/bootstrap_params.csv"),
 }
 
+BROWSER_PYTHON_FILES = (
+    "__init__.py",
+    "_files.py",
+    "_params.py",
+    "_posterior.py",
+    "bland_altman.py",
+    "bootstrap.py",
+    "browser_contract.py",
+    "conway_meta.py",
+    "data.py",
+    "inference.py",
+    "simulation.py",
+    "ui_api.py",
+    "utils.py",
+    "validate_inputs.py",
+    "core/__init__.py",
+    "core/_params.py",
+    "core/_posterior.py",
+    "core/bland_altman.py",
+    "core/bootstrap.py",
+    "core/constants.py",
+    "core/conway_meta.py",
+    "core/inference.py",
+    "core/paco2.py",
+    "core/simulation.py",
+    "core/utils.py",
+    "core/validate_inputs.py",
+)
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -36,11 +65,14 @@ def stage_web_python(repo_root: Path, web_dir: Path | None = None) -> dict[str, 
     if package_dst.exists():
         shutil.rmtree(package_dst)
     package_dst.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(
-        package_src,
-        package_dst,
-        ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "workflows"),
-    )
+    package_dst.mkdir(parents=True, exist_ok=True)
+    for relative_name in BROWSER_PYTHON_FILES:
+        source = package_src / relative_name
+        if not source.exists():
+            raise FileNotFoundError(f"Required browser Python file not found: {source}")
+        destination = package_dst / relative_name
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
 
     data_dst.mkdir(parents=True, exist_ok=True)
     staged_data: list[str] = []

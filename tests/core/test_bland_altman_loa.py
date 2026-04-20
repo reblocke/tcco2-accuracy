@@ -7,7 +7,7 @@ import pytest
 
 from tcco2_accuracy.bland_altman import loa_bounds
 
-FIXTURE_PATH = Path(__file__).parent / "fixtures" / "conway_table1.csv"
+FIXTURE_PATH = Path(__file__).resolve().parents[1] / "fixtures" / "conway_table1.csv"
 
 
 def _load_main_analysis_row() -> dict[str, str]:

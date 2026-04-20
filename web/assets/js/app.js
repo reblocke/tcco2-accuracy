@@ -153,9 +153,13 @@ function renderResult(result) {
       `True negative: ${result.p_true_negative.toFixed(3)} · ` +
       `False negative: ${result.p_false_negative.toFixed(3)}`;
   }
+  const chartInfo = renderChart(result);
+  const thresholdNote = chartInfo.thresholdInRange
+    ? ""
+    : " Threshold marker is outside the focused plot range.";
   elements.caption.textContent =
-    `Posterior mass above threshold: ${(result.p_ge_threshold * 100).toFixed(1)}%.`;
-  renderChart(result);
+    `Posterior mass above threshold: ${(result.p_ge_threshold * 100).toFixed(1)}%.` +
+    thresholdNote;
 }
 
 function renderChart(result) {
@@ -188,12 +192,14 @@ function renderChart(result) {
     [result.paco2_median, "Median", "rgba(23, 32, 38, 0.92)", "solid"],
     [result.paco2_q_high, "PI high", "rgba(23, 32, 38, 0.55)", "dot"],
   ];
+  const displayRange = posteriorDisplayRange(result, verticals);
+  const annotations = markerAnnotations(verticals, displayRange);
   const layout = {
     title: "Posterior PaCO2 distribution conditioned on observed TcCO2",
-    xaxis: { title: "PaCO2 (mmHg)" },
+    xaxis: { title: "PaCO2 (mmHg)", range: displayRange.range },
     yaxis: { title: "Posterior probability" },
     bargap: 0.05,
-    margin: { t: 52, r: 20, b: 58, l: 66 },
+    margin: { t: 96, r: 20, b: 58, l: 66 },
     shapes: verticals.map(([x, , color, dash]) => ({
       type: "line",
       x0: x,
@@ -204,21 +210,118 @@ function renderChart(result) {
       yref: "paper",
       line: { color, dash, width: 2 },
     })),
-    annotations: verticals.map(([x, label]) => ({
-      x,
-      y: 1,
-      xref: "x",
-      yref: "paper",
-      yanchor: "bottom",
-      text: label,
-      showarrow: false,
-      font: { size: 11 },
-    })),
+    annotations,
   };
   globalThis.Plotly.newPlot(elements.chart, traces, layout, {
     responsive: true,
     displayModeBar: false,
   });
+  return {
+    thresholdInRange:
+      result.threshold >= displayRange.range[0] && result.threshold <= displayRange.range[1],
+  };
+}
+
+function posteriorDisplayRange(result, verticals) {
+  const bins = result.paco2_bin.map(Number);
+  const probabilities = result.posterior_prob.map(Number);
+  if (bins.length === 0 || bins.length !== probabilities.length) {
+    return { range: [0, 1] };
+  }
+
+  const cdf = [];
+  let total = 0;
+  for (const probability of probabilities) {
+    total += Number.isFinite(probability) && probability > 0 ? probability : 0;
+    cdf.push(total);
+  }
+  if (total <= 0) {
+    return { range: [Math.min(...bins), Math.max(...bins)] };
+  }
+
+  const lower = valueAtMass(bins, cdf, total * 0.005);
+  const upper = valueAtMass(bins, cdf, total * 0.995);
+  let values = [lower, upper, result.paco2_q_low, result.paco2_median, result.paco2_q_high]
+    .map(Number)
+    .filter(Number.isFinite);
+  let focusMin = Math.min(...values);
+  let focusMax = Math.max(...values);
+  let focusWidth = Math.max(focusMax - focusMin, binWidthFromBins(bins), 1);
+
+  const threshold = Number(result.threshold);
+  const nearDistance = Math.max(focusWidth * 0.5, 5);
+  if (Number.isFinite(threshold) && threshold >= focusMin - nearDistance && threshold <= focusMax + nearDistance) {
+    values = [...values, threshold];
+    focusMin = Math.min(...values);
+    focusMax = Math.max(...values);
+    focusWidth = Math.max(focusMax - focusMin, binWidthFromBins(bins), 1);
+  }
+
+  for (const [x] of verticals) {
+    const marker = Number(x);
+    if (Number.isFinite(marker) && marker >= focusMin - nearDistance && marker <= focusMax + nearDistance) {
+      values.push(marker);
+    }
+  }
+
+  const minValue = Math.min(...values);
+  const maxValue = Math.max(...values);
+  const width = Math.max(maxValue - minValue, binWidthFromBins(bins), 1);
+  const padding = Math.max(3, width * 0.12, binWidthFromBins(bins) * 2);
+  return { range: [roundDownToFive(minValue - padding), roundUpToFive(maxValue + padding)] };
+}
+
+function valueAtMass(values, cdf, targetMass) {
+  const index = cdf.findIndex((value) => value >= targetMass);
+  if (index === -1) {
+    return values[values.length - 1];
+  }
+  return values[index];
+}
+
+function binWidthFromBins(bins) {
+  if (bins.length < 2) {
+    return 1;
+  }
+  const width = Math.abs(bins[1] - bins[0]);
+  return Number.isFinite(width) && width > 0 ? width : 1;
+}
+
+function roundDownToFive(value) {
+  return Math.floor(value / 5) * 5;
+}
+
+function roundUpToFive(value) {
+  return Math.ceil(value / 5) * 5;
+}
+
+function markerAnnotations(verticals, displayRange) {
+  const [xMin, xMax] = displayRange.range;
+  const width = Math.max(xMax - xMin, 1);
+  const collisionDistance = Math.max(4, width * 0.1);
+  const lanes = [];
+
+  return verticals
+    .map(([x, label]) => ({ x: Number(x), label }))
+    .filter(({ x }) => Number.isFinite(x) && x >= xMin && x <= xMax)
+    .sort((left, right) => left.x - right.x)
+    .map(({ x, label }) => {
+      let lane = lanes.findIndex((lastX) => Math.abs(x - lastX) >= collisionDistance);
+      if (lane === -1) {
+        lane = lanes.length;
+      }
+      lanes[lane] = x;
+      return {
+        x,
+        y: 1.02 + lane * 0.065,
+        xref: "x",
+        yref: "paper",
+        yanchor: "bottom",
+        text: label,
+        showarrow: false,
+        font: { size: 11 },
+      };
+    });
 }
 
 function setBusy(isBusy) {

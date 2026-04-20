@@ -15,7 +15,7 @@ from tcco2_accuracy.conway_meta import (
 )
 from tcco2_accuracy.data import load_conway_group
 
-FIXTURE_PATH = Path(__file__).parent / "fixtures" / "conway_table1.csv"
+FIXTURE_PATH = Path(__file__).resolve().parents[1] / "fixtures" / "conway_table1.csv"
 GROUP_MAP = {
     "Main analysis": "main",
     "ICU": "icu",

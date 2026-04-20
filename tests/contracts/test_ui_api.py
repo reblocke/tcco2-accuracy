@@ -134,7 +134,7 @@ def test_all_setting_maps_to_main_params() -> None:
 
 
 def test_ui_api_inference_smoke_all() -> None:
-    root = Path(__file__).resolve().parents[1]
+    root = Path(__file__).resolve().parents[2]
     params_path = root / "artifacts" / "bootstrap_params.csv"
     params = pd.read_csv(params_path)
 
@@ -158,7 +158,7 @@ def test_ui_api_inference_smoke_all() -> None:
 
 
 def test_inference_demo_regression_optional() -> None:
-    root = Path(__file__).resolve().parents[1]
+    root = Path(__file__).resolve().parents[2]
     demo_path = root / "artifacts" / "inference_demo.md"
     params_path = root / "artifacts" / "bootstrap_params.csv"
     paco2_path = root / "Data" / "In Silico TCCO2 Database.dta"

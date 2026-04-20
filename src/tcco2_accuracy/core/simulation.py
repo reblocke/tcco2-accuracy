@@ -12,7 +12,8 @@ from scipy import stats
 from ._params import PACO2_TO_CONWAY_GROUP as PACO2_TO_CONWAY_GROUP
 from ._params import select_group_params
 from .bland_altman import loa_bounds, total_sd
-from .data import PACO2_SUBGROUP_ORDER, prepare_paco2_distribution
+from .constants import PACO2_SUBGROUP_ORDER
+from .paco2 import prepare_paco2_distribution
 from .utils import quantile_key, safe_ratio, safe_ratio_inf, validate_params_df
 
 DEFAULT_CLASSIFICATION_THRESHOLDS: tuple[float, ...] = (45.0,)

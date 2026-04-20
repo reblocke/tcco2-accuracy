@@ -7,7 +7,7 @@ from collections.abc import Iterable
 
 import pandas as pd
 
-from .data import CONWAY_SUBGROUP_FLAGS
+from .constants import CONWAY_SUBGROUP_FLAGS
 from .utils import validate_params_df
 
 PACO2_TO_CONWAY_GROUP: dict[str, str] = {
