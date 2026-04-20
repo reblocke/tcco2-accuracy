@@ -1,0 +1,70 @@
+from __future__ import annotations
+
+import contextlib
+import socket
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+import pytest
+from playwright.sync_api import expect
+
+from scripts.stage_web_python import stage_web_python
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+@pytest.fixture(scope="session")
+def web_server() -> str:
+    stage_web_python(ROOT)
+    port = _free_port()
+    process = subprocess.Popen(
+        [sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1"],
+        cwd=ROOT / "web",
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    try:
+        _wait_for_server(port)
+        yield f"http://127.0.0.1:{port}"
+    finally:
+        process.terminate()
+        with contextlib.suppress(subprocess.TimeoutExpired):
+            process.wait(timeout=5)
+
+
+def test_static_app_default_calculation(page, web_server: str) -> None:
+    page.goto(web_server, wait_until="domcontentloaded")
+
+    page.get_by_text("Calculation complete.").wait_for(timeout=180_000)
+
+    assert page.locator("#metric-interval").inner_text() != "-"
+    assert page.locator("#metric-probability").inner_text() != "-"
+    assert page.locator("#posterior-chart .main-svg").count() >= 1
+
+
+def test_static_app_threshold_change_updates_metric(page, web_server: str) -> None:
+    page.goto(web_server, wait_until="domcontentloaded")
+    page.get_by_text("Calculation complete.").wait_for(timeout=180_000)
+
+    page.locator("#threshold").fill("50")
+    page.locator("#calculate").click()
+
+    expect(page.locator("#metric-threshold-label")).to_contain_text("50", timeout=180_000)
+
+
+def _free_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return int(sock.getsockname()[1])
+
+
+def _wait_for_server(port: int) -> None:
+    deadline = time.time() + 10
+    while time.time() < deadline:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            if sock.connect_ex(("127.0.0.1", port)) == 0:
+                return
+        time.sleep(0.1)
+    raise RuntimeError("Timed out waiting for local web server.")

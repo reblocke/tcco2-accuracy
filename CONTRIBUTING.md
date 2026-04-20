@@ -21,16 +21,11 @@ Suitable contributions include:
 ## Development setup
 
 ### Python
-1. Create and activate a virtual environment:
-   ```bash
-   python -m venv .venv
-   . .venv/bin/activate  # Windows: .venv\Scripts\activate
-   ```
-2. Install in editable mode:
-   ```bash
-   pip install -e .
-   ```
-   If editable install is not configured yet, install the requirements listed in `pyproject.toml` manually.
+Install the locked environment from the repository root:
+
+```bash
+uv sync --locked
+```
 
 ### Stata
 - Use Stata 17+ if possible.
@@ -38,16 +33,16 @@ Suitable contributions include:
 
 ## Testing
 
-Run the package tests before opening a PR:
+Run the local verification gate before opening a PR:
 
 ```bash
-pytest -q
+make verify
 ```
 
-If `pytest` is not installed in the active shell, use the documented ephemeral check:
+For a narrower Python-only check:
 
 ```bash
-uv run --no-project --with-requirements requirements.txt --with-requirements requirements-dev.txt pytest -q
+make test
 ```
 
 For workflow or artifact changes, also describe any generated outputs and the exact rebuild command used.

@@ -16,7 +16,6 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RDATA_CANDIDATES = (
     REPO_ROOT / "Data" / "data.Rdata",
@@ -176,8 +175,7 @@ def _require_rdata_frames(
         value = objects.get(name)
         if not isinstance(value, pd.DataFrame):
             message = (
-                f"RData object '{name}' is not a dataframe. "
-                f"Available: {_describe_objects(objects)}"
+                f"RData object '{name}' is not a dataframe. Available: {_describe_objects(objects)}"
             )
             _ensure(False, message, strict)
             continue
@@ -271,9 +269,7 @@ def _ensure_fallback_studies(
         source_key = spec["source_object"]
         source = rdata_frames.get(source_key)
         if source is None:
-            message = (
-                f"Fallback study '{study_id}' requires '{source_key}' object in RData."
-            )
+            message = f"Fallback study '{study_id}' requires '{source_key}' object in RData."
             _ensure(False, message, strict)
             continue
         bias, s2 = _lookup_bias_s2(source, study_id, source_key, strict)
