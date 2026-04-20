@@ -17,7 +17,7 @@ Non-negotiables / invariants
 - Add brief comments explaining “why” each mapping/heuristic exists.
 
 Read first
-- Read AGENTS.md and update CONTINUITY.md before and after the work.
+- Read AGENTS.md and use the relevant `.agents/skills/` workflow before non-trivial edits.
 
 Current issue to solve
 - The exporter logic (or missing exporter) assumes the RData contains raw columns like:

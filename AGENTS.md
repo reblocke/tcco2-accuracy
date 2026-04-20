@@ -1,70 +1,54 @@
-# TcCO2 Accuracy — Python Port (Codex instructions)
+# Codex AGENTS
 
-## Continuity Ledger (compaction-safe)
-Maintain a single Continuity Ledger for this workspace in `http://CONTINUITY.md`. The ledger is the canonical session briefing designed to survive context compaction; do not rely on earlier chat text unless it’s reflected in the ledger.
+## Purpose
+- This repository contains the TcCO2 to PaCO2 agreement meta-analysis, uncertainty simulation, Streamlit app, validation artifacts, and manuscript support files.
+- Keep it as a stabilized monorepo for now. Do not split app, analysis, data, or manuscript assets in this wave.
+- The importable Python package is `tcco2_accuracy` under `python/src/`.
 
-### How it works
-- At the start of every assistant turn: read `http://CONTINUITY.md`, update it to reflect the latest goal/constraints/decisions/state, then proceed with the work.
-- Update `http://CONTINUITY.md` again whenever any of these change: goal, constraints/assumptions, key decisions, progress state (Done/Now/Next), or important tool outcomes.
-- Keep it short and stable: facts only, no transcripts. Prefer bullets. Mark uncertainty as `UNCONFIRMED` (never guess).
-- If you notice missing recall or a compaction/summary event: refresh/rebuild the ledger from visible context, mark gaps `UNCONFIRMED`, ask up to 1–3 targeted questions, then continue.
+## Repo Map
+- `python/src/tcco2_accuracy/` - Python package, numerical core, workflow modules, and UI API.
+- `python/tests/` - package and workflow tests.
+- `app/` and `streamlit_app.py` - Streamlit entry points.
+- `Data/` and `Conway Meta/` - source/reference data and supplements.
+- `artifacts/` - small derived outputs intended for review/manuscript workflows.
+- `Drafts/` - manuscript and presentation drafts; edit only when explicitly requested.
+- `Code/` - Stata reference code; `Code/Legacy/` is read-only reference material.
+- `.agents/skills/` - focused local workflows for recurring agent tasks.
 
-### `functions.update_plan` vs the Ledger
-- `functions.update_plan` is for short-term execution scaffolding while you work (a small 3–7 step plan with pending/in_progress/completed).
-- `http://CONTINUITY.md` is for long-running continuity across compaction (the “what/why/current state”), not a step-by-step task list.
-- Keep them consistent: when the plan or state changes, update the ledger at the intent/progress level (not every micro-step).
+## Commands
+- Install with pip: `python3 -m pip install -r requirements.txt -r requirements-dev.txt`
+- Ephemeral test run without adopting uv: `uv run --no-project --with-requirements requirements.txt --with-requirements requirements-dev.txt pytest -q`
+- Tests in an active environment: `pytest -q`
+- Rebuild artifacts: `python scripts/rebuild_artifacts.py --out artifacts`
+- Streamlit app: `streamlit run streamlit_app.py`
 
-### In replies
-- Begin with a brief “Ledger Snapshot” (Goal + Now/Next + Open Questions). Print the full ledger only when it materially changes or when the user asks.
+## Authority
+1. Conway Thorax 2019 paper and supplementary methods/code in `Conway Meta/` and `Data/`.
+2. `docs/SPEC.md`, `docs/VALIDATION.md`, `docs/CONWAY_DATA_SCHEMA.md`, and `docs/DECISIONS.md`.
+3. Stata code in `Code/` as reference only; `Code/Legacy/` may contain bugs.
+4. Existing Python code, tests, and artifacts.
 
-### `http://CONTINUITY.md` format (keep headings)
-- Goal (incl. success criteria):
-- Constraints/Assumptions:
-- Key decisions:
-- State:
-- Done:
-- Now:
-- Next:
-- Open questions (UNCONFIRMED if needed):
-- Working set (files/ids/commands):
+When Stata conflicts with the paper or docs, implement the paper/docs and record the divergence in `docs/DECISIONS.md` or an ADR.
 
+## Working Rules
+- Before non-trivial edits, state assumptions, ambiguities, tradeoffs, a brief plan, risks, and verification commands.
+- Keep changes small and directly tied to the request; do not make drive-by refactors.
+- Do not modify `Code/Legacy/` or `Drafts/` unless the user explicitly asks for that file family.
+- Do not commit patient-level or large raw extracts. Use small, de-identified fixtures under `python/tests/fixtures/`.
+- Keep core math pure and isolate I/O in package I/O or workflow modules.
+- Keep `requirements.txt` and `requirements-dev.txt` authoritative for this wave; do not add or commit `uv.lock` unless a later dependency-normalization decision adopts uv.
+- Generated scratch outputs belong in `.pytest_tmp/` or `.tmp/` and should not be tracked.
 
-## Goal
-Port the TcCO2↔PaCO2 agreement meta-analysis + TriNetX/in-silico simulation pipeline to Python, producing:
-1) validated reproduction of Conway (Thorax 2019) meta-analysis outputs,
-2) uncertainty-propagated simulation outputs, and
-3) an inference function: TcCO2 → interval for PaCO2 (with parameter uncertainty).
+## Skill Triggers
+- Planning a non-trivial change: `.agents/skills/implementation-strategy/SKILL.md`.
+- Verifying a code change: `.agents/skills/code-change-verification/SKILL.md`.
+- Updating docs after behavior/workflow changes: `.agents/skills/docs-sync/SKILL.md`.
+- Preparing PR text: `.agents/skills/pr-draft-summary/SKILL.md`.
+- Reviewing numerical/statistical behavior: `.agents/skills/scientific-validation/SKILL.md`.
+- Reviewing clinical, privacy, public-copy, provenance, or app surfaces: use the matching focused skill in `.agents/skills/`.
 
-## Authority hierarchy (resolve conflicts in this order)
-1) Conway Thorax 2019 paper + supplementary methods/code in `Conway Meta/`
-2) `docs/SPEC.md` + `docs/DECISIONS.md` (intended behavior for this project)
-3) Stata legacy code in `Code/` (reference only; may contain bugs)
-
-When Stata conflicts with (1) or (2):
-- implement (1)+(2),
-- document the divergence in `docs/DECISIONS.md` with file/line references.
-
-## Non-negotiables
-- Difference definition: follow Conway. (Bias/difference is defined as PaCO2 − TcCO2 in the paper.)
-- Parameter uncertainty must be propagated via **route-1 study-level bootstrap** (cluster bootstrap over studies).
-- Every milestone ends with:
-  - run `pytest`,
-  - update small artifacts under `artifacts/` (markdown + small tables),
-  - `git commit` with a clear message.
-
-## Reproducibility & safety
-- Do NOT modify `Code/Legacy/` or `Drafts/`.
-- Do NOT commit patient-level or large raw extracts. Use small, de-identified fixtures (e.g., summary tables, tiny sampled rows) under `tests/fixtures/`.
-- Prefer validated libraries (numpy/pandas/scipy/statsmodels) over custom re-implementations.
-
-## Python layout
-- All new Python code lives under `python/`:
-  - `python/src/tcco2_accuracy/`
-  - `python/tests/`
-- Keep core math pure (no I/O), and isolate I/O to `io.py`/`data.py` modules.
-
-## Definition of done (per milestone)
-- Tests pass locally.
-- Outputs match validation targets (Conway Table 1 + invariants).
-- Artifacts updated.
-- Commit created.
+## Done Criteria
+- Relevant tests pass locally.
+- Validation targets and small artifacts are updated when behavior changes.
+- Decisions, divergences, and data provenance changes are documented.
+- The final report names changed files, verification commands, warnings, skips, and remaining risks.
