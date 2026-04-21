@@ -175,6 +175,16 @@ function renderChart(result) {
       name: "Posterior",
     },
   ];
+  if (result.likelihood_prob) {
+    traces.push({
+      type: "scatter",
+      mode: "lines",
+      x: result.paco2_bin,
+      y: result.likelihood_prob,
+      line: { color: "rgba(94, 76, 128, 0.72)", width: 2, dash: "dash" },
+      name: "Likelihood (scaled)",
+    });
+  }
   if (result.prior_prob) {
     traces.push({
       type: "scatter",
@@ -197,7 +207,7 @@ function renderChart(result) {
   const layout = {
     title: "Posterior PaCO2 distribution conditioned on observed TcCO2",
     xaxis: { title: "PaCO2 (mmHg)", range: displayRange.range },
-    yaxis: { title: "Posterior probability" },
+    yaxis: { title: "Probability per bin" },
     bargap: 0.05,
     margin: { t: 96, r: 20, b: 58, l: 66 },
     shapes: verticals.map(([x, , color, dash]) => ({

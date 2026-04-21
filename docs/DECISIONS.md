@@ -29,6 +29,9 @@
 - The browser posterior chart uses a posterior-focused x-axis to keep the displayed distribution
   readable when the prior has a long tail. This does not change posterior/prior arrays or numeric
   summaries.
+- Prior-weighted browser plots include a Python-computed `Likelihood (scaled)` curve normalized to
+  bin mass for visual comparison; likelihood-only mode omits it because it duplicates the displayed
+  posterior shape. This does not change posterior/prior arrays or numeric summaries.
 - Pure numerical code is separated under `src/tcco2_accuracy/core/`; top-level modules remain
   compatibility wrappers for existing public imports.
 - Malformed continuity-ledger paths are retired; durable project decisions belong in this file or
