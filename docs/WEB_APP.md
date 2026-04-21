@@ -48,7 +48,11 @@ Open http://127.0.0.1:8000.
 ```bash
 make test
 make e2e
+make visual-qa
 make verify
 ```
 
 `make e2e` runs Playwright against the staged static app and verifies the Pyodide contract executes in Chromium.
+`make visual-qa` writes desktop and mobile screenshots to `.pytest_tmp/visual-qa/`
+for chart-label review. It is an explicit local/reviewer aid and is not part of
+`make verify`.

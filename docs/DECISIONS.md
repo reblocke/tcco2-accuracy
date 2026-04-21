@@ -21,7 +21,8 @@
   of `.dta`.
 - Public PaCO2 prior assets retain 1 mmHg normalized weights but omit exact bin counts. Exact
   count-bearing prior bins and PaCO2 distribution figure bins are restricted local/generated outputs
-  and are ignored rather than tracked.
+  and are ignored rather than tracked. Current-tree remediation is the active governance decision;
+  Git history rewriting is out of scope for this pass.
 - Pyodide 0.29.0, Plotly.js 2.35.2, and SheetJS 0.18.5 are pinned CDN browser dependencies.
 - User-entered values and uploads remain client-side; the app has no backend, telemetry,
   persistence, or patient-value URL state.
@@ -30,6 +31,8 @@
 - Generated static app assets under `web/assets/py/` and `web/assets/data/` are not tracked; Pages,
   E2E tests, and local serving regenerate them from `src/`, `Data/`, and `artifacts/` with
   `scripts/stage_web_python.py`.
+- Visual QA screenshots are generated only on request with `make visual-qa` under
+  `.pytest_tmp/visual-qa/`; they are not part of `make verify`.
 - The browser posterior chart uses a posterior-focused x-axis to keep the displayed distribution
   readable when the prior has a long tail. This does not change posterior/prior arrays or numeric
   summaries.

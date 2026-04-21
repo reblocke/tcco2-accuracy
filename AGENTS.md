@@ -24,13 +24,15 @@
 - Stage browser assets: `make stage-web`
 - Python tests: `make test`
 - Browser E2E: `make e2e`
+- Visual QA screenshots: `make visual-qa`
 - Full local gate: `make verify`
 - Serve static app: `make serve`
 - Rebuild artifacts: `uv run python scripts/rebuild_artifacts.py --out artifacts`
 
 ## Authority
 1. Conway Thorax 2019 paper and supplementary methods/code in `Conway Meta/` and `Data/`.
-2. `docs/SPEC.md`, `docs/VALIDATION.md`, `docs/CONWAY_DATA_SCHEMA.md`, and `docs/DECISIONS.md`.
+2. `docs/SPEC.md`, `docs/VALIDATION.md`, `docs/CONWAY_DATA_SCHEMA.md`,
+   `docs/DATA_GOVERNANCE.md`, and `docs/DECISIONS.md`.
 3. Stata code in `Code/` as reference only; `Code/Legacy/` may contain bugs.
 4. Existing Python code, tests, browser contract tests, and artifacts.
 
@@ -41,6 +43,8 @@ When Stata conflicts with the paper or docs, implement the paper/docs and record
 - Keep changes small and directly tied to the request; do not make drive-by refactors.
 - Do not modify `Code/Legacy/` or `Drafts/` unless the user explicitly asks for that file family.
 - Do not commit patient-level or large raw extracts. Use small, de-identified fixtures under `tests/fixtures/`.
+- Do not commit exact count-bearing PaCO2 prior or distribution-bin outputs; keep them in `.pytest_tmp/`,
+  `.tmp/`, or a private manuscript workspace unless explicitly approved.
 - Keep core math pure and isolate I/O in package I/O, workflow modules, or the browser contract.
 - Do not edit generated `web/assets/py/` or `web/assets/data/` by hand; stage them from canonical sources.
 - Python remains the single numerical source of truth. JavaScript may manage UI state, uploads, worker calls, and plotting, but must not reimplement the statistical model.
@@ -62,4 +66,5 @@ When Stata conflicts with the paper or docs, implement the paper/docs and record
 - Browser contract outputs match Python reference behavior for canonical cases.
 - Validation targets and small artifacts are updated when behavior changes.
 - Decisions, divergences, browser-runtime choices, and data provenance changes are documented.
+- Public/restricted data boundaries remain aligned with `docs/DATA_GOVERNANCE.md` and `Data/PROVENANCE.md`.
 - The final report names changed files, verification commands, warnings, skips, and remaining risks.
