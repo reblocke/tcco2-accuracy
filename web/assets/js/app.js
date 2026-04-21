@@ -111,7 +111,7 @@ async function buildPayload() {
     use_canonical_params: useCanonicalParams,
     study_csv: studyCsv || null,
     prior_bins_csv: priorCsv || null,
-    prior_source: priorCsv ? "uploaded_bins" : "default_bins",
+    prior_source: priorCsv ? "uploaded_bins" : "public_prior",
   };
 }
 
@@ -142,17 +142,11 @@ function renderResult(result) {
     `${result.paco2_q_low.toFixed(1)}, ${result.paco2_q_high.toFixed(1)}]`;
   elements.thresholdLabel.textContent = `P(PaCO2 >= ${formatNumber(result.threshold)})`;
   elements.probability.textContent = result.p_ge_threshold.toFixed(3);
-  elements.decision.textContent = titleCase(result.decision_label);
-
-  if (result.decision_label === "positive") {
-    elements.decisionText.textContent =
-      `True positive: ${result.p_true_positive.toFixed(3)} · ` +
-      `False positive: ${result.p_false_positive.toFixed(3)}`;
-  } else {
-    elements.decisionText.textContent =
-      `True negative: ${result.p_true_negative.toFixed(3)} · ` +
-      `False negative: ${result.p_false_negative.toFixed(3)}`;
-  }
+  elements.decision.textContent =
+    result.decision_label === "positive" ? "At/above threshold" : "Below threshold";
+  elements.decisionText.textContent =
+    `Posterior mass at/above threshold: ${result.p_ge_threshold.toFixed(3)} · ` +
+    `Below threshold: ${(1 - result.p_ge_threshold).toFixed(3)}`;
   const chartInfo = renderChart(result);
   const thresholdNote = chartInfo.thresholdInRange
     ? ""
@@ -203,11 +197,15 @@ function renderChart(result) {
     [result.paco2_q_high, "PI high", "rgba(23, 32, 38, 0.55)", "dot"],
   ];
   const displayRange = posteriorDisplayRange(result, verticals);
-  const annotations = markerAnnotations(verticals, displayRange);
+  const annotations = [
+    ...markerAnnotations(verticals, displayRange),
+    ...curveAnnotations(result, displayRange),
+  ];
   const layout = {
     title: "Posterior PaCO2 distribution conditioned on observed TcCO2",
     xaxis: { title: "PaCO2 (mmHg)", range: displayRange.range },
     yaxis: { title: "Probability per bin" },
+    showlegend: false,
     bargap: 0.05,
     margin: { t: 96, r: 20, b: 58, l: 66 },
     shapes: verticals.map(([x, , color, dash]) => ({
@@ -334,6 +332,71 @@ function markerAnnotations(verticals, displayRange) {
     });
 }
 
+function curveAnnotations(result, displayRange) {
+  const curves = [
+    {
+      text: "Likelihood (scaled)",
+      values: result.likelihood_prob,
+      color: "rgba(94, 76, 128, 0.95)",
+      yshift: 10,
+    },
+    {
+      text: "Prior",
+      values: result.prior_prob,
+      color: "rgba(82, 91, 95, 0.95)",
+      yshift: -10,
+    },
+  ];
+
+  return curves.flatMap(({ text, values, color, yshift }) => {
+    if (!values) {
+      return [];
+    }
+    const point = visibleCurveLabelPoint(result.paco2_bin, values, displayRange);
+    if (!point) {
+      return [];
+    }
+    const [xMin, xMax] = displayRange.range;
+    const width = Math.max(xMax - xMin, 1);
+    const nearRightEdge = point.x > xMin + width * 0.78;
+    return [
+      {
+        x: point.x,
+        y: point.y,
+        xref: "x",
+        yref: "y",
+        text,
+        showarrow: false,
+        font: { color, size: 12 },
+        bgcolor: "rgba(255, 255, 255, 0.82)",
+        borderpad: 2,
+        xanchor: nearRightEdge ? "right" : "left",
+        yanchor: "middle",
+        xshift: nearRightEdge ? -6 : 6,
+        yshift,
+      },
+    ];
+  });
+}
+
+function visibleCurveLabelPoint(bins, values, displayRange) {
+  const [xMin, xMax] = displayRange.range;
+  const targetX = xMin + (xMax - xMin) * 0.84;
+  let best = null;
+  for (let index = 0; index < bins.length; index += 1) {
+    const x = Number(bins[index]);
+    const y = Number(values[index]);
+    if (!Number.isFinite(x) || !Number.isFinite(y) || y <= 0 || x < xMin || x > xMax) {
+      continue;
+    }
+    const distance = Math.abs(x - targetX);
+    if (!best || distance < best.distance) {
+      best = { x, y, distance };
+    }
+  }
+  return best;
+}
+
 function setBusy(isBusy) {
   elements.calculate.disabled = isBusy;
   elements.calculate.textContent = isBusy ? "Calculating..." : "Calculate";
@@ -347,10 +410,6 @@ function showError(message) {
 function hideError() {
   elements.error.hidden = true;
   elements.error.textContent = "";
-}
-
-function titleCase(value) {
-  return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
 }
 
 function formatNumber(value) {

@@ -9,7 +9,7 @@ import pytest
 from scipy import stats
 
 from tcco2_accuracy.data import (
-    PACO2_PRIOR_BINS_PATH,
+    PACO2_PUBLIC_PRIOR_PATH,
     load_paco2_distribution,
     load_paco2_prior,
     prepare_paco2_distribution,
@@ -107,6 +107,34 @@ def test_single_draw_scaled_likelihood_matches_normal_shape() -> None:
     assert result.likelihood_prob == pytest.approx(expected)
 
 
+def test_weighted_prior_matches_equivalent_count_expansion() -> None:
+    params = pd.DataFrame({"delta": [0.0], "sigma2": [4.0], "tau2": [0.0]})
+    expanded_prior = np.array([40.0, 42.0, 42.0, 46.0])
+
+    expanded = predict_paco2_from_tcco2(
+        tcco2=42.0,
+        subgroup="pft",
+        threshold=45.0,
+        mode="prior_weighted",
+        params_draws=params,
+        paco2_prior_values=expanded_prior,
+    )
+    weighted = predict_paco2_from_tcco2(
+        tcco2=42.0,
+        subgroup="pft",
+        threshold=45.0,
+        mode="prior_weighted",
+        params_draws=params,
+        paco2_prior_values=np.array([40.0, 42.0, 46.0]),
+        paco2_prior_weights=np.array([0.25, 0.5, 0.25]),
+    )
+
+    assert weighted.paco2_median == pytest.approx(expanded.paco2_median)
+    assert weighted.p_ge_threshold == pytest.approx(expanded.p_ge_threshold)
+    assert weighted.posterior_prob == pytest.approx(expanded.posterior_prob)
+    assert weighted.prior_prob == pytest.approx(expanded.prior_prob)
+
+
 def test_likelihood_only_result_omits_redundant_likelihood_curve() -> None:
     params = pd.DataFrame({"delta": [0.0], "sigma2": [4.0], "tau2": [0.0]})
 
@@ -177,7 +205,7 @@ def test_ui_api_inference_smoke_all() -> None:
     params_path = root / "artifacts" / "bootstrap_params.csv"
     params = pd.read_csv(params_path)
 
-    prior_result = load_paco2_prior("all", default_bins_path=PACO2_PRIOR_BINS_PATH)
+    prior_result = load_paco2_prior("all", default_bins_path=PACO2_PUBLIC_PRIOR_PATH)
     assert prior_result.error is None
     assert prior_result.values is not None
 
@@ -188,6 +216,7 @@ def test_ui_api_inference_smoke_all() -> None:
         mode="prior_weighted",
         params_draws=params,
         paco2_prior_values=prior_result.values,
+        paco2_prior_weights=prior_result.weights,
     )
 
     assert np.isfinite(result.paco2_q_low)

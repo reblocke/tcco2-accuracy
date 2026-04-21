@@ -20,3 +20,5 @@ dist/
 build/
 /web/assets/data/
 /web/assets/py/
+/Data/paco2_prior_bins.csv
+/artifacts/figure_paco2_distribution_bins.csv

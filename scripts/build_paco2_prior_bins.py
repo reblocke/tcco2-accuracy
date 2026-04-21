@@ -1,4 +1,4 @@
-"""Build binned PaCO2 prior distributions for browser and CI deployments."""
+"""Build public or local binned PaCO2 prior distributions."""
 
 from __future__ import annotations
 
@@ -6,8 +6,7 @@ import argparse
 from pathlib import Path
 
 from tcco2_accuracy.data import (
-    INSILICO_PACO2_PATH,
-    PACO2_PRIOR_BINS_PATH,
+    PACO2_PUBLIC_PRIOR_PATH,
     build_paco2_prior_bins,
     load_paco2_distribution,
 )
@@ -18,13 +17,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--input",
         type=Path,
-        default=INSILICO_PACO2_PATH,
-        help="In-silico PaCO2 .dta source.",
+        default=None,
+        help="In-silico PaCO2 .dta source. Defaults to package path/fallback lookup.",
     )
     parser.add_argument(
         "--output",
         type=Path,
-        default=PACO2_PRIOR_BINS_PATH,
+        default=PACO2_PUBLIC_PRIOR_PATH,
         help="Output CSV for the binned prior.",
     )
     parser.add_argument(
@@ -39,6 +38,11 @@ def parse_args() -> argparse.Namespace:
         default=1.0,
         help="Bin width for PaCO2 values (mmHg).",
     )
+    parser.add_argument(
+        "--include-counts",
+        action="store_true",
+        help="Write exact count columns for restricted local use.",
+    )
     return parser.parse_args()
 
 
@@ -48,8 +52,10 @@ def main() -> None:
     # build_paco2_prior_bins pools subgroups into "all" using subgroup sample sizes.
     prior_bins = build_paco2_prior_bins(data, bin_width=float(args.bin_width))
     prior_bins = prior_bins.sort_values(["group", "paco2_bin"]).reset_index(drop=True)
+    if not args.include_counts:
+        prior_bins = prior_bins[["group", "paco2_bin", "weight"]]
 
-    # Store a compact binned prior so the static app can run without the full .dta.
+    # Store a compact public prior so the static app can run without the full .dta.
     args.output.parent.mkdir(parents=True, exist_ok=True)
     prior_bins.to_csv(args.output, index=False)
 

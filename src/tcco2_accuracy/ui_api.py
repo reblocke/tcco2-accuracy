@@ -59,6 +59,7 @@ def predict_paco2_from_tcco2(
     interval: float = 0.95,
     params_draws: pd.DataFrame | None = None,
     paco2_prior_values: np.ndarray | None = None,
+    paco2_prior_weights: np.ndarray | None = None,
     n_param_draws: int | None = None,
     seed: int | None = None,
     bin_width: float = 1.0,
@@ -82,8 +83,13 @@ def predict_paco2_from_tcco2(
 
     if mode == "prior_weighted":
         paco2_values = validate_prior(paco2_prior_values)
+        prior_weights = _validate_prior_weights(paco2_prior_weights, paco2_values)
         # Prior-weighted updates the empirical PaCO2 pretest prior with the TcCO2 likelihood.
         log_weights = prior_log_weights(float(tcco2), paco2_values, deltas, sd_total)
+        if prior_weights is not None:
+            with np.errstate(divide="ignore"):
+                log_prior_weights = np.where(prior_weights > 0, np.log(prior_weights), -np.inf)
+            log_weights = log_weights + log_prior_weights
         weights = normalize_log_weights(log_weights)
         # Prediction interval (PI) reflects parameter uncertainty + measurement variability.
         paco2_interval = weighted_quantile(paco2_values, weights, quantiles)
@@ -96,6 +102,7 @@ def predict_paco2_from_tcco2(
             bin_width=float(bin_width),
             mode=mode,
             paco2_values=paco2_values,
+            prior_weights=prior_weights,
             weights=weights,
         )
     elif mode == "likelihood_only":
@@ -171,6 +178,7 @@ def _posterior_histogram(
     bin_width: float,
     mode: InferenceMode,
     paco2_values: np.ndarray | None = None,
+    prior_weights: np.ndarray | None = None,
     weights: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray | None, np.ndarray | None]:
     """Return histogram bins and posterior/prior/scaled-likelihood probabilities."""
@@ -200,7 +208,9 @@ def _posterior_histogram(
         if total_weight <= 0:
             raise ValueError("Posterior weights must be positive for histogram.")
         posterior_prob = weighted_hist / total_weight
-        prior_hist = np.histogram(paco2_values, bins=bin_edges)[0]
+        prior_hist = np.histogram(paco2_values, bins=bin_edges, weights=prior_weights)[0]
+        if prior_weights is None:
+            prior_hist = np.histogram(paco2_values, bins=bin_edges)[0]
         prior_prob = prior_hist / float(np.sum(prior_hist))
         likelihood_prob = _scaled_likelihood_prob(
             tcco2=tcco2,
@@ -221,6 +231,27 @@ def _posterior_histogram(
         raise ValueError("Posterior density must integrate to positive mass.")
     posterior_prob = posterior_prob / mass
     return paco2_bin, posterior_prob, None, None
+
+
+def _validate_prior_weights(
+    prior_weights: np.ndarray | None,
+    paco2_values: np.ndarray,
+) -> np.ndarray | None:
+    """Return normalized prior weights aligned to PaCO2 support, when provided."""
+
+    if prior_weights is None:
+        return None
+    weights = np.asarray(prior_weights, dtype=float)
+    if weights.shape != paco2_values.shape:
+        raise ValueError("Prior weights must match prior values.")
+    if not np.all(np.isfinite(weights)):
+        raise ValueError("Prior weights must be finite.")
+    if np.any(weights < 0):
+        raise ValueError("Prior weights must be non-negative.")
+    total = float(np.sum(weights))
+    if total <= 0:
+        raise ValueError("Prior weights must contain positive mass.")
+    return weights / total
 
 
 def _scaled_likelihood_prob(

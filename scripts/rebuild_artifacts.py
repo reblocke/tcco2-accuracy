@@ -28,6 +28,12 @@ def parse_args() -> argparse.Namespace:
         help="Canonical Conway study table (CSV/XLSX) override.",
     )
     parser.add_argument(
+        "--paco2-path",
+        type=Path,
+        default=None,
+        help="Restricted local in-silico PaCO2 .dta source override.",
+    )
+    parser.add_argument(
         "--bootstrap-mode",
         type=str,
         choices=BOOTSTRAP_MODES,
@@ -101,7 +107,7 @@ def main() -> None:
         bootstrap_mode=args.bootstrap_mode,
         out_dir=out_dir,
     )
-    paco2_result = paco2.run_paco2_summary(out_dir=out_dir)
+    paco2_result = paco2.run_paco2_summary(paco2_path=args.paco2_path, out_dir=out_dir)
     sim.run_forward_simulation_summary(
         params=bootstrap_result.draws,
         paco2_data=paco2_result.data,

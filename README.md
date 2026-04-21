@@ -43,14 +43,15 @@ are not the canonical source.
 Regenerate review/manuscript artifacts:
 
 ```bash
-uv run python scripts/rebuild_artifacts.py --out artifacts --seed 202401 --n-boot 1000 --thresholds 45
+uv run python scripts/rebuild_artifacts.py --out artifacts --paco2-path Data/in_silico_tcco2_db.dta --seed 202401 --n-boot 1000 --thresholds 45
 ```
 
 The full artifact rebuild may use the in-silico PaCO2 distribution at
 `Data/In Silico TCCO2 Database.dta`, or the local alias
 `Data/in_silico_tcco2_db.dta`, when that restricted local file is present. The
 static browser app does not require that `.dta`; it uses the shipped binned prior
-`Data/paco2_prior_bins.csv`.
+`Data/paco2_public_prior.csv`, which retains 1 mmHg prior weights but omits
+exact bin counts.
 
 ## Repository Layout
 
@@ -76,8 +77,8 @@ static browser app does not require that `.dta`; it uses the shipped binned prio
 - JavaScript handles controls, uploads, worker messaging, and plotting.
 - The posterior chart uses a posterior-focused x-axis for readability; numeric
   summaries still use the full posterior/prior support.
-- Default calculations use repo-shipped canonical bootstrap parameters and prior
-  bins for responsiveness.
+- Default calculations use repo-shipped canonical bootstrap parameters and the
+  public 1 mmHg density prior for responsiveness.
 - Custom study tables or changed bootstrap settings trigger in-browser
   recomputation through the staged Python package.
 - User-entered values and uploads remain in the browser. The app has no backend,
@@ -87,8 +88,9 @@ static browser app does not require that `.dta`; it uses the shipped binned prio
 
 - Canonical Conway study inputs are maintained in `Data/conway_studies.csv` and
   `Data/conway_studies.xlsx`.
-- PaCO2 prior bins for app deployment are maintained in
-  `Data/paco2_prior_bins.csv`.
+- The public PaCO2 prior for app deployment is maintained in
+  `Data/paco2_public_prior.csv`; exact count-bearing prior bins are restricted
+  local/generated outputs and should not be committed.
 - No patient-level protected health information (PHI) is included in this
   repository.
 

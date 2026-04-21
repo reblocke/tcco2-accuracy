@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 
 from tcco2_accuracy.data import (
-    PACO2_PRIOR_BINS_PATH,
+    PACO2_PUBLIC_PRIOR_PATH,
     PACO2_SUBGROUP_ORDER,
     load_paco2_prior_bins,
 )
@@ -35,7 +35,7 @@ def _sample_prior_values(
 
 
 def _sample_paco2_prior(seed: int = 202401, n_samples: int = 200) -> pd.DataFrame:
-    bins = load_paco2_prior_bins(PACO2_PRIOR_BINS_PATH)
+    bins = load_paco2_prior_bins(PACO2_PUBLIC_PRIOR_PATH)
     random_state = np.random.default_rng(seed)
     frames = []
     for group in PACO2_SUBGROUP_ORDER:

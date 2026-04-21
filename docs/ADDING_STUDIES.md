@@ -23,9 +23,11 @@ Use the canonical spreadsheet as the single source of truth:
 - `n_participants`: number of participants contributing pairs.
 
 ## PaCO2 priors
-PaCO2 priors for prior-weighted inference live separately in `Data/paco2_prior_bins.csv`.
-Updating the Conway study table does not change these priors; use the prior build
-script if the in-silico distribution changes.
+The public prior for browser prior-weighted inference lives separately in
+`Data/paco2_public_prior.csv`. Updating the Conway study table does not change
+this prior; use the prior build script if the restricted in-silico distribution
+changes. Exact count-bearing prior bins are local/generated outputs and should
+not be committed.
 
 ## Validate the table locally
 ```bash
@@ -42,7 +44,7 @@ PY
 ## Regenerate artifacts
 ```bash
 uv run python scripts/rebuild_artifacts.py --input-study-table Data/conway_studies.xlsx \
-  --seed 202401 --n-boot 1000 --thresholds 45
+  --paco2-path Data/in_silico_tcco2_db.dta --seed 202401 --n-boot 1000 --thresholds 45
 ```
 
 ## Run tests
