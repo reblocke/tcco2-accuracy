@@ -6,6 +6,9 @@
 - The full rebuild needs the in-silico PaCO2 `.dta` at `Data/In Silico TCCO2 Database.dta`
   or the local alias `Data/in_silico_tcco2_db.dta`; app-only workflows use
   `Data/paco2_public_prior.csv` without the full `.dta`.
+- Exact count-bearing outputs such as PaCO2 prior bins or distribution figure
+  bins should be written to `.pytest_tmp/`, `.tmp/`, or a private manuscript
+  workspace unless explicitly approved for public release.
 
 ## Artifacts and manuscript placeholders
 - Error-model parameters: `artifacts/manuscript_parameters.csv` + `artifacts/manuscript_parameters.md`

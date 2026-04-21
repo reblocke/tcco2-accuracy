@@ -74,6 +74,8 @@ def stage_web_python(repo_root: Path, web_dir: Path | None = None) -> dict[str, 
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, destination)
 
+    if data_dst.exists():
+        shutil.rmtree(data_dst)
     data_dst.mkdir(parents=True, exist_ok=True)
     staged_data: list[str] = []
     for asset_name, source_rel in DEFAULT_DATA_ASSETS.items():

@@ -9,6 +9,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_stage_web_python_copies_package_and_assets(tmp_path: Path) -> None:
     web_dir = tmp_path / "web"
+    stale_exact_prior = web_dir / "assets" / "data" / "paco2_prior_bins.csv"
+    stale_exact_prior.parent.mkdir(parents=True, exist_ok=True)
+    stale_exact_prior.write_text("group,paco2_bin,count\nall,40,1\n")
 
     manifest = stage_web_python(ROOT, web_dir=web_dir)
 

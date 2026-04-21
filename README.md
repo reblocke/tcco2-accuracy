@@ -51,7 +51,9 @@ The full artifact rebuild may use the in-silico PaCO2 distribution at
 `Data/in_silico_tcco2_db.dta`, when that restricted local file is present. The
 static browser app does not require that `.dta`; it uses the shipped binned prior
 `Data/paco2_public_prior.csv`, which retains 1 mmHg prior weights but omits
-exact bin counts.
+exact bin counts. Generate exact count-bearing manuscript outputs only into
+`.pytest_tmp/`, `.tmp/`, or a private manuscript workspace unless explicitly
+approved for release.
 
 ## Repository Layout
 
@@ -93,6 +95,8 @@ exact bin counts.
   local/generated outputs and should not be committed.
 - No patient-level protected health information (PHI) is included in this
   repository.
+- Public/restricted asset boundaries are documented in
+  `docs/DATA_GOVERNANCE.md` and `Data/PROVENANCE.md`.
 
 If future analyses require restricted data, do not commit raw files. Provide
 synthetic examples and access instructions instead.
@@ -101,6 +105,8 @@ synthetic examples and access instructions instead.
 
 - `make test` runs Python unit, workflow, staging, and browser-contract tests.
 - `make e2e` stages the web app and runs Playwright browser smoke tests.
+- `make visual-qa` stages the web app and writes local review screenshots under
+  `.pytest_tmp/visual-qa/`.
 - `make verify` runs staging, format check, lint, unit tests, and E2E tests.
 - Scientific validation targets are documented in `docs/VALIDATION.md`.
 
