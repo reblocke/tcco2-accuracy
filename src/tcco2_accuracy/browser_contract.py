@@ -62,6 +62,9 @@ def compute_ui_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "paco2_bin": _array_to_list(result.paco2_bin),
         "posterior_prob": _array_to_list(result.posterior_prob),
         "prior_prob": None if result.prior_prob is None else _array_to_list(result.prior_prob),
+        "likelihood_prob": None
+        if result.likelihood_prob is None
+        else _array_to_list(result.likelihood_prob),
         "posterior_cdf": _array_to_list(result.posterior_cdf),
         "metadata": {
             "params_source": "payload_params"

@@ -78,8 +78,47 @@ def test_posterior_histogram_conservation() -> None:
     assert result.prior_prob is not None
     assert np.sum(result.prior_prob) == pytest.approx(1.0, abs=1e-10)
     assert np.all((result.prior_prob >= 0) & (result.prior_prob <= 1))
+    assert result.likelihood_prob is not None
+    assert result.likelihood_prob.shape == result.paco2_bin.shape
+    assert np.sum(result.likelihood_prob) == pytest.approx(1.0, abs=1e-10)
+    assert np.all(np.isfinite(result.likelihood_prob))
+    assert np.all(result.likelihood_prob >= 0)
     assert result.paco2_q_low >= np.min(result.paco2_bin)
     assert result.paco2_q_high <= np.max(result.paco2_bin)
+
+
+def test_single_draw_scaled_likelihood_matches_normal_shape() -> None:
+    params = pd.DataFrame({"delta": [0.0], "sigma2": [4.0], "tau2": [0.0]})
+    prior_values = np.array([40.0, 45.0, 50.0, 55.0])
+
+    result = predict_paco2_from_tcco2(
+        tcco2=45.0,
+        subgroup="pft",
+        threshold=45.0,
+        mode="prior_weighted",
+        params_draws=params,
+        paco2_prior_values=prior_values,
+    )
+
+    expected = stats.norm.pdf(result.paco2_bin, loc=45.0, scale=2.0)
+    expected = expected / expected.sum()
+
+    assert result.likelihood_prob is not None
+    assert result.likelihood_prob == pytest.approx(expected)
+
+
+def test_likelihood_only_result_omits_redundant_likelihood_curve() -> None:
+    params = pd.DataFrame({"delta": [0.0], "sigma2": [4.0], "tau2": [0.0]})
+
+    result = predict_paco2_from_tcco2(
+        tcco2=45.0,
+        subgroup="pft",
+        threshold=45.0,
+        mode="likelihood_only",
+        params_draws=params,
+    )
+
+    assert result.likelihood_prob is None
 
 
 def test_decision_label_probabilities() -> None:

@@ -48,6 +48,7 @@ class PredictionResult:
     posterior_prob: np.ndarray
     prior_prob: np.ndarray | None
     posterior_cdf: np.ndarray
+    likelihood_prob: np.ndarray | None = None
 
 
 def predict_paco2_from_tcco2(
@@ -88,7 +89,7 @@ def predict_paco2_from_tcco2(
         paco2_interval = weighted_quantile(paco2_values, weights, quantiles)
         # Threshold probability is posterior mass at/above the chosen hypercapnia cutoff.
         p_ge_threshold = float(np.sum(weights[paco2_values >= float(threshold)]))
-        paco2_bin, posterior_prob, prior_prob = _posterior_histogram(
+        paco2_bin, posterior_prob, prior_prob, likelihood_prob = _posterior_histogram(
             tcco2=float(tcco2),
             deltas=deltas,
             sd_total=sd_total,
@@ -103,7 +104,7 @@ def predict_paco2_from_tcco2(
         paco2_interval = mixture_quantiles(quantiles, means, sd_total)
         # Threshold probability is posterior mass at/above the chosen hypercapnia cutoff.
         p_ge_threshold = float(mixture_survival(np.array([float(threshold)]), means, sd_total)[0])
-        paco2_bin, posterior_prob, prior_prob = _posterior_histogram(
+        paco2_bin, posterior_prob, prior_prob, likelihood_prob = _posterior_histogram(
             tcco2=float(tcco2),
             deltas=deltas,
             sd_total=sd_total,
@@ -138,6 +139,7 @@ def predict_paco2_from_tcco2(
         paco2_bin=paco2_bin,
         posterior_prob=posterior_prob,
         prior_prob=prior_prob,
+        likelihood_prob=likelihood_prob,
         posterior_cdf=posterior_cdf,
     )
 
@@ -170,8 +172,8 @@ def _posterior_histogram(
     mode: InferenceMode,
     paco2_values: np.ndarray | None = None,
     weights: np.ndarray | None = None,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
-    """Return histogram bins and posterior/prior probabilities."""
+) -> tuple[np.ndarray, np.ndarray, np.ndarray | None, np.ndarray | None]:
+    """Return histogram bins and posterior/prior/scaled-likelihood probabilities."""
 
     if mode == "prior_weighted":
         if paco2_values is None or weights is None:
@@ -200,7 +202,14 @@ def _posterior_histogram(
         posterior_prob = weighted_hist / total_weight
         prior_hist = np.histogram(paco2_values, bins=bin_edges)[0]
         prior_prob = prior_hist / float(np.sum(prior_hist))
-        return paco2_bin, posterior_prob, prior_prob
+        likelihood_prob = _scaled_likelihood_prob(
+            tcco2=tcco2,
+            deltas=deltas,
+            sd_total=sd_total,
+            paco2_bin=paco2_bin,
+            bin_width=bin_width,
+        )
+        return paco2_bin, posterior_prob, prior_prob, likelihood_prob
 
     densities = stats.norm.pdf(
         paco2_bin[:, None], loc=tcco2 + deltas[None, :], scale=sd_total[None, :]
@@ -211,4 +220,25 @@ def _posterior_histogram(
     if mass <= 0:
         raise ValueError("Posterior density must integrate to positive mass.")
     posterior_prob = posterior_prob / mass
-    return paco2_bin, posterior_prob, None
+    return paco2_bin, posterior_prob, None, None
+
+
+def _scaled_likelihood_prob(
+    tcco2: float,
+    deltas: np.ndarray,
+    sd_total: np.ndarray,
+    paco2_bin: np.ndarray,
+    bin_width: float,
+) -> np.ndarray:
+    """Return a normalized likelihood curve on the posterior histogram grid."""
+
+    densities = stats.norm.pdf(
+        tcco2,
+        loc=paco2_bin[:, None] - deltas[None, :],
+        scale=sd_total[None, :],
+    )
+    likelihood_prob = np.mean(densities, axis=1) * bin_width
+    mass = float(np.sum(likelihood_prob))
+    if mass <= 0:
+        raise ValueError("Scaled likelihood must integrate to positive mass.")
+    return likelihood_prob / mass

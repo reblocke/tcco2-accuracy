@@ -50,6 +50,10 @@ def test_browser_contract_matches_ui_api_canonical_prior_weighted() -> None:
     assert browser["paco2_q_high"] == pytest.approx(direct.paco2_q_high)
     assert browser["p_ge_threshold"] == pytest.approx(direct.p_ge_threshold)
     assert sum(browser["posterior_prob"]) == pytest.approx(1.0)
+    assert direct.likelihood_prob is not None
+    assert browser["likelihood_prob"] is not None
+    assert browser["likelihood_prob"] == pytest.approx(direct.likelihood_prob)
+    assert sum(browser["likelihood_prob"]) == pytest.approx(1.0)
 
 
 @pytest.mark.parametrize("subgroup", ["all", "pft", "ed_inp", "icu"])
@@ -75,6 +79,11 @@ def test_browser_contract_canonical_cases_are_serializable(subgroup: str, mode: 
     assert 0.0 <= result["p_ge_threshold"] <= 1.0
     assert isinstance(result["paco2_bin"], list)
     assert isinstance(result["posterior_prob"], list)
+    if mode == "prior_weighted":
+        assert isinstance(result["likelihood_prob"], list)
+        assert len(result["likelihood_prob"]) == len(result["paco2_bin"])
+    else:
+        assert result["likelihood_prob"] is None
 
 
 def test_browser_contract_accepts_custom_prior_bins() -> None:

@@ -24,7 +24,9 @@ The app under `web/` is static HTML/CSS/JS. It uses:
 
 The posterior chart uses a posterior-focused x-axis so long prior tails do not
 compress the clinically relevant posterior view. The full posterior/prior arrays
-still drive all numeric summaries.
+still drive all numeric summaries. In prior-weighted mode, the optional
+likelihood overlay is computed in Python and JavaScript only renders the
+serialized curve.
 
 ## Browser Contract
 `tcco2_accuracy.browser_contract` exposes JSON-like functions for the browser:
