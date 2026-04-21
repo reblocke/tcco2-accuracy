@@ -9,7 +9,7 @@ from pathlib import Path
 
 DEFAULT_DATA_ASSETS = {
     "conway_studies.csv": Path("Data/conway_studies.csv"),
-    "paco2_prior_bins.csv": Path("Data/paco2_prior_bins.csv"),
+    "paco2_public_prior.csv": Path("Data/paco2_public_prior.csv"),
     "bootstrap_params.csv": Path("artifacts/bootstrap_params.csv"),
 }
 

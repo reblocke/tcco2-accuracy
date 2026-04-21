@@ -83,7 +83,7 @@ function defaultAssets() {
     defaultAssetsPromise = Promise.all([
       fetchText("assets/data/bootstrap_params.csv"),
       fetchText("assets/data/conway_studies.csv"),
-      fetchText("assets/data/paco2_prior_bins.csv"),
+      fetchText("assets/data/paco2_public_prior.csv"),
     ]).then(([params, studies, priorBins]) => ({ params, studies, priorBins }));
   }
   return defaultAssetsPromise;

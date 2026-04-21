@@ -22,6 +22,7 @@ from .core.paco2 import (
     build_paco2_prior_bins,
     paco2_subgroup_summary,
     prepare_paco2_distribution,
+    prior_distribution_from_bins,
     prior_values_from_bins,
     validate_paco2_columns,
     validate_paco2_prior_bins,
@@ -39,6 +40,7 @@ __all__ = [
     "PACO2_PRIOR_BINS_PATH",
     "PACO2_PRIOR_BINS_XLSX_PATH",
     "PACO2_PRIOR_GROUPS",
+    "PACO2_PUBLIC_PRIOR_PATH",
     "PACO2_PRIOR_REQUIRED_COLUMNS",
     "PACO2_REQUIRED_COLUMNS",
     "PACO2_SUBGROUP_ORDER",
@@ -57,6 +59,7 @@ __all__ = [
     "paco2_subgroup_summary",
     "prepare_conway_meta_inputs",
     "prepare_paco2_distribution",
+    "prior_distribution_from_bins",
     "prior_values_from_bins",
     "validate_paco2_columns",
     "validate_paco2_prior_bins",
@@ -81,6 +84,7 @@ INSILICO_PACO2_PATH = REPO_ROOT / "Data" / "In Silico TCCO2 Database.dta"
 INSILICO_PACO2_FALLBACK_PATHS = (REPO_ROOT / "Data" / "in_silico_tcco2_db.dta",)
 PACO2_PRIOR_BINS_PATH = REPO_ROOT / "Data" / "paco2_prior_bins.csv"
 PACO2_PRIOR_BINS_XLSX_PATH = REPO_ROOT / "Data" / "paco2_prior_bins.xlsx"
+PACO2_PUBLIC_PRIOR_PATH = REPO_ROOT / "Data" / "paco2_public_prior.csv"
 
 
 @dataclass(frozen=True)
@@ -99,6 +103,7 @@ class PriorLoadResult:
     bins: pd.DataFrame | None
     source: str | None
     paths_checked: tuple[Path, ...]
+    weights: np.ndarray | None = None
     error: PriorLoadError | None = None
 
 
@@ -256,10 +261,11 @@ def load_default_paco2_prior(
     subgroup: str,
     bins_path: Path | None = None,
 ) -> np.ndarray:
-    """Load the repo-shipped binned prior for a subgroup.
+    """Load a count-expanded default prior for a subgroup.
 
-    The default bins CSV exists to keep the UI and CI portable without
-    depending on the full in-silico .dta.
+    This compatibility helper requires a count-based prior table. Browser
+    inference uses ``load_paco2_prior`` so it can consume the public weight-only
+    prior without reconstructing counts.
     """
 
     bins_path = bins_path or PACO2_PRIOR_BINS_PATH
@@ -286,25 +292,26 @@ def load_paco2_prior(
 
     if uploaded_bytes is not None:
         bins = load_paco2_prior_bins_bytes(uploaded_bytes, uploaded_name or "prior.csv")
-        values = prior_values_from_bins(bins, subgroup_key)
+        values, weights = prior_distribution_from_bins(bins, subgroup_key)
         return PriorLoadResult(
             values=values,
+            weights=weights,
             bins=bins,
             source="uploaded",
             paths_checked=tuple(paths_checked),
         )
 
-    bins_path = default_bins_path or PACO2_PRIOR_BINS_PATH
+    bins_path = default_bins_path or PACO2_PUBLIC_PRIOR_PATH
     paths_checked.append(bins_path)
     if bins_path.exists():
-        # Binned weights represent the empirical PaCO2 pretest distribution.
+        # Binned weights represent the public PaCO2 pretest density prior.
         bins = load_paco2_prior_bins(bins_path)
-        # "all" is a pooled prior weighted by subgroup sample sizes.
-        values = prior_values_from_bins(bins, subgroup_key)
+        values, weights = prior_distribution_from_bins(bins, subgroup_key)
         return PriorLoadResult(
             values=values,
+            weights=weights,
             bins=bins,
-            source="default_bins",
+            source="public_prior",
             paths_checked=tuple(paths_checked),
         )
 
@@ -323,6 +330,7 @@ def load_paco2_prior(
             raise ValueError(f"No PaCO2 values found for subgroup '{subgroup_key}'.")
         return PriorLoadResult(
             values=values,
+            weights=None,
             bins=None,
             source="insilico_dta",
             paths_checked=tuple(paths_checked),
@@ -332,6 +340,7 @@ def load_paco2_prior(
     error = PriorLoadError(message=message, paths_checked=tuple(paths_checked))
     return PriorLoadResult(
         values=None,
+        weights=None,
         bins=None,
         source=None,
         paths_checked=tuple(paths_checked),

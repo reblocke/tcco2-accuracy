@@ -21,7 +21,7 @@
 - Source file: `Data/In Silico TCCO2 Database.dta` by package default, with
   `Data/in_silico_tcco2_db.dta` accepted as a local alias, or an explicitly supplied `.dta`
   path in workflow loaders.
-- The static browser app uses `Data/paco2_prior_bins.csv` by default so it can run without the full `.dta`.
+- The static browser app uses `Data/paco2_public_prior.csv` by default so it can run without the full `.dta` or public exact bin counts.
 - Use rows with non-missing `paco2`; PaCO2 values are in mmHg.
 - Treat `is_amb`, `is_emer`, `is_inp`, `cc_time` as binary flags (missing → 0).
 - Subgroup assignment is mutually exclusive, applied in order:

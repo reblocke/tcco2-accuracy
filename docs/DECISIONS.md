@@ -14,10 +14,14 @@
 - The public app deployment target is static GitHub Pages. See `docs/adr/0001-streamlit-to-pages.md`.
 - Browser computation loads staged Python through Pyodide in a worker. JavaScript manages UI,
   uploads, and plotting but does not duplicate the statistical model.
-- Browser default inference uses staged canonical assets: `Data/conway_studies.csv`,
-  `Data/paco2_prior_bins.csv`, and `artifacts/bootstrap_params.csv`.
+- Browser default inference uses staged canonical/public assets: `Data/conway_studies.csv`,
+  `Data/paco2_public_prior.csv`, and `artifacts/bootstrap_params.csv`.
 - Offline PaCO2 distribution loading accepts `Data/In Silico TCCO2 Database.dta` and the local alias
-  `Data/in_silico_tcco2_db.dta`; the static app still uses binned prior assets instead of `.dta`.
+  `Data/in_silico_tcco2_db.dta`; the static app still uses a public weight-only prior asset instead
+  of `.dta`.
+- Public PaCO2 prior assets retain 1 mmHg normalized weights but omit exact bin counts. Exact
+  count-bearing prior bins and PaCO2 distribution figure bins are restricted local/generated outputs
+  and are ignored rather than tracked.
 - Pyodide 0.29.0, Plotly.js 2.35.2, and SheetJS 0.18.5 are pinned CDN browser dependencies.
 - User-entered values and uploads remain client-side; the app has no backend, telemetry,
   persistence, or patient-value URL state.
@@ -32,6 +36,9 @@
 - Prior-weighted browser plots include a Python-computed `Likelihood (scaled)` curve normalized to
   bin mass for visual comparison; likelihood-only mode omits it because it duplicates the displayed
   posterior shape. This does not change posterior/prior arrays or numeric summaries.
+- Browser UI copy avoids clinical correctness wording and reports threshold classification with
+  posterior mass summaries because the app is a research interpretation tool, not clinical decision
+  support.
 - Pure numerical code is separated under `src/tcco2_accuracy/core/`; top-level modules remain
   compatibility wrappers for existing public imports.
 - Malformed continuity-ledger paths are retired; durable project decisions belong in this file or

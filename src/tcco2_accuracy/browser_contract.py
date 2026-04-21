@@ -8,7 +8,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from .data import load_paco2_prior_bins_bytes, prior_values_from_bins
+from .data import load_paco2_prior_bins_bytes, prior_distribution_from_bins
 from .ui_api import build_subgroup_bootstrap_draws, predict_paco2_from_tcco2
 from .utils import validate_params_df
 from .validate_inputs import validate_conway_studies_df
@@ -25,10 +25,11 @@ def compute_ui_payload(payload: dict[str, Any]) -> dict[str, Any]:
     params = _params_from_payload(payload, subgroup)
 
     prior_values = None
+    prior_weights = None
     prior_source = "not_used"
     if mode == "prior_weighted":
         prior_bins = _required_frame(payload, "prior_bins")
-        prior_values = prior_values_from_bins(prior_bins, subgroup)
+        prior_values, prior_weights = prior_distribution_from_bins(prior_bins, subgroup)
         prior_source = str(payload.get("prior_source") or "provided_bins")
 
     result = predict_paco2_from_tcco2(
@@ -39,6 +40,7 @@ def compute_ui_payload(payload: dict[str, Any]) -> dict[str, Any]:
         interval=_float_payload(payload, "interval", 0.95),
         params_draws=params,
         paco2_prior_values=prior_values,
+        paco2_prior_weights=prior_weights,
         n_param_draws=_optional_int_payload(payload, "n_param_draws"),
         seed=_optional_int_payload(payload, "seed"),
         bin_width=_float_payload(payload, "bin_width", 1.0),

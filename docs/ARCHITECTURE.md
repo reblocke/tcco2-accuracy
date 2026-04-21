@@ -47,14 +47,15 @@ be edited by hand.
 
 Staged assets:
 - `Data/conway_studies.csv`
-- `Data/paco2_prior_bins.csv`
+- `Data/paco2_public_prior.csv`
 - `artifacts/bootstrap_params.csv`
 - Python source files required by the browser contract
 
 ## Data Strategy
 The browser default path uses repo-shipped static assets only. It does not
-require the large in-silico `.dta`. Offline workflows may still use the `.dta`
-when present for artifact generation and prior-bin rebuilding.
+require the large in-silico `.dta`. It uses a public weight-only 1 mmHg prior
+asset without exact bin counts. Offline workflows may still use the `.dta` when
+present for artifact generation and exact local prior-bin rebuilding.
 
 ## Privacy Boundary
 The app has no backend, telemetry, persistence, or PHI-bearing URL state.

@@ -136,16 +136,18 @@ def validate_paco2_prior_bins(data: pd.DataFrame) -> pd.DataFrame:
         raise ValueError(f"Missing prior bin columns: {sorted(missing)}")
     prior["group"] = prior["group"].astype(str).str.strip().str.lower()
     prior["paco2_bin"] = pd.to_numeric(prior["paco2_bin"], errors="coerce")
-    prior["count"] = pd.to_numeric(prior["count"], errors="coerce")
     prior["weight"] = pd.to_numeric(prior["weight"], errors="coerce")
+    if "count" in prior.columns:
+        prior["count"] = pd.to_numeric(prior["count"], errors="coerce")
     if not np.all(np.isfinite(prior["paco2_bin"])):
         raise ValueError("Non-finite PaCO2 bin values in prior.")
-    if not np.all(np.isfinite(prior["count"])):
-        raise ValueError("Non-finite counts in prior.")
     if not np.all(np.isfinite(prior["weight"])):
         raise ValueError("Non-finite weights in prior.")
-    if np.any(prior["count"] < 0):
-        raise ValueError("Prior counts must be non-negative.")
+    if "count" in prior.columns:
+        if not np.all(np.isfinite(prior["count"])):
+            raise ValueError("Non-finite counts in prior.")
+        if np.any(prior["count"] < 0):
+            raise ValueError("Prior counts must be non-negative.")
     if np.any(prior["weight"] < 0):
         raise ValueError("Prior weights must be non-negative.")
     groups = set(prior["group"])
@@ -158,12 +160,38 @@ def validate_paco2_prior_bins(data: pd.DataFrame) -> pd.DataFrame:
     return prior
 
 
+def prior_distribution_from_bins(
+    prior_bins: pd.DataFrame, group: str
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return discrete prior support and normalized mass for one PaCO2 group."""
+
+    subset = prior_bins.loc[prior_bins["group"] == group].sort_values("paco2_bin")
+    if subset.empty:
+        raise ValueError(f"No binned priors available for group '{group}'.")
+    values = subset["paco2_bin"].to_numpy(dtype=float)
+    if "count" in subset.columns:
+        counts = subset["count"].to_numpy(dtype=float)
+        total_count = float(np.sum(counts))
+        if total_count <= 0:
+            raise ValueError(f"Prior counts must be positive for group '{group}'.")
+        weights = counts / total_count
+    else:
+        weights = subset["weight"].to_numpy(dtype=float)
+        total_weight = float(np.sum(weights))
+        if total_weight <= 0:
+            raise ValueError(f"Prior weights must be positive for group '{group}'.")
+        weights = weights / total_weight
+    return values, weights
+
+
 def prior_values_from_bins(prior_bins: pd.DataFrame, group: str) -> np.ndarray:
     """Expand binned PaCO2 prior counts into empirical prior values."""
 
     subset = prior_bins.loc[prior_bins["group"] == group]
     if subset.empty:
         raise ValueError(f"No binned priors available for group '{group}'.")
+    if "count" not in subset.columns:
+        raise ValueError("Cannot expand weight-only priors without a count column.")
     return np.repeat(
         subset["paco2_bin"].to_numpy(dtype=float),
         subset["count"].to_numpy(dtype=int),
