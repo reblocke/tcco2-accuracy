@@ -1,5 +1,19 @@
 # Data Provenance
 
+## Conway study table
+
+- Canonical public inputs: `Data/conway_studies.csv` and `Data/conway_studies.xlsx`.
+- Template for future additions: `Data/conway_studies_template.xlsx`.
+- Count fallback for the Conway export workflow: `Data/data_counts.csv`.
+- Source article: Conway A, Tipton E, Liu W-H, Conway Z, Soalheira K,
+  Sutherland J, Fingleton J. *Accuracy and precision of transcutaneous carbon
+  dioxide monitoring: a systematic review and meta-analysis.* Thorax.
+  2019;74(2):157-163. doi:10.1136/thoraxjnl-2017-211466.
+- Source data/code record: https://figshare.com/articles/dataset/Accuracy_of_TcCO2_monitoring_meta-analysis/6244058
+- Public-branch rule: keep the curated CSV/XLSX inputs and cite/link the source
+  records. Do not mirror third-party PDFs, duplicated supplement folders, or
+  binary RData source archives in the public branch tip.
+
 ## `paco2_public_prior.csv`
 
 - Source: restricted local in-silico PaCO2 distribution used by the project workflows. The source file is not redistributed; local paths may include `Data/in_silico_tcco2_db.dta` or `Data/In Silico TCCO2 Database.dta`.

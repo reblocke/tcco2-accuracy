@@ -4,9 +4,45 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>TcCO2 to PaCO2 inference</title>
+    <meta
+      name="description"
+      content="Research-only browser app for estimating PaCO2 posterior distributions from TcCO2 values using the tcco2-accuracy Python model in Pyodide."
+    />
+    <link rel="canonical" href="https://reblocke.github.io/tcco2-accuracy/" />
+    <meta property="og:title" content="TcCO2 to PaCO2 inference" />
+    <meta
+      property="og:description"
+      content="Client-side research software for TcCO2-to-PaCO2 inference. No backend, telemetry, persistence, or patient-value URLs."
+    />
+    <meta property="og:url" content="https://reblocke.github.io/tcco2-accuracy/" />
+    <meta property="og:type" content="website" />
     <link rel="stylesheet" href="assets/css/styles.css" />
     <script defer src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "TcCO2 to PaCO2 inference",
+        "applicationCategory": "ResearchApplication",
+        "operatingSystem": "Web browser",
+        "url": "https://reblocke.github.io/tcco2-accuracy/",
+        "codeRepository": "https://github.com/reblocke/tcco2-accuracy",
+        "license": "https://github.com/reblocke/tcco2-accuracy/blob/main/LICENSE",
+        "isAccessibleForFree": true,
+        "description": "Research-only static browser app for estimating PaCO2 posterior distributions from observed TcCO2 values using a Python model in Pyodide.",
+        "citation": [
+          "https://doi.org/10.1016/j.chest.2025.07.3877",
+          "https://doi.org/10.1164/ajrccm.2025.211.Abstracts.A2683",
+          "https://doi.org/10.1136/thoraxjnl-2017-211466"
+        ],
+        "author": {
+          "@type": "Person",
+          "name": "Brian W. Locke",
+          "identifier": "https://orcid.org/0000-0002-3588-5238"
+        }
+      }
+    </script>
     <script type="module" src="assets/js/app.js"></script>
   </head>
   <body>

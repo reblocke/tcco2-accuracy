@@ -1,7 +1,9 @@
 # TcCO2 Accuracy — Validation Targets
 
 ## Conway Table 1
-- Fixtures extracted from `Conway Meta/Thorax 2019 TcCO2 metaanalysis.pdf`.
+- Fixtures are keyed to Table 1 of Conway et al. Thorax 2019
+  (DOI `10.1136/thoraxjnl-2017-211466`) and the linked Figshare source
+  record; publisher PDFs are not tracked in this repository.
 - Invariants: `tests/core/test_conway_meta.py` validates bias/SD/τ²/LoA against Table 1.
 
 ## Workflow validation stages

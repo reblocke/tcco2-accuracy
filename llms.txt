@@ -1,0 +1,59 @@
+# TcCO2 Accuracy
+
+Repository: https://github.com/reblocke/tcco2-accuracy
+Static app: https://reblocke.github.io/tcco2-accuracy/
+License: MIT for repository code and author-owned documentation.
+
+Purpose:
+This public repository contains research software, validation artifacts, Stata reference code, and a static GitHub Pages app for evaluating transcutaneous CO2 (TcCO2) monitoring against arterial PaCO2. The app estimates a PaCO2 posterior distribution from an observed TcCO2 using the repository Python model in the browser.
+
+Project status:
+Abstract/poster stage. Results have been presented at ATS 2025 and CHEST 2025. The manuscript has not yet been submitted. Do not add full manuscript text unless a submitted preprint, accepted author manuscript, or explicit public manuscript source is supplied.
+
+Citable records:
+- CHEST 2025 abstract: Simulation suggests transcutaneous CO2 sensors may accurately detect hypercapnia across settings. DOI: https://doi.org/10.1016/j.chest.2025.07.3877
+- ATS 2025 abstract: In silico estimation of the performance of transcutaneous CO2 sensors for detecting hypercapnia in newly admitted inpatients. DOI: https://doi.org/10.1164/ajrccm.2025.211.Abstracts.A2683
+- Conway evidence synthesis: Accuracy and precision of transcutaneous carbon dioxide monitoring: a systematic review and meta-analysis. DOI: https://doi.org/10.1136/thoraxjnl-2017-211466
+- Conway data/code archive: https://figshare.com/articles/dataset/Accuracy_of_TcCO2_monitoring_meta-analysis/6244058
+
+Primary commands:
+```bash
+uv sync --locked
+make verify
+make serve
+```
+
+App behavior:
+- Python is the numerical source of truth.
+- JavaScript handles UI controls, uploads, worker messaging, and plotting.
+- The app has no backend, telemetry, persistence, or patient-value URLs.
+- User-entered values and uploaded CSV/XLSX files remain in the browser.
+- Generated staged assets under web/assets/py/ and web/assets/data/ come from make stage-web and must not be edited by hand.
+
+Public data:
+- Data/conway_studies.csv and Data/conway_studies.xlsx are canonical public Conway study summaries used by the model.
+- Data/paco2_public_prior.csv is a public, normalized, weight-only PaCO2 prior for browser deployment.
+- Small aggregate artifacts under artifacts/ support review and manuscript workflows.
+- See data_dictionary.md, data_dictionary.csv, docs/DATA_GOVERNANCE.md, and Data/PROVENANCE.md.
+
+Restricted or local-only data:
+- Data/in_silico_tcco2_db.dta and Data/In Silico TCCO2 Database.dta are restricted local PaCO2 source inputs.
+- Data/paco2_prior_bins.csv and artifacts/figure_paco2_distribution_bins.csv are exact count-bearing outputs and should remain local/generated unless explicitly approved.
+- Internal drafts, editable poster decks, third-party article PDFs, RData source archives, local Stata .dta files, generated web assets, caches, and visual QA screenshots should not be committed.
+
+Repository map:
+- src/tcco2_accuracy/core/: pure numerical/statistical code.
+- src/tcco2_accuracy/: I/O, contracts, wrappers, reporting, and workflow modules.
+- web/: static GitHub Pages app.
+- scripts/: staging, artifact, and data-prep commands.
+- tests/: unit, workflow, contract, and browser tests.
+- docs/: architecture, data governance, validation, deployment, and decisions.
+- artifacts/: small aggregate review/manuscript outputs.
+- Data/: canonical public CSV/XLSX inputs and public prior.
+
+Agent cautions:
+- Do not change scientific model behavior in documentation-only readiness work.
+- Do not mirror publisher abstracts or full articles; link DOI pages and paraphrase original repository summaries.
+- Preserve the browser app's client-side/no-telemetry/no-backend design.
+- Validate CITATION.cff after citation edits.
+- Run make stage-web and browser/app tests after app or browser metadata changes.
