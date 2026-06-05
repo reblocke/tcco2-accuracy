@@ -1,5 +1,7 @@
 clear
-cd "/Users/DustinAnderson/Desktop/Medicine/Fellowship/Research/Hypercapnia/TcCO2/Working Folder/Individual Data and Do-Files"
+local code_root "Code/Legacy"
+if "`1'" != "" local code_root "`1'"
+cd "`code_root'"
 
 				/*==================================*
 				Cleaning of the data and creation of working dataset

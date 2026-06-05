@@ -4,7 +4,9 @@
 *---------------------------------------------------------------------*
 
 clear
-cd "/Users/DustinAnderson/Desktop/Medicine/Fellowship/Research/Hypercapnia/TcCO2/Working Folder" // Change this to your folder containing the 'working folder'.
+local project_root "."
+if "`1'" != "" local project_root "`1'"
+cd "`project_root'"
 
 				/*==================================*
 				Cleaning of the data and creation of working dataset
@@ -142,4 +144,3 @@ twoway kdensity paco2, recast(area) fcolor(ebg%25) lcolor(navy) lpattern(solid) 
 	xsize(9) ysize(3.5)
 graph save total_distributions.gph, replace
 restore
-
