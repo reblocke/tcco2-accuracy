@@ -1,0 +1,42 @@
+# TcCO2 To PaCO2 Inference App
+
+App URL: https://reblocke.github.io/tcco2-accuracy/
+Repository: https://github.com/reblocke/tcco2-accuracy
+
+Purpose:
+Static research app for estimating a PaCO2 posterior distribution from an observed transcutaneous CO2 (TcCO2) value using the repository Python model in Pyodide.
+
+Not clinical software:
+This is research software only. It is not intended for diagnosis, treatment, or clinical decision-making.
+
+Inputs:
+- TcCO2 value in mmHg.
+- Hypercapnia threshold in mmHg, default 45.
+- Clinical setting selector: all, ambulatory/PFT, ED/inpatient, ICU.
+- Optional custom study table upload as CSV/XLSX.
+- Optional custom binned PaCO2 prior upload as CSV/XLSX.
+
+Outputs:
+- PaCO2 median and prediction interval.
+- Posterior probability that PaCO2 is at or above the selected threshold.
+- TcCO2 threshold classification.
+- Posterior distribution plot.
+
+Privacy and runtime:
+- No backend.
+- No telemetry.
+- No persistence.
+- No patient-value URLs.
+- User-entered values and uploads stay in the browser.
+- JavaScript handles UI and plotting; Python remains the numerical source of truth.
+
+Default assets:
+- web/assets/data/conway_studies.csv is staged from Data/conway_studies.csv.
+- web/assets/data/paco2_public_prior.csv is staged from Data/paco2_public_prior.csv.
+- web/assets/data/bootstrap_params.csv is staged from artifacts/bootstrap_params.csv.
+- web/assets/py/ is staged from src/tcco2_accuracy by make stage-web.
+
+Citations:
+- CHEST 2025 abstract DOI: https://doi.org/10.1016/j.chest.2025.07.3877
+- ATS 2025 abstract DOI: https://doi.org/10.1164/ajrccm.2025.211.Abstracts.A2683
+- Conway Thorax evidence synthesis DOI: https://doi.org/10.1136/thoraxjnl-2017-211466

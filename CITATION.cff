@@ -1,46 +1,106 @@
 cff-version: 1.2.0
-message: >-
-  If you use this software, please cite the associated conference abstracts
-  (CHEST and ATS posters) and the archived software release (preferred once a DOI is minted).
-title: "TcCO₂ Accuracy"
+message: "If you use this repository, please cite the software and the associated conference abstracts."
+title: "TcCO2 Accuracy"
 type: software
 authors:
   - family-names: Locke
-    given-names: Brian
-    orcid: "https://orcid.org/0000-0000-0000-0000"  # TODO: replace with your ORCID
+    given-names: Brian W.
+    orcid: "https://orcid.org/0000-0002-3588-5238"
 repository-code: "https://github.com/reblocke/tcco2-accuracy"
-url: "https://github.com/reblocke/tcco2-accuracy"
-license: MIT
+url: "https://reblocke.github.io/tcco2-accuracy/"
+license: "MIT"
+abstract: "Research software and a static browser app for evaluating TcCO2-to-PaCO2 agreement, simulation-based hypercapnia classification, and TcCO2-conditioned PaCO2 inference."
 keywords:
   - transcutaneous CO2
   - TcCO2
   - PaCO2
-  - Bland-Altman
-  - limits of agreement
+  - hypercapnia
   - respiratory failure
-  - monitoring
-abstract: >-
-  Analysis code and supporting artifacts for evaluating the accuracy of transcutaneous CO₂ (TcCO₂)
-  monitoring versus arterial PaCO₂ across clinical contexts. The repository currently supports
-  poster-presented results (CHEST and ATS) and a manuscript in preparation.
+  - Bland-Altman
+  - simulation
+  - Pyodide
+preferred-citation:
+  type: article
+  authors:
+    - family-names: Anderson-Bell
+      given-names: Dustin
+    - family-names: Locke
+      given-names: Brian W.
+      orcid: "https://orcid.org/0000-0002-3588-5238"
+  title: "Simulation suggests transcutaneous CO2 sensors may accurately detect hypercapnia across settings"
+  journal: "CHEST"
+  year: 2025
+  month: 10
+  volume: 168
+  issue: 4
+  start: "A6917"
+  doi: "10.1016/j.chest.2025.07.3877"
+  url: "https://doi.org/10.1016/j.chest.2025.07.3877"
 references:
-  - type: other
-    title: "CHEST poster (Google Scholar entry)"
-    url: "https://scholar.google.com/citations?view_op=view_citation&hl=en&user=O1nydc8AAAAJ&sortby=pubdate&citation_for_view=O1nydc8AAAAJ:hC7cP41nSMkC"
-  - type: other
-    title: "ATS poster (Google Scholar entry)"
-    url: "https://scholar.google.com/citations?view_op=view_citation&hl=en&user=O1nydc8AAAAJ&sortby=pubdate&citation_for_view=O1nydc8AAAAJ:dhFuZR0502QC"
   - type: article
-    title: "The accuracy and precision of transcutaneous carbon dioxide monitoring: a systematic review and meta-analysis"
+    authors:
+      - family-names: Anderson-Bell
+        given-names: Dustin
+      - family-names: Locke
+        given-names: Brian W.
+        orcid: "https://orcid.org/0000-0002-3588-5238"
+      - family-names: Gouripeddi
+        given-names: Ram
+      - family-names: Richards
+        given-names: W.
+    title: "In silico estimation of the performance of transcutaneous CO2 sensors for detecting hypercapnia in newly admitted inpatients"
+    journal: "American Journal of Respiratory and Critical Care Medicine"
+    year: 2025
+    month: 5
+    volume: 211
+    issue: "Supplement_1"
+    start: "A2683"
+    end: "A2683"
+    doi: "10.1164/ajrccm.2025.211.Abstracts.A2683"
+    url: "https://doi.org/10.1164/ajrccm.2025.211.Abstracts.A2683"
+  - type: article
     authors:
       - family-names: Conway
-        given-names: A.
+        given-names: Aaron
+      - family-names: Tipton
+        given-names: Elizabeth
+      - family-names: Liu
+        given-names: Wei-Hong
+      - family-names: Conway
+        given-names: Zachary
+      - family-names: Soalheira
+        given-names: Kathleen
+      - family-names: Sutherland
+        given-names: Joanna
+      - family-names: Fingleton
+        given-names: James
+    title: "Accuracy and precision of transcutaneous carbon dioxide monitoring: a systematic review and meta-analysis"
     journal: "Thorax"
     year: 2019
-    doi: "10.1136/thoraxjnl-2018-212632"
-# TODOs:
-# - Add preferred software DOI once you mint a Zenodo release:
-#   doi: "10.5281/zenodo.XXXXXXX"
-# - Add release version and date for the exact artifact used in posters/manuscript:
-#   version: "v0.X"
-#   date-released: "YYYY-MM-DD"
+    month: 2
+    volume: 74
+    issue: 2
+    start: 157
+    end: 163
+    doi: "10.1136/thoraxjnl-2017-211466"
+    url: "https://doi.org/10.1136/thoraxjnl-2017-211466"
+  - type: data
+    authors:
+      - family-names: Conway
+        given-names: Aaron
+      - family-names: Tipton
+        given-names: Elizabeth
+      - family-names: Liu
+        given-names: Wei-Hong
+      - family-names: Conway
+        given-names: Zachary
+      - family-names: Soalheira
+        given-names: Kathleen
+      - family-names: Sutherland
+        given-names: Joanna
+      - family-names: Fingleton
+        given-names: James
+    title: "Accuracy of TcCO2 monitoring meta-analysis"
+    year: 2018
+    doi: "10.6084/m9.figshare.6244058.v2"
+    repository: "https://figshare.com/articles/dataset/Accuracy_of_TcCO2_monitoring_meta-analysis/6244058"

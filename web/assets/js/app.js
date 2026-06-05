@@ -201,13 +201,19 @@ function renderChart(result) {
     ...markerAnnotations(verticals, displayRange),
     ...curveAnnotations(result, displayRange),
   ];
+  const isCompactChart = elements.chart.clientWidth < 520;
   const layout = {
-    title: "Posterior PaCO2 distribution conditioned on observed TcCO2",
+    title: {
+      text: isCompactChart
+        ? "PaCO2 distribution conditioned<br>on observed TcCO2"
+        : "Posterior PaCO2 distribution conditioned on observed TcCO2",
+      font: { size: isCompactChart ? 14 : 18 },
+    },
     xaxis: { title: "PaCO2 (mmHg)", range: displayRange.range },
     yaxis: { title: "Probability per bin" },
     showlegend: false,
     bargap: 0.05,
-    margin: { t: 96, r: 20, b: 58, l: 66 },
+    margin: { t: isCompactChart ? 110 : 96, r: 20, b: 58, l: 66 },
     shapes: verticals.map(([x, , color, dash]) => ({
       type: "line",
       x0: x,

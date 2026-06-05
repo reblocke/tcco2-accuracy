@@ -1,22 +1,45 @@
 # TcCO2 Accuracy
 
-Research code and materials for studying agreement between transcutaneous CO2
-(TcCO2) monitoring and arterial PaCO2 across clinical contexts. The repository
-now ships a static GitHub Pages app that runs the Python numerical model in the
-browser with Pyodide.
+[![ATS abstract](https://img.shields.io/badge/ATS%202025-10.1164%2Fajrccm.2025.211.Abstracts.A2683-blue)](https://doi.org/10.1164/ajrccm.2025.211.Abstracts.A2683)
+[![CHEST abstract](https://img.shields.io/badge/CHEST%202025-10.1016%2Fj.chest.2025.07.3877-blue)](https://doi.org/10.1016/j.chest.2025.07.3877)
+[![App](https://img.shields.io/badge/app-GitHub%20Pages-green)](https://reblocke.github.io/tcco2-accuracy/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**Project status:** Presented as posters at CHEST and ATS. Manuscript in
-preparation. This is research software and is not intended for clinical
-decision-making.
+Research software and a static browser app for studying agreement between
+transcutaneous CO2 (TcCO2) monitoring and arterial PaCO2 across clinical
+contexts. The browser app runs the Python numerical model in Pyodide and keeps
+all user-entered values client-side.
 
-## Links
+**Project status:** abstract/poster stage. Results have been presented at ATS
+2025 and CHEST 2025; the manuscript has not yet been submitted. This is research
+software and is not intended for clinical decision-making.
 
-- **Static app:** https://reblocke.github.io/tcco2-accuracy/
-- **Repository:** https://github.com/reblocke/tcco2-accuracy
-- **CHEST poster:** https://scholar.google.com/citations?view_op=view_citation&hl=en&user=O1nydc8AAAAJ&sortby=pubdate&citation_for_view=O1nydc8AAAAJ:hC7cP41nSMkC
-- **ATS poster:** https://scholar.google.com/citations?view_op=view_citation&hl=en&user=O1nydc8AAAAJ&sortby=pubdate&citation_for_view=O1nydc8AAAAJ:dhFuZR0502QC
-- **Related evidence synthesis:** Conway A, et al. *Thorax* (2019). Accuracy and precision of transcutaneous CO2 monitoring.
-- **Public dataset / code archive:** https://figshare.com/articles/dataset/Accuracy_of_TcCO2_monitoring_meta-analysis/6244058
+## Links And Identifiers
+
+| Item | Link |
+| --- | --- |
+| Static app | https://reblocke.github.io/tcco2-accuracy/ |
+| Repository | https://github.com/reblocke/tcco2-accuracy |
+| Machine-readable index | [llms.txt](llms.txt) |
+| ATS 2025 abstract | [10.1164/ajrccm.2025.211.Abstracts.A2683](https://doi.org/10.1164/ajrccm.2025.211.Abstracts.A2683) |
+| CHEST 2025 abstract | [10.1016/j.chest.2025.07.3877](https://doi.org/10.1016/j.chest.2025.07.3877) |
+| Conway evidence synthesis | [10.1136/thoraxjnl-2017-211466](https://doi.org/10.1136/thoraxjnl-2017-211466) |
+| Conway data/code archive | [Figshare record](https://figshare.com/articles/dataset/Accuracy_of_TcCO2_monitoring_meta-analysis/6244058) |
+
+## Authors, Funding, And Disclosures
+
+| Contributor | Role | Affiliation |
+| --- | --- | --- |
+| Dustin Anderson-Bell, MD | Abstract author | University of Utah Health |
+| Brian W. Locke, MD, MSc | Abstract author, repository maintainer | Intermountain Health; University of Utah |
+| Ram Gouripeddi, MBBS, MS | ATS abstract author | University of Utah Biomedical Informatics |
+| W. Richards, BS | ATS abstract author | University of Utah Biomedical Informatics |
+
+Funding/support listed with the abstracts includes the American Thoracic Society
+ASPIRE Fellowship, the Intermountain Fund, NIH NRSA `5T32HL105321`, and NCATS
+`UM1TR004409`. Repository issues and pull requests are the preferred contact
+route. Maintainer: Brian W. Locke (`@reblocke`, ORCID
+[`0000-0002-3588-5238`](https://orcid.org/0000-0002-3588-5238)).
 
 ## Quick Start
 
@@ -58,20 +81,23 @@ approved for release.
 ## Repository Layout
 
 ```text
-├── src/tcco2_accuracy/core/   # Pure numerical/statistical source of truth
-├── src/tcco2_accuracy/        # I/O, contracts, wrappers, reporting, workflows
-├── tests/                     # Core, workflow, contract, and browser tests
-├── web/                       # Static GitHub Pages app
-├── scripts/                   # Staging, artifact, and data-prep commands
-├── Data/                      # Source/reference inputs and deployable prior bins
-├── artifacts/                 # Small generated review/manuscript outputs
-├── docs/                      # Architecture, deployment, validation, and decisions
-├── Code/                      # Stata reference code
-├── Drafts/                    # Manuscript/presentation drafts
-├── Makefile                   # Local command surface
-├── pyproject.toml             # Package and dependency metadata
-└── uv.lock                    # Locked Python environment
+src/tcco2_accuracy/core/   Pure numerical/statistical source of truth
+src/tcco2_accuracy/        I/O, contracts, wrappers, reporting, workflows
+tests/                     Core, workflow, contract, and browser tests
+web/                       Static GitHub Pages app
+scripts/                   Staging, artifact, and data-prep commands
+Data/                      Canonical public CSV/XLSX inputs and public prior
+artifacts/                 Small aggregate review/manuscript outputs
+docs/                      Architecture, deployment, validation, and decisions
+Code/                      Stata reference code
+Makefile                   Local command surface
+pyproject.toml             Package and dependency metadata
+uv.lock                    Locked Python environment
 ```
+
+Internal drafts, editable poster decks, third-party PDFs, RData source archives,
+local Stata `.dta` files, and exact count-bearing PaCO2 outputs are local-only
+or source-linked materials and are not part of the public branch tip.
 
 ## Static App Model
 
@@ -86,7 +112,7 @@ approved for release.
 - User-entered values and uploads remain in the browser. The app has no backend,
   telemetry, persistence, or patient-value URLs.
 
-## Data Access
+## Data Access And Dictionary
 
 - Canonical Conway study inputs are maintained in `Data/conway_studies.csv` and
   `Data/conway_studies.xlsx`.
@@ -97,78 +123,45 @@ approved for release.
   repository.
 - Public/restricted asset boundaries are documented in
   `docs/DATA_GOVERNANCE.md` and `Data/PROVENANCE.md`.
+- Variable and artifact documentation is available in [data_dictionary.md](data_dictionary.md)
+  and [data_dictionary.csv](data_dictionary.csv).
 
 If future analyses require restricted data, do not commit raw files. Provide
 synthetic examples and access instructions instead.
 
 ## Quality Checks
 
-- `make test` runs Python unit, workflow, staging, and browser-contract tests.
-- `make e2e` stages the web app and runs Playwright browser smoke tests.
-- `make visual-qa` stages the web app and writes local review screenshots under
-  `.pytest_tmp/visual-qa/`.
-- `make verify` runs staging, format check, lint, unit tests, and E2E tests.
-- Scientific validation targets are documented in `docs/VALIDATION.md`.
+| Command | Purpose |
+| --- | --- |
+| `make stage-web` | Stage Python and data assets for the static app |
+| `make test` | Run Python unit, workflow, staging, and browser-contract tests |
+| `make e2e` | Run Playwright browser smoke tests against the staged app |
+| `make visual-qa` | Write local review screenshots under `.pytest_tmp/visual-qa/` |
+| `make verify` | Run staging, format check, lint, unit tests, and E2E tests |
+
+Scientific validation targets are documented in `docs/VALIDATION.md`.
 
 ## Citation
 
-Until journal publication, please cite the conference abstracts and this
-repository release:
+Until a manuscript or archived software DOI is available, cite the repository
+release or commit and the conference abstracts:
 
-> Anderson-Bell D, Locke BW. *TcCO2 Accuracy: code for evaluating transcutaneous
-> CO2 monitoring accuracy.* GitHub repository (version `<tag>`).
+> Anderson-Bell D, Locke BW. Simulation suggests transcutaneous CO2 sensors may
+> accurately detect hypercapnia across settings. CHEST. 2025;168(4):A6917.
+> doi:[10.1016/j.chest.2025.07.3877](https://doi.org/10.1016/j.chest.2025.07.3877)
+
+> Anderson-Bell D, Locke BW, Gouripeddi R, Richards W. In silico estimation of
+> the performance of transcutaneous CO2 sensors for detecting hypercapnia in
+> newly admitted inpatients. American Journal of Respiratory and Critical Care
+> Medicine. 2025;211(Supplement_1):A2683.
+> doi:[10.1164/ajrccm.2025.211.Abstracts.A2683](https://doi.org/10.1164/ajrccm.2025.211.Abstracts.A2683)
 
 See `CITATION.cff` for machine-readable metadata.
 
 ## License
 
-- **Code:** MIT License (see `LICENSE`)
-- **Data:** Governed by original source licenses and access terms.
-
-## LLM and Repository Readiness Notes
-
-### Description
-Simulation suggests transcutaneous CO2 sensors may accurately detect hypercapnia across settings
-
-### Instructions
-Start with this README, then inspect the files listed under Repository Layout. For computational workflows, run commands from the repository root and avoid committing generated outputs unless a release explicitly calls for them.
-
-### Authors, Funding, and Acknowledgments
-Maintainer: Brian W. Locke (`@reblocke`, ORCID 0000-0002-3588-5238). Preserve any project-specific author, funding, and acknowledgment details already listed elsewhere in the repository or accompanying publication.
-
-### Repository Layout
-- `.python-version`
-- `AGENTS.md`
-- `CITATION.cff`
-- `CODE_OF_CONDUCT.md`
-- `CONTRIBUTING.md`
-- `Code/1_conway_tcco2_cleaning_do.do`
-- `Code/2_trinetx_cleaning_do.do`
-- `Code/3_tcco2_uncertainty_and_simulation_do.do`
-- `Code/Master TcCO2 do file.do`
-- `Data/AGENTS.md`
-- `Data/PROVENANCE.md`
-- `Data/TcCO2 meta-analysis.Rmd`
-- `Data/Thorax 2019 TcCO2 metaanalysis.pdf`
-- `Data/conway_studies.csv`
-
-### Data and Codebook
-Clinical or simulation data; verify no PHI
-
-### Workflow / Script Order
-stata-mp -b do "Code/1_conway_tcco2_cleaning_do.do"
-
-### Dependencies / Environment
-Python requirements/pyproject if present
-
-### Citation
-No publication DOI is assigned to this repository. Cite the GitHub repository URL and the commit or release used.
-
-### License
-Repository license status: MIT. See the root license file when present. Third-party and publisher materials remain under their original terms.
-
-### Manuscript Status
-No manuscript version public yet; use repo-generated manuscript snippets only if authored and intended for release Do not add unpublished manuscript text
-
-### Contact
-Maintainer: Brian W. Locke (`@reblocke`). Use GitHub issues or pull requests for repository-specific questions when the repository is public.
+- **Code and author-owned repository documentation:** MIT License (see `LICENSE`)
+- **Data and external evidence sources:** governed by original source licenses
+  and access terms.
+- **Third-party article pages, source records, and abstract pages:** linked and
+  cited rather than mirrored as publisher PDFs or full publisher text.
