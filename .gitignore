@@ -1,11 +1,14 @@
+# OS/editor artifacts
 .DS_Store
-*.dta
-*.gph
-/Results and Figures
-temp.log
+Thumbs.db
+~$*
+*.swp
+*.swo
 *.stswp
+
+# Python/build/test artifacts
 __pycache__/
-*.pyc
+*.py[cod]
 .pytest_cache/
 .pytest_tmp/
 .tmp/
@@ -15,10 +18,40 @@ __pycache__/
 .coverage
 htmlcov/
 .venv/
+venv/
 *.egg-info/
 dist/
 build/
+
+# Stata/local analysis outputs
+*.dta
+*.gph
+*.grec
+*.log
+*.smcl
+temp.log
+/Results and Figures/
+/outputs/
+
+# Generated GitHub Pages assets; regenerate with `make stage-web`
 /web/assets/data/
 /web/assets/py/
+
+# Restricted or exact-count PaCO2 outputs
 /Data/paco2_prior_bins.csv
+/Data/paco2_prior_bins.xlsx
 /artifacts/figure_paco2_distribution_bins.csv
+
+# Local drafts and publisher/source mirrors removed from the public branch
+/Drafts/
+/Data/Conway Thorax supplement and code/
+/Data/TcCO2 meta-analysis.Rmd
+/Data/*.Rdata
+/Data/*.rdata
+/Data/*.RHistory
+/Data/*.Rhistory
+/Data/*.pdf
+*.doc
+*.docx
+*.ppt
+*.pptx

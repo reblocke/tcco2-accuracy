@@ -313,7 +313,9 @@ local total_sd_draw = sqrt(`sigma2_draw' + `tau2_draw')
 display "Drawn total SD = `total_sd_draw'"
 
 
-use "/Users/reblocke/Research/tcco2-accuracy/Data/In Silico TCCO2 Database.dta", clear //swap to yours
+local insilico_db "Data/In Silico TCCO2 Database.dta"
+if "`1'" != "" local insilico_db "`1'"
+use "`insilico_db'", clear
 
 // For each row, generate difference from Normal(bias_draw, total_sd_draw)
 set seed 12345
@@ -324,5 +326,4 @@ gen double tcco2_sim       = paco2 - difference_draw
 
 summarize paco2 tcco2_sim difference_draw
 //save "co2_sim_data.dta", replace
-
 

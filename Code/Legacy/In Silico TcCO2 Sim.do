@@ -70,7 +70,9 @@ capture log close // close any existing log
 * Data processing
 clear
 
-cd "/Users/blocke/Box Sync/Residency Personal Files/Scholarly Work/Locke Research Projects/tcco2-accuracy" //change to your folder
+local project_root "."
+if "`1'" != "" local project_root "`1'"
+cd "`project_root'"
 
 
 /* This block just creates output folders for figures and log files, and makes it 

@@ -22,6 +22,8 @@
 - `web/assets/data/paco2_public_prior.csv` - generated staged public 1 mmHg PaCO2 density prior.
 - `web/assets/data/bootstrap_params.csv` - generated staged canonical bootstrap parameters.
 - `web/assets/py/tcco2_accuracy/` - generated staged Python package copied from the browser allowlist.
+- `web/llms.txt` and the metadata tags in `web/index.html` describe the deployed
+  static app for machine indexing.
 
 Run `make stage-web` after changing Python browser-facing code or default data
 assets. Generated staged assets are not tracked.
