@@ -2,19 +2,21 @@
 
 Bootstrap draws: 1000 per subgroup (seed=202401).
 Bootstrap mode: cluster_plus_withinstudy.
+Agreement method version: `agreement_natural_log_tau2_direct_v1`.
+Results status: `provisional`.
 
 LoA bounds shown as 2.5/50/97.5% bootstrap quantiles;
-Conway CI shown as reported outer CI bounds.
+corrected analytic CI shown as outer CI bounds from the same method revision.
 
-| Group | LoA L q2.5 | LoA L q50 | LoA L q97.5 | LoA U q2.5 | LoA U q50 | LoA U q97.5 | Conway CI L | Conway CI U | Width ratio | Width gap |
+| Group | LoA L q2.5 | LoA L q50 | LoA L q97.5 | LoA U q2.5 | LoA U q50 | LoA U q97.5 | Corrected analytic CI L | Corrected analytic CI U | Width ratio | Width gap |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| main | -8.58 | -7.05 | -4.79 | 4.32 | 6.85 | 8.48 | -15.04 | 14.81 | 0.57 | 12.79 |
-| icu | -6.82 | -5.59 | -4.47 | 2.84 | 4.37 | 7.22 | -7.33 | 6.14 | 1.04 | -0.56 |
-| arf | -5.32 | -3.71 | -2.62 | 4.56 | 6.96 | 10.13 | -7.82 | 11.21 | 0.81 | 3.58 |
-| lft | -4.47 | -3.96 | -2.48 | 1.84 | 3.86 | 5.25 | -7.36 | 7.26 | 0.66 | 4.90 |
+| main | -11.36 | -9.95 | -8.52 | 7.86 | 9.73 | 11.26 | -11.28 | 11.05 | 1.01 | -0.28 |
+| icu | -12.32 | -10.47 | -8.74 | 7.15 | 9.24 | 12.40 | -12.35 | 11.16 | 1.05 | -1.20 |
+| arf | -12.11 | -8.77 | -6.43 | 8.41 | 11.93 | 17.04 | -12.40 | 15.78 | 1.03 | -0.98 |
+| lft | -8.36 | -6.06 | -4.65 | 2.98 | 6.05 | 9.39 | -11.16 | 11.07 | 0.80 | 4.48 |
 
-Width interpretation (bootstrap vs Conway outer CI):
-- main: materially narrower than Conway CI.
-- icu: comparable to Conway CI.
-- arf: comparable to Conway CI.
-- lft: materially narrower than Conway CI.
+Width interpretation (bootstrap vs corrected analytic outer CI):
+- main: comparable to the corrected analytic CI.
+- icu: comparable to the corrected analytic CI.
+- arf: comparable to the corrected analytic CI.
+- lft: materially narrower than the corrected analytic CI.

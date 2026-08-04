@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Sequence
+from typing import Iterable, Sequence
 
 import numpy as np
 import pandas as pd
@@ -55,23 +55,44 @@ def write_bootstrap_params(path: Path, params: pd.DataFrame) -> None:
         raise ValueError(f"Unsupported bootstrap params format: {path.suffix}")
 
 
-def bootstrap_loa_summary(params: pd.DataFrame, conway_path: Path | None = None) -> pd.DataFrame:
-    """Summarize bootstrap LoA bounds versus Conway CIs."""
+def bootstrap_loa_summary(
+    params: pd.DataFrame,
+    conway_path: Path | None = None,
+    *,
+    data_by_group: Iterable[tuple[str, pd.DataFrame]] | None = None,
+    truncate_tau2: bool = True,
+) -> pd.DataFrame:
+    """Summarize bootstrap LoA bounds versus corrected analytic CIs.
+
+    When ``data_by_group`` is supplied, analytic comparators are calculated from
+    those exact group frames. Direct callers may omit it to retain path-backed
+    loading of the canonical Conway groups.
+    """
 
     rows: list[dict[str, float | str]] = []
     bootstrap_mode = _extract_bootstrap_mode(params)
-    for group_name, group_key in CONWAY_GROUPS.items():
+    method_version = _extract_single_value(params, "agreement_method_version")
+    results_status = _extract_single_value(params, "results_status")
+    analytic_groups = (
+        [
+            (group_name, load_conway_group(group_key, path=conway_path))
+            for group_name, group_key in CONWAY_GROUPS.items()
+        ]
+        if data_by_group is None
+        else list(data_by_group)
+    )
+    for group_name, group_data in analytic_groups:
         subset = params[params["group"] == group_name]
         if subset.empty:
             continue
         loa_l_q = subset["loa_l"].quantile([0.025, 0.5, 0.975])
         loa_u_q = subset["loa_u"].quantile([0.025, 0.5, 0.975])
-        summary = conway_group_summary(load_conway_group(group_key, path=conway_path))
+        summary = conway_group_summary(group_data, truncate_tau2=truncate_tau2)
         bootstrap_outer_width = float(loa_u_q.loc[0.975] - loa_l_q.loc[0.025])
-        conway_outer_width = float(summary.ci_u - summary.ci_l)
+        corrected_analytic_outer_width = float(summary.ci_u - summary.ci_l)
         width_ratio = (
-            bootstrap_outer_width / conway_outer_width
-            if np.isfinite(conway_outer_width) and conway_outer_width != 0
+            bootstrap_outer_width / corrected_analytic_outer_width
+            if np.isfinite(corrected_analytic_outer_width) and corrected_analytic_outer_width != 0
             else float("nan")
         )
         rows.append(
@@ -83,16 +104,22 @@ def bootstrap_loa_summary(params: pd.DataFrame, conway_path: Path | None = None)
                 "loa_u_q025": float(loa_u_q.loc[0.025]),
                 "loa_u_q50": float(loa_u_q.loc[0.5]),
                 "loa_u_q975": float(loa_u_q.loc[0.975]),
-                "conway_loa_l": summary.loa_l,
-                "conway_loa_u": summary.loa_u,
-                "conway_ci_l": summary.ci_l,
-                "conway_ci_u": summary.ci_u,
+                "corrected_analytic_loa_l": summary.loa_l,
+                "corrected_analytic_loa_u": summary.loa_u,
+                "corrected_analytic_ci_l": summary.ci_l,
+                "corrected_analytic_ci_u": summary.ci_u,
                 "bootstrap_outer_width": bootstrap_outer_width,
-                "conway_outer_width": conway_outer_width,
+                "corrected_analytic_outer_width": corrected_analytic_outer_width,
                 "width_ratio": float(width_ratio),
-                "width_gap": float(conway_outer_width - bootstrap_outer_width),
+                "width_gap": float(corrected_analytic_outer_width - bootstrap_outer_width),
                 "n_boot": int(subset.shape[0]),
                 **({"bootstrap_mode": bootstrap_mode} if bootstrap_mode is not None else {}),
+                **(
+                    {"agreement_method_version": method_version}
+                    if method_version is not None
+                    else {}
+                ),
+                **({"results_status": results_status} if results_status is not None else {}),
             }
         )
 
@@ -112,13 +139,23 @@ def format_bootstrap_summary(
         "",
         f"Bootstrap draws: {n_boot} per subgroup (seed={seed}).",
         f"Bootstrap mode: {bootstrap_mode}.",
-        "",
-        "LoA bounds shown as 2.5/50/97.5% bootstrap quantiles;",
-        "Conway CI shown as reported outer CI bounds.",
-        "",
-        "| Group | LoA L q2.5 | LoA L q50 | LoA L q97.5 | LoA U q2.5 | LoA U q50 | LoA U q97.5 | Conway CI L | Conway CI U | Width ratio | Width gap |",
-        "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
+    method_version = _extract_single_value(summary, "agreement_method_version")
+    results_status = _extract_single_value(summary, "results_status")
+    if method_version is not None:
+        lines.append(f"Agreement method version: `{method_version}`.")
+    if results_status is not None:
+        lines.append(f"Results status: `{results_status}`.")
+    lines.extend(
+        [
+            "",
+            "LoA bounds shown as 2.5/50/97.5% bootstrap quantiles;",
+            "corrected analytic CI shown as outer CI bounds from the same method revision.",
+            "",
+            "| Group | LoA L q2.5 | LoA L q50 | LoA L q97.5 | LoA U q2.5 | LoA U q50 | LoA U q97.5 | Corrected analytic CI L | Corrected analytic CI U | Width ratio | Width gap |",
+            "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+        ]
+    )
 
     for _, row in summary.iterrows():
         lines.append(
@@ -132,8 +169,8 @@ def format_bootstrap_summary(
                     f"{row['loa_u_q025']:.2f}",
                     f"{row['loa_u_q50']:.2f}",
                     f"{row['loa_u_q975']:.2f}",
-                    f"{row['conway_ci_l']:.2f}",
-                    f"{row['conway_ci_u']:.2f}",
+                    f"{row['corrected_analytic_ci_l']:.2f}",
+                    f"{row['corrected_analytic_ci_u']:.2f}",
                     f"{row['width_ratio']:.2f}",
                     f"{row['width_gap']:.2f}",
                 ]
@@ -142,7 +179,7 @@ def format_bootstrap_summary(
         )
 
     lines.append("")
-    lines.append("Width interpretation (bootstrap vs Conway outer CI):")
+    lines.append("Width interpretation (bootstrap vs corrected analytic outer CI):")
     for _, row in summary.iterrows():
         interpretation = _interpret_width_ratio(float(row["width_ratio"]))
         lines.append(f"- {row['group']}: {interpretation}.")
@@ -151,22 +188,26 @@ def format_bootstrap_summary(
 
 
 def _extract_bootstrap_mode(params: pd.DataFrame) -> str | None:
-    if "bootstrap_mode" not in params.columns:
+    return _extract_single_value(params, "bootstrap_mode")
+
+
+def _extract_single_value(frame: pd.DataFrame, column: str) -> str | None:
+    if column not in frame.columns:
         return None
-    modes = pd.Series(params["bootstrap_mode"]).dropna().unique()
-    if modes.size != 1:
+    values = pd.Series(frame[column]).dropna().astype(str).unique()
+    if values.size != 1:
         return None
-    return str(modes[0])
+    return str(values[0])
 
 
 def _interpret_width_ratio(width_ratio: float) -> str:
     if not np.isfinite(width_ratio):
         return "ratio unavailable"
     if width_ratio < 0.8:
-        return "materially narrower than Conway CI"
+        return "materially narrower than the corrected analytic CI"
     if width_ratio <= 1.2:
-        return "comparable to Conway CI"
-    return "wider than Conway CI"
+        return "comparable to the corrected analytic CI"
+    return "wider than the corrected analytic CI"
 
 
 def build_simulation_summary(

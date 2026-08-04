@@ -1,6 +1,9 @@
-# Conway Table 1 Fixture Summary
+# Conway Table 1 Published/Legacy Fixture Summary
 
-- Source: `Conway Meta/Thorax 2019 TcCO2 metaanalysis.pdf` (Table 1).
+- Status: frozen published/legacy comparator; not a correctness target for
+  `agreement_natural_log_tau2_direct_v1`.
+- Source: Conway et al., Thorax 2019, Table 1 (DOI
+  `10.1136/thoraxjnl-2017-211466`); publisher PDFs are not tracked.
 - Rows included: Main analysis, ICU, acute respiratory failure, outpatients requiring lung function tests.
 
 | Population | Studies | N pairs | n participants | Bias | SD | Tau2 | LoA L | LoA U | CI L | CI U |

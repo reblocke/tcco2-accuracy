@@ -1,10 +1,12 @@
 # Conway Study Input Schema
 
 Canonical study-level inputs for the Conway meta-analysis live in:
-- `Data/conway_studies.csv`
-- `Data/conway_studies.xlsx`
+- `Data/conway_studies.csv` (operational promotion and browser-staging source)
+- `Data/conway_studies.xlsx` (human-editable review and authoring mirror)
 
-The table is the single source of truth for meta-analysis, bootstrap draws, and inference.
+These files represent one canonical table and must remain semantically equal within `1e-12`.
+The CSV is the executable source of truth for canonical artifact promotion; the XLSX supports
+human review and study additions.
 
 ## Required columns
 - `study_id` (string): unique study identifier.

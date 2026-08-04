@@ -8,6 +8,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from .core.conway_meta import AGREEMENT_METHOD_VERSION, RESULTS_STATUS
 from .data import load_paco2_prior_bins_bytes, prior_distribution_from_bins
 from .ui_api import build_subgroup_bootstrap_draws, predict_paco2_from_tcco2
 from .utils import validate_params_df
@@ -23,6 +24,7 @@ def compute_ui_payload(payload: dict[str, Any]) -> dict[str, Any]:
     subgroup = str(payload.get("subgroup", "all")).strip().lower()
     mode = str(payload.get("mode", "prior_weighted")).strip().lower()
     params = _params_from_payload(payload, subgroup)
+    provenance = _browser_params_provenance(params)
 
     prior_values = None
     prior_weights = None
@@ -74,6 +76,7 @@ def compute_ui_payload(payload: dict[str, Any]) -> dict[str, Any]:
             else "computed",
             "prior_source": prior_source,
             "n_params": int(params.shape[0]),
+            **provenance,
         },
     }
 
@@ -90,27 +93,59 @@ def build_bootstrap_payload(payload: dict[str, Any]) -> dict[str, Any]:
         seed=_optional_int_payload(payload, "seed"),
         bootstrap_mode=str(payload.get("bootstrap_mode") or DEFAULT_BOOTSTRAP_MODE),
     )
+    provenance = _browser_params_provenance(params)
     return {
         "subgroup": subgroup,
         "n_rows": int(params.shape[0]),
         "params": _json_records(params),
+        "metadata": provenance,
     }
 
 
 def _params_from_payload(payload: dict[str, Any], subgroup: str) -> pd.DataFrame:
     params = _optional_frame(payload, "params")
     if params is not None:
-        return validate_params_df(params).reset_index(drop=True)
+        params = validate_params_df(params).reset_index(drop=True)
+        _browser_params_provenance(params)
+        return params
 
     studies = _required_frame(payload, "study")
     validate_conway_studies_df(studies)
-    return build_subgroup_bootstrap_draws(
+    params = build_subgroup_bootstrap_draws(
         studies=studies,
         subgroup=subgroup,  # type: ignore[arg-type]
         n_boot=_int_payload(payload, "n_boot", DEFAULT_N_BOOT),
         seed=_optional_int_payload(payload, "seed"),
         bootstrap_mode=str(payload.get("bootstrap_mode") or DEFAULT_BOOTSTRAP_MODE),
     )
+    _browser_params_provenance(params)
+    return params
+
+
+def _browser_params_provenance(params: pd.DataFrame) -> dict[str, str]:
+    """Validate the fail-closed browser provenance contract."""
+
+    expected = {
+        "agreement_method_version": AGREEMENT_METHOD_VERSION,
+        "results_status": RESULTS_STATUS,
+    }
+    missing = sorted(set(expected) - set(params.columns))
+    if missing:
+        raise ValueError(
+            f"Browser parameter table is missing required provenance columns: {missing}"
+        )
+
+    for column, expected_value in expected.items():
+        if params[column].isna().any():
+            raise ValueError(f"Browser parameter provenance `{column}` must not be missing.")
+        values = sorted({str(value) for value in params[column]})
+        if values != [expected_value]:
+            raise ValueError(
+                f"Browser parameter provenance `{column}` must contain exactly "
+                f"the current value '{expected_value}'; found {values}."
+            )
+
+    return expected.copy()
 
 
 def _required_frame(payload: dict[str, Any], name: str) -> pd.DataFrame:
