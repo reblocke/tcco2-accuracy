@@ -63,19 +63,26 @@ def run_bootstrap(
 
     group_map = groups or CONWAY_GROUPS
     if data_by_group is None:
-        data_by_group = [
+        resolved_data_by_group = [
             (group_name, load_conway_group(group_key, path=conway_path))
             for group_name, group_key in group_map.items()
         ]
+    else:
+        resolved_data_by_group = list(data_by_group)
     draws = bootstrap_group_draws(
-        data_by_group,
+        resolved_data_by_group,
         n_boot=n_boot,
         seed=seed,
         study_id=study_id,
         truncate_tau2=truncate_tau2,
         bootstrap_mode=bootstrap_mode,
     )
-    summary = bootstrap_loa_summary(draws, conway_path=conway_path)
+    summary = bootstrap_loa_summary(
+        draws,
+        conway_path=conway_path,
+        data_by_group=resolved_data_by_group,
+        truncate_tau2=truncate_tau2,
+    )
     markdown = format_bootstrap_summary(
         summary,
         n_boot=n_boot,

@@ -1,7 +1,14 @@
 # TcCO2 Accuracy — Decisions
 
 ## Open decisions
-- None yet.
+- Independent biostatistical review is required before removing provisional warnings,
+  unfreezing downstream manuscript outputs, creating a final release tag, or making
+  submission-readiness claims.
+- The distinction between 73 reported studies and 76 modeled effect rows, together with
+  any estimator, clustering, or estimand changes, remains outside the TCCO2-003/004
+  correction and requires separate review.
+- Exact count-bearing tracked artifacts require a separate governance disposition before
+  the repository as a whole can be described as public-safe.
 
 ## Workflow and monorepo stabilization
 - The repository remains a monorepo for this wave: Python package, static browser app, source/reference
@@ -42,17 +49,50 @@
 - Browser UI copy avoids clinical correctness wording and reports threshold classification with
   posterior mass summaries because the app is a research interpretation tool, not clinical decision
   support.
+- Browser initialization and recalculation failures fail closed: before an error is displayed, the
+  app removes prior result-provenance attributes, hides and resets metrics, and purges the prior
+  Plotly chart so a failed custom run cannot appear to retain a valid result.
+- Agreement calculations, canonical browser parameters, and public agreement artifacts carry
+  method revision `agreement_natural_log_tau2_direct_v1` and status `provisional`. Pages may deploy
+  this corrected provisional method, but independent biostatistical review remains a final-release
+  and manuscript-unfreeze gate.
+- Public artifact regeneration uses the explicit `public-agreement` profile and public Conway data
+  only. Full PaCO2-dependent regeneration requires an explicit restricted input and a scratch/private
+  output directory. In-repository full output is permitted only below `.pytest_tmp/` or `.tmp/`;
+  otherwise the destination must be an external private path.
+- Canonical promotion to repository `artifacts/` is additionally locked to
+  `Data/conway_studies.csv`, seed 202401, 1,000 draws per subgroup, and
+  `cluster_plus_withinstudy`. Path aliases resolving to those canonical locations are accepted;
+  custom studies or settings must write to scratch. `artifacts/STATUS.md` remains the hand-authored
+  authority because scientific status and frozen-output decisions cannot be inferred from CLI args.
+  Promotion snapshots the complete five-file destination state before the first replacement. If
+  any replacement fails, all five destinations are rolled back byte-for-byte and files absent
+  before the attempt are removed; unrelated manifest and frozen files are never part of promotion.
 - Pure numerical code is separated under `src/tcco2_accuracy/core/`; top-level modules remain
   compatibility wrappers for existing public imports.
 - Malformed continuity-ledger paths are retired; durable project decisions belong in this file or
   `docs/adr/`.
 
 ## Logged divergences
-- `logs2` inputs are recomputed as `log10(S2*) + 1/(n_2 - 1)` with `v_logs2 = 2/(n_2 - 1)` to match `Conway Meta/data.dta`, even though `Code/3_tcco2_uncertainty_and_simulation_do.do:94` describes `logs2` as a natural log.
+- Superseding the legacy reproduction decision, `logs2` inputs now use the coherent natural-log
+  expression `log(S2*) + 1/(n_2 - 1)` with `v_logs2 = 2/(n_2 - 1)` and an `exp()`
+  back-transform, following Tipton and Shuster equations 4.4-4.5. The Figshare RData and inherited
+  Stata/Python calculation used `log10` with natural-log correction and back-transformation; those
+  values are retained only as frozen published/legacy comparators.
+- Analytic LoA uncertainty now treats `2 / sum((v_bias + tau2)^-2)` as direct-scale `Var(tau2)`
+  and applies the equation 4.16 coefficient `1/(sigma2 + tau2)`. The inherited implementation
+  instead paired that direct-scale variance with the log-scale coefficient
+  `tau2^2/(sigma2 + tau2)`.
 - Bootstrap τ² draws are truncated at 0 to enforce non-negative between-study variance for simulation/inference draws in `src/tcco2_accuracy/core/bootstrap.py`.
 - Bootstrap workflows default to `cluster_plus_withinstudy` to align outer CI scale with Conway, while low-level bootstrap functions default to `cluster_only` in `src/tcco2_accuracy/workflows/bootstrap.py` and `src/tcco2_accuracy/core/bootstrap.py`.
 - Hybrid bootstrap perturbations treat bias and log-variance inputs as independent due to missing covariance data in `src/tcco2_accuracy/core/bootstrap.py`.
-- Meta-analysis τ² defaults to untruncated values to reproduce Conway Table 1, but if the method-of-moments denominator is non-finite or zero we set τ² = 0 for stability in `src/tcco2_accuracy/core/conway_meta.py`.
+- Historical provisional choice (superseded 2026-08-04 below): meta-analysis τ² retained
+  untruncated analytic behavior for published/legacy-comparator review.
+- 2026-08-04: Production `loa_summary`, `conway_group_summary`, and meta workflow calculations
+  zero-truncate a negative method-of-moments τ² estimate before random-effects weights, LoA, and
+  equation 4.13. `random_effects_meta(..., truncate_tau2=False)` retains the raw estimate as a
+  diagnostic-only path. Confidence-interval behavior at and near the τ²=0 boundary remains
+  provisional pending independent biostatistical review.
 - LoA confidence intervals are undefined for single-study summaries, so CI bounds are returned as NaN when df ≤ 0 in `src/tcco2_accuracy/core/conway_meta.py`.
 - Main-analysis descriptive counts aggregate by `study_base` (strip trailing parentheses) and treat identical-bias multi-row citations as overlapping cohorts (use max counts) in `src/tcco2_accuracy/core/conway_meta.py`.
 - PaCO2 subgroup assignment follows `docs/SPEC.md:20-27`, which includes ED in `ed_inp` by construction; this differs from `Code/2_trinetx_cleaning_do.do:8-13`, where `ed_inp_group` excludes ED (`is_emer==0`) and requires `cc_time==0`.
@@ -60,4 +100,4 @@
 - Simulation/inference parameter validation requires finite numeric values with non-negative σ² and τ² in `src/tcco2_accuracy/core/utils.py`.
 - When subgroup-specific parameters are missing, simulation and inference use the shared selector in `src/tcco2_accuracy/core/_params.py` and fall back to all parameters (with a warning) rather than dropping the subgroup.
 - `format_inference_demo` only supports a single threshold and raises a ValueError otherwise in `src/tcco2_accuracy/workflows/infer.py`.
-- Conway study exports read bias/S2 and subgroup membership from the RData objects (`main`, `ICU`, `ARF`, `LFT`) and merge counts from `data.dta` (or `data_counts.csv` fallback); the Bolliger ICU row uses a 49/49/1 count fallback with bias/S2 pulled from `ICU` when absent from `main` to preserve Table 1 reproduction (`scripts/export_conway_rdata.py:29`, `scripts/export_conway_rdata.py:107`).
+- Legacy Conway study exports read bias/S2 and subgroup membership from the RData objects (`main`, `ICU`, `ARF`, `LFT`) and merge counts from `data.dta` (or `data_counts.csv` fallback); the Bolliger ICU row uses a 49/49/1 count fallback with bias/S2 pulled from `ICU` when absent from `main` to preserve the published/legacy source export (`scripts/export_conway_rdata.py:29`, `scripts/export_conway_rdata.py:107`).

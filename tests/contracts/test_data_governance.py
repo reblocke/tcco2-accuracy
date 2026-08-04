@@ -7,6 +7,8 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
 PUBLIC_PRIOR = ROOT / "Data" / "paco2_public_prior.csv"
+CONWAY_CSV = ROOT / "Data" / "conway_studies.csv"
+CONWAY_XLSX = ROOT / "Data" / "conway_studies.xlsx"
 RESTRICTED_EXACT_OUTPUTS = (
     Path("Data/paco2_prior_bins.csv"),
     Path("artifacts/figure_paco2_distribution_bins.csv"),
@@ -19,6 +21,17 @@ def test_public_prior_csv_exposes_weights_not_counts() -> None:
     assert list(prior.columns) == ["group", "paco2_bin", "weight"]
     forbidden_columns = {"count", "counts", "n", "raw_count", "cell_n", "density"}
     assert forbidden_columns.isdisjoint({column.lower() for column in prior.columns})
+
+
+def test_conway_csv_and_xlsx_mirrors_are_semantically_equal() -> None:
+    pd.testing.assert_frame_equal(
+        pd.read_csv(CONWAY_CSV),
+        pd.read_excel(CONWAY_XLSX),
+        check_dtype=False,
+        check_exact=False,
+        rtol=0,
+        atol=1e-12,
+    )
 
 
 def test_exact_count_outputs_are_ignored_and_untracked() -> None:

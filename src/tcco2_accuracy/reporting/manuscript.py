@@ -24,7 +24,6 @@ from ..simulation import (
 )
 from ..two_stage import TwoStagePolicy, summarize_two_stage_draws
 from ..utils import quantile_key, threshold_label, validate_params_df
-from ..workflows import bootstrap as bootstrap_workflow
 
 MANUSCRIPT_GROUP_ORDER = ("pft", "ed_inp", "icu", "all")
 MANUSCRIPT_GROUP_LABELS: dict[str, str] = {
@@ -51,6 +50,31 @@ class ManuscriptWorkflowResult:
     invariants: dict[str, float | int | str]
 
 
+@dataclass(frozen=True)
+class ManuscriptParametersResult:
+    parameters: pd.DataFrame
+    markdown: str
+
+
+def run_manuscript_parameters(
+    params: pd.DataFrame,
+    out_dir: Path | None = None,
+) -> ManuscriptParametersResult:
+    """Generate only the agreement-model parameter artifacts.
+
+    This entry point deliberately has no PaCO2 input and is safe for the public
+    agreement-artifact profile.
+    """
+
+    parameters = _summarize_parameters(params)
+    markdown = _format_parameters_table(parameters)
+    if out_dir is not None:
+        out_dir = Path(out_dir)
+        _write_csv(out_dir / "manuscript_parameters.csv", parameters)
+        write_text(out_dir / "manuscript_parameters.md", markdown)
+    return ManuscriptParametersResult(parameters=parameters, markdown=markdown)
+
+
 def run_manuscript_outputs(
     params: pd.DataFrame | None = None,
     paco2_data: pd.DataFrame | None = None,
@@ -73,6 +97,10 @@ def run_manuscript_outputs(
     """Generate manuscript-ready tables, figures, and result snippets."""
 
     if params is None:
+        # Keep the workflow import local so this reporting module remains safe to
+        # import before the eager ``tcco2_accuracy.workflows`` package initializer.
+        from ..workflows import bootstrap as bootstrap_workflow
+
         params = bootstrap_workflow.run_bootstrap(
             n_boot=n_boot,
             seed=seed,
@@ -228,6 +256,11 @@ def _next_seed(rng: np.random.Generator | None) -> int | None:
 
 def _summarize_parameters(params: pd.DataFrame) -> pd.DataFrame:
     params = validate_params_df(params).copy()
+    metadata = {
+        column: _require_single_metadata_value(params, column)
+        for column in ("agreement_method_version", "results_status")
+        if column in params.columns
+    }
     if "group" in params.columns:
         params["group"] = params["group"].map(PARAM_GROUP_MAP).fillna(params["group"])
     else:
@@ -255,7 +288,16 @@ def _summarize_parameters(params: pd.DataFrame) -> pd.DataFrame:
     ]
     summary = summary.reset_index()
     summary["label"] = summary["group"].map(MANUSCRIPT_GROUP_LABELS).fillna(summary["group"])
+    for column, value in metadata.items():
+        summary[column] = value
     return _order_groups(summary)
+
+
+def _require_single_metadata_value(params: pd.DataFrame, column: str) -> str:
+    values = params[column].dropna().astype(str).unique()
+    if values.size != 1:
+        raise ValueError(f"Expected exactly one {column}; found {values.tolist()}")
+    return str(values[0])
 
 
 def _simulate_with_all(
@@ -675,8 +717,15 @@ def _format_parameters_table(parameters: pd.DataFrame) -> str:
         "# Error-model parameters used",
         "",
         "Median with 95% uncertainty interval (bootstrap percentile).",
-        "",
     ]
+    for column, label in (
+        ("agreement_method_version", "Agreement method version"),
+        ("results_status", "Results status"),
+    ):
+        if column in parameters.columns:
+            value = _require_single_metadata_value(parameters, column)
+            lines.append(f"{label}: `{value}`.")
+    lines.append("")
     headers = [
         "Setting",
         "Bias δ",

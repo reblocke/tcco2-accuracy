@@ -8,8 +8,8 @@ The machine-readable companion is `data_dictionary.csv`.
 
 | Asset | Purpose | Public status |
 | --- | --- | --- |
-| `Data/conway_studies.csv` | Canonical study-level input table for the TcCO2-PaCO2 agreement model | Public |
-| `Data/conway_studies.xlsx` | Spreadsheet copy of the canonical Conway study table | Public |
+| `Data/conway_studies.csv` | Operational canonical promotion and browser-staging source | Public |
+| `Data/conway_studies.xlsx` | Human-editable review mirror of the canonical CSV | Public |
 | `Data/conway_studies_template.xlsx` | Template for future study additions | Public |
 | `Data/data_counts.csv` | Source-derived count fallback for Conway export workflows | Public, review provenance before reuse |
 | `Data/paco2_public_prior.csv` | Weight-only PaCO2 prior used by the browser app | Public |
@@ -51,10 +51,24 @@ or encoded in URLs.
 ## Aggregate Artifacts
 
 Small aggregate outputs under `artifacts/` support review and manuscript
-workflows. Public aggregate examples include bootstrap parameters, classification
-metrics, two-stage strategy summaries, prediction interval examples, and result
-snippets. These should not contain patient-level rows, identifiers, exact
-restricted-source counts, or small-cell reconstruction fields.
+workflows. `artifacts/STATUS.md` is the authority for whether each output is
+corrected-provisional or frozen at the legacy agreement-method revision. The
+canonical bootstrap parameters include `agreement_method_version` and
+`results_status`; browser staging rejects missing, stale, or mixed values.
+Canonical promotion also requires the locked source, seed, draw count, and bootstrap mode in
+`artifacts/STATUS.md`; custom candidates must be written outside `artifacts/`.
+
+Only public Conway-derived agreement outputs are promoted in the current wave.
+Classification metrics, two-stage summaries, prediction intervals, confusion
+matrices, and result snippets remain frozen until corrected downstream regeneration
+and governance review. Aggregate outputs must not contain patient-level rows,
+identifiers, exact restricted-source counts, or small-cell reconstruction fields.
+
+| Asset | Purpose | Current status |
+| --- | --- | --- |
+| `artifacts/STATUS.md` | Current/frozen artifact manifest and promotion gates | Current documentation |
+| `artifacts/bootstrap_params.csv` | Canonical browser bootstrap parameters | Corrected-provisional |
+| PaCO2-dependent artifacts listed in `artifacts/STATUS.md` | Simulation, inference, classification, and manuscript review outputs | Frozen legacy-method |
 
 ## Restricted Or Local-Only Assets
 
@@ -75,3 +89,5 @@ restricted-source counts, or small-cell reconstruction fields.
   or internal draft files as machine-readable surfaces.
 - The static app is research software only and is not intended for clinical
   decision-making.
+- Corrected browser outputs remain provisional pending independent biostatistical
+  review; frozen downstream artifacts must not be described as corrected.

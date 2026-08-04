@@ -2,6 +2,16 @@
 
 from __future__ import annotations
 
-from ..reporting.manuscript import ManuscriptWorkflowResult, run_manuscript_outputs
+from ..reporting.manuscript import (
+    ManuscriptParametersResult,
+    ManuscriptWorkflowResult,
+    run_manuscript_outputs,
+    run_manuscript_parameters,
+)
 
-__all__ = ["ManuscriptWorkflowResult", "run_manuscript_outputs"]
+__all__ = [
+    "ManuscriptParametersResult",
+    "ManuscriptWorkflowResult",
+    "run_manuscript_outputs",
+    "run_manuscript_parameters",
+]

@@ -59,6 +59,7 @@ async function initialize() {
     elements.status.textContent = "Runtime ready. Default data are loaded from repo assets.";
     await calculate();
   } catch (error) {
+    clearResult();
     showError(error.message);
     elements.status.textContent = "Runtime failed to load.";
   }
@@ -73,6 +74,7 @@ async function calculate() {
     renderResult(result);
     elements.status.textContent = "Calculation complete.";
   } catch (error) {
+    clearResult();
     showError(error.message);
     elements.status.textContent = "Calculation failed.";
   } finally {
@@ -136,7 +138,12 @@ async function readUploadAsCsv(file) {
 }
 
 function renderResult(result) {
+  document.body.dataset.agreementMethodVersion = result.metadata.agreement_method_version;
+  document.body.dataset.resultsStatus = result.metadata.results_status;
+  document.body.dataset.paramsSource = result.metadata.params_source;
   elements.metrics.hidden = false;
+  elements.metrics.style.removeProperty("display");
+  elements.chart.hidden = false;
   elements.interval.textContent =
     `${result.paco2_median.toFixed(1)} [` +
     `${result.paco2_q_low.toFixed(1)}, ${result.paco2_q_high.toFixed(1)}]`;
@@ -406,6 +413,25 @@ function visibleCurveLabelPoint(bins, values, displayRange) {
 function setBusy(isBusy) {
   elements.calculate.disabled = isBusy;
   elements.calculate.textContent = isBusy ? "Calculating..." : "Calculate";
+}
+
+function clearResult() {
+  delete document.body.dataset.agreementMethodVersion;
+  delete document.body.dataset.resultsStatus;
+  delete document.body.dataset.paramsSource;
+  elements.metrics.hidden = true;
+  elements.metrics.style.display = "none";
+  elements.interval.textContent = "-";
+  elements.thresholdLabel.textContent = "P(PaCO2 >= threshold)";
+  elements.probability.textContent = "-";
+  elements.decision.textContent = "-";
+  elements.decisionText.textContent = "Run a calculation to show posterior threshold mass.";
+  elements.caption.textContent = "";
+  if (globalThis.Plotly?.purge) {
+    globalThis.Plotly.purge(elements.chart);
+  }
+  elements.chart.replaceChildren();
+  elements.chart.hidden = true;
 }
 
 function showError(message) {

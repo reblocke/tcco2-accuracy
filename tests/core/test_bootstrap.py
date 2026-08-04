@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 from tcco2_accuracy.bootstrap import bootstrap_conway_parameters
+from tcco2_accuracy.conway_meta import AGREEMENT_METHOD_VERSION, RESULTS_STATUS
 from tcco2_accuracy.data import load_conway_group
 
 
@@ -13,6 +14,8 @@ def test_bootstrap_reproducible() -> None:
     draws_b = bootstrap_conway_parameters(data, n_boot=25, seed=123)
 
     pd.testing.assert_frame_equal(draws_a, draws_b)
+    assert draws_a["agreement_method_version"].unique().tolist() == [AGREEMENT_METHOD_VERSION]
+    assert draws_a["results_status"].unique().tolist() == [RESULTS_STATUS]
 
 
 def test_bootstrap_tau2_nonnegative_and_loa_spread() -> None:

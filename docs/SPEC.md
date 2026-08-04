@@ -8,14 +8,36 @@
 - This document captures intended behavior for the Python package, workflows, and app-facing inference API.
 - Public-facing summaries should describe outputs as research estimates with uncertainty, not clinical validation.
 
+## Agreement variance and limits of agreement
+- Agreement calculations use method revision `agreement_natural_log_tau2_direct_v1` and remain
+  provisional pending independent biostatistical review.
+- For adjusted within-study variance `S2*`, the study-level input is
+  `log(S2*) + 1/(n_participants - 1)` on the natural-log scale, with sampling variance
+  `2/(n_participants - 1)`. The pooled within-study variance is back-transformed with `exp()`.
+- Let `sigma2` be the pooled within-study variance and `tau2` the between-study variance.
+  Marginal LoA use `delta +/- 2 * sqrt(sigma2 + tau2)`.
+- Analytic LoA uncertainty uses direct-scale `var_tau2 = 2 / sum((v_bias + tau2)^-2)`.
+  Its delta-method contribution is `var_tau2 / (sigma2 + tau2)`; no quantity named
+  `var_log_tau2` is used for that direct-scale variance.
+- The coefficient for pooled log-within-study-variance uncertainty is
+  `sigma2^2 / (sigma2 + tau2)`.
+- Production LoA and subgroup summaries truncate a negative method-of-moments `tau2`
+  estimate to 0 before calculating random-effects weights, LoA, or equation 4.13.
+  `random_effects_meta(..., truncate_tau2=False)` remains available only as a low-level
+  raw diagnostic path.
+- Confidence-interval behavior at and near the `tau2 = 0` boundary remains provisional
+  pending independent biostatistical review.
+- The Conway Table 1 values remain a frozen published/legacy comparator rather than a
+  correctness target for the corrected method.
+
 ## Bootstrap uncertainty propagation
 - Bootstrap modes: `cluster_only` (study-level resampling) and `cluster_plus_withinstudy`
   (cluster resampling plus parametric perturbations of study bias/log-variance).
 - Within-study perturbations draw `bias* ~ Normal(bias, v_bias)` and
   `logs2* ~ Normal(logs2, v_logs2)` with independence between bias and log-variance.
 - Workflow defaults use `cluster_plus_withinstudy` to align outer CI scale with Conway.
-- For simulation/inference draws, τ² is truncated at 0 when requested to keep
-  between-study variance non-negative (Table 1 reproduction uses untruncated τ²).
+- Production simulation/inference draws use a zero-truncated τ² to keep between-study
+  variance non-negative. Passing `truncate_tau2=False` is an explicit diagnostic-only path.
 
 ## In-silico PaCO2 distribution
 - Source file: `Data/In Silico TCCO2 Database.dta` by package default, with
