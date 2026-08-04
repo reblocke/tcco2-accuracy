@@ -2,7 +2,7 @@
 
 ## Package Layout
 The Python package lives under `src/tcco2_accuracy/`. The pure numerical source
-of truth is `src/tcco2_accuracy/core/`, which owns Conway reproduction,
+of truth is `src/tcco2_accuracy/core/`, which owns corrected Conway-input agreement calculations,
 bootstrap uncertainty, simulation, inverse inference, conditional classification,
 two-stage calculations, PaCO2 subgrouping, prior-bin expansion, and validation.
 

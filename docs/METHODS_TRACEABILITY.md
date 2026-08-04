@@ -5,7 +5,7 @@ tests, and generated artifacts.
 
 | Scientific component | Code authority | Verification | Review artifacts |
 | --- | --- | --- | --- |
-| Conway agreement reproduction and LoA calculations | `src/tcco2_accuracy/core/conway_meta.py`, `src/tcco2_accuracy/core/bland_altman.py` | `tests/core/test_conway_meta.py`, `tests/core/test_bland_altman_loa.py`, `tests/core/test_conway_table1_fixture.py` | `artifacts/meta_loa_check.md`, `artifacts/manuscript_parameters.*` |
+| Corrected Conway-input agreement and LoA calculations (`agreement_natural_log_tau2_direct_v1`) | `src/tcco2_accuracy/core/conway_meta.py`, `src/tcco2_accuracy/core/bland_altman.py` | Independent equation-oracle, scale-equivalence, boundary, and legacy-fixture tests in `tests/core/` | `artifacts/meta_loa_check.md`, `artifacts/manuscript_parameters.*`, `artifacts/conway_table1_fixture_summary.md` (legacy comparator) |
 | Bootstrap uncertainty for bias, within-study variance, and heterogeneity | `src/tcco2_accuracy/core/bootstrap.py` | `tests/core/test_bootstrap.py`, `tests/core/test_hybrid_bootstrap_and_conditional.py` | `artifacts/bootstrap_params.csv`, `artifacts/bootstrap_summary.md` |
 | PaCO2 subgroup assignment and public prior weights | `src/tcco2_accuracy/core/paco2.py`, `src/tcco2_accuracy/data.py` | `tests/core/test_paco2_distribution.py`, `tests/core/test_paco2_prior_bins.py` | `artifacts/paco2_distribution_summary.md`, `Data/paco2_public_prior.csv` |
 | Forward TcCO2 classification performance | `src/tcco2_accuracy/core/simulation.py` | `tests/core/test_simulation.py`, `tests/workflows/test_workflows.py` | `artifacts/simulation_summary.md`, `artifacts/manuscript_table1.*` |
@@ -16,3 +16,8 @@ tests, and generated artifacts.
 `make verify` is the repository-level gate. Manuscript/reviewer artifacts should
 be rebuilt to a scratch directory and compared with a baseline whenever core,
 workflow, or reporting code changes.
+
+Only the artifacts labeled `corrected-provisional` in `artifacts/STATUS.md` are current for
+the corrected agreement method. PaCO2-dependent manuscript, simulation, inference, and
+classification artifacts remain frozen at the legacy method until the downstream regeneration,
+governance, and independent-review gates are complete.

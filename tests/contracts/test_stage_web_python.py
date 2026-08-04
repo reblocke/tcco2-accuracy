@@ -24,6 +24,9 @@ def test_stage_web_python_copies_package_and_assets(tmp_path: Path) -> None:
     assert (web_dir / "assets" / "py" / "manifest.json").exists()
     assert (web_dir / "assets" / "data" / "conway_studies.csv").exists()
     assert (web_dir / "assets" / "data" / "paco2_public_prior.csv").exists()
+    assert (web_dir / "assets" / "data" / "bootstrap_params.csv").read_bytes() == (
+        ROOT / "artifacts" / "bootstrap_params.csv"
+    ).read_bytes()
     assert not (web_dir / "assets" / "data" / "paco2_prior_bins.csv").exists()
     assert not list((web_dir / "assets" / "py").rglob("__pycache__"))
     assert not (web_dir / "assets" / "py" / "tcco2_accuracy" / "workflows").exists()

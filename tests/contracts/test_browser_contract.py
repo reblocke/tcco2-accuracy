@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 
 from tcco2_accuracy.browser_contract import build_bootstrap_payload, compute_ui_payload
+from tcco2_accuracy.core.conway_meta import AGREEMENT_METHOD_VERSION, RESULTS_STATUS
 from tcco2_accuracy.data import PACO2_PRIOR_GROUPS, prior_distribution_from_bins
 from tcco2_accuracy.ui_api import predict_paco2_from_tcco2
 
@@ -55,6 +56,8 @@ def test_browser_contract_matches_ui_api_canonical_prior_weighted() -> None:
     assert browser["likelihood_prob"] is not None
     assert browser["likelihood_prob"] == pytest.approx(direct.likelihood_prob)
     assert sum(browser["likelihood_prob"]) == pytest.approx(1.0)
+    assert browser["metadata"]["agreement_method_version"] == AGREEMENT_METHOD_VERSION
+    assert browser["metadata"]["results_status"] == RESULTS_STATUS
 
 
 @pytest.mark.parametrize("subgroup", ["all", "pft", "ed_inp", "icu"])
@@ -80,6 +83,8 @@ def test_browser_contract_canonical_cases_are_serializable(subgroup: str, mode: 
     assert 0.0 <= result["p_ge_threshold"] <= 1.0
     assert isinstance(result["paco2_bin"], list)
     assert isinstance(result["posterior_prob"], list)
+    assert result["metadata"]["agreement_method_version"] == AGREEMENT_METHOD_VERSION
+    assert result["metadata"]["results_status"] == RESULTS_STATUS
     if mode == "prior_weighted":
         assert isinstance(result["likelihood_prob"], list)
         assert len(result["likelihood_prob"]) == len(result["paco2_bin"])
@@ -147,6 +152,97 @@ def test_browser_contract_recomputes_from_uploaded_study_table() -> None:
     assert bootstrap["subgroup"] == "pft"
     assert bootstrap["n_rows"] == 25
     assert bootstrap["params"]
+    assert bootstrap["metadata"] == {
+        "agreement_method_version": AGREEMENT_METHOD_VERSION,
+        "results_status": RESULTS_STATUS,
+    }
+    assert {row["agreement_method_version"] for row in bootstrap["params"]} == {
+        AGREEMENT_METHOD_VERSION
+    }
+    assert {row["results_status"] for row in bootstrap["params"]} == {RESULTS_STATUS}
+
+
+@pytest.mark.parametrize(
+    ("column", "replacement"),
+    [
+        ("agreement_method_version", "legacy_mixed_log_v0"),
+        ("results_status", "final"),
+    ],
+)
+def test_browser_contract_rejects_stale_parameter_provenance(column: str, replacement: str) -> None:
+    params = pd.read_csv(ROOT / "artifacts" / "bootstrap_params.csv")
+    params[column] = replacement
+
+    with pytest.raises(ValueError, match=f"provenance `{column}`"):
+        compute_ui_payload(_likelihood_payload(params))
+
+
+@pytest.mark.parametrize("column", ["agreement_method_version", "results_status"])
+def test_browser_contract_rejects_missing_parameter_provenance(column: str) -> None:
+    params = pd.read_csv(ROOT / "artifacts" / "bootstrap_params.csv").drop(columns=column)
+
+    with pytest.raises(ValueError, match="missing required provenance columns"):
+        compute_ui_payload(_likelihood_payload(params))
+
+
+@pytest.mark.parametrize(
+    ("column", "replacement"),
+    [
+        ("agreement_method_version", "legacy_mixed_log_v0"),
+        ("results_status", "final"),
+    ],
+)
+def test_browser_contract_rejects_mixed_parameter_provenance(column: str, replacement: str) -> None:
+    params = pd.read_csv(ROOT / "artifacts" / "bootstrap_params.csv")
+    params.loc[params.index[0], column] = replacement
+
+    with pytest.raises(ValueError, match=f"provenance `{column}`"):
+        compute_ui_payload(_likelihood_payload(params))
+
+
+def test_browser_contract_default_and_uploaded_paths_share_method_provenance() -> None:
+    default_result = compute_ui_payload(
+        {
+            "tcco2": 50.0,
+            "subgroup": "pft",
+            "mode": "likelihood_only",
+            "params_csv": _read_text(ROOT / "artifacts" / "bootstrap_params.csv"),
+            "n_param_draws": 25,
+            "seed": 123,
+        }
+    )
+    uploaded_result = compute_ui_payload(
+        {
+            "tcco2": 50.0,
+            "subgroup": "pft",
+            "mode": "likelihood_only",
+            "study_csv": _read_text(ROOT / "Data" / "conway_studies.csv"),
+            "n_boot": 25,
+            "n_param_draws": 25,
+            "seed": 123,
+            "bootstrap_mode": "cluster_plus_withinstudy",
+        }
+    )
+
+    assert (
+        default_result["metadata"]["agreement_method_version"]
+        == uploaded_result["metadata"]["agreement_method_version"]
+    )
+    assert (
+        default_result["metadata"]["results_status"]
+        == uploaded_result["metadata"]["results_status"]
+    )
+
+
+def _likelihood_payload(params: pd.DataFrame) -> dict[str, object]:
+    return {
+        "tcco2": 50.0,
+        "subgroup": "all",
+        "mode": "likelihood_only",
+        "params_csv": params.to_csv(index=False),
+        "n_param_draws": 25,
+        "seed": 1,
+    }
 
 
 def _read_text(path: Path) -> str:

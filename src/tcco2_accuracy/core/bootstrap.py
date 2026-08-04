@@ -9,7 +9,12 @@ import numpy as np
 import pandas as pd
 
 from .bland_altman import loa_bounds
-from .conway_meta import loa_summary, prepare_conway_inputs
+from .conway_meta import (
+    AGREEMENT_METHOD_VERSION,
+    RESULTS_STATUS,
+    loa_summary,
+    prepare_conway_inputs,
+)
 
 BOOTSTRAP_MODES = ("cluster_only", "cluster_plus_withinstudy")
 
@@ -41,7 +46,7 @@ def bootstrap_conway_parameters(
 
     cluster_map = {study: inputs[inputs[study_id] == study] for study in study_ids}
     rng = np.random.default_rng(seed)
-    draws: list[dict[str, float | int]] = []
+    draws: list[dict[str, float | int | str]] = []
 
     for replicate in range(n_boot):
         sampled_ids = rng.choice(study_ids, size=study_ids.size, replace=True)
@@ -62,7 +67,8 @@ def bootstrap_conway_parameters(
             boot["v_logs2"],
             truncate_tau2=truncate_tau2,
         )
-        # Truncation is a stability choice for simulation draws, not Table 1 reproduction.
+        # Truncation enforces a non-negative variance component for simulation draws;
+        # passing False remains an explicit diagnostic-only path.
         tau2 = max(0.0, loa.tau2) if truncate_tau2 else loa.tau2
         sigma2 = loa.sd**2
         sd_total = math.sqrt(sigma2 + tau2)
@@ -78,6 +84,8 @@ def bootstrap_conway_parameters(
                 "loa_l": loa_l,
                 "loa_u": loa_u,
                 "bootstrap_mode": bootstrap_mode,
+                "agreement_method_version": AGREEMENT_METHOD_VERSION,
+                "results_status": RESULTS_STATUS,
             }
         )
 

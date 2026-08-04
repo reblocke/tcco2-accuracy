@@ -136,6 +136,9 @@ async function readUploadAsCsv(file) {
 }
 
 function renderResult(result) {
+  document.body.dataset.agreementMethodVersion = result.metadata.agreement_method_version;
+  document.body.dataset.resultsStatus = result.metadata.results_status;
+  document.body.dataset.paramsSource = result.metadata.params_source;
   elements.metrics.hidden = false;
   elements.interval.textContent =
     `${result.paco2_median.toFixed(1)} [` +

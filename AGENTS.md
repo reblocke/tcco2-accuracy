@@ -28,7 +28,8 @@
 - Visual QA screenshots: `make visual-qa`
 - Full local gate: `make verify`
 - Serve static app: `make serve`
-- Rebuild artifacts: `uv run python scripts/rebuild_artifacts.py --out artifacts`
+- Rebuild public agreement artifacts: `uv run python scripts/rebuild_artifacts.py --profile public-agreement --input-study-table Data/conway_studies.csv --out artifacts --seed 202401 --n-boot 1000 --bootstrap-mode cluster_plus_withinstudy`
+- Rebuild full restricted outputs to scratch: `uv run python scripts/rebuild_artifacts.py --profile full --paco2-path PATH --out .pytest_tmp/full-artifacts`
 
 ## Authority
 1. Conway Thorax 2019 paper, Figshare source record, and repository provenance docs.
@@ -56,6 +57,8 @@ When Stata conflicts with the paper or docs, implement the paper/docs and record
 - Browser app changes must keep user-entered values client-side: no backend, telemetry, persistence, or PHI-bearing URLs unless explicitly approved.
 - Keep `pyproject.toml` and `uv.lock` authoritative for dependencies.
 - Generated scratch outputs belong in `.pytest_tmp/` or `.tmp/` and should not be tracked.
+- The repository `artifacts/` destination accepts only the promotion contract in
+  `artifacts/STATUS.md`; custom study tables or bootstrap settings must use scratch output.
 - Keep `README.md`, `llms.txt`, `web/llms.txt`, `CITATION.cff`, and the data dictionary internally consistent after repository-surface changes.
 
 ## Skill Triggers

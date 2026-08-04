@@ -14,6 +14,13 @@ all user-entered values client-side.
 2025 and CHEST 2025; the manuscript has not yet been submitted. This is research
 software and is not intended for clinical decision-making.
 
+**Statistical revision:** the agreement-model logarithm and analytic LoA uncertainty
+equations have been corrected under method revision
+`agreement_natural_log_tau2_direct_v1`. Browser and agreement-parameter outputs are
+provisional pending independent biostatistical review. PaCO2-dependent manuscript and
+downstream outputs remain frozen at the legacy method revision; see
+[`artifacts/STATUS.md`](artifacts/STATUS.md).
+
 ## Links And Identifiers
 
 | Item | Link |
@@ -63,20 +70,33 @@ are not the canonical source.
 
 ## Rebuild Outputs
 
-Regenerate review/manuscript artifacts:
+Regenerate only the current public Conway-derived agreement artifacts:
 
 ```bash
-uv run python scripts/rebuild_artifacts.py --out artifacts --paco2-path Data/in_silico_tcco2_db.dta --seed 202401 --n-boot 1000 --thresholds 45
+uv run python scripts/rebuild_artifacts.py --profile public-agreement --input-study-table Data/conway_studies.csv --out artifacts --seed 202401 --n-boot 1000 --bootstrap-mode cluster_plus_withinstudy
 ```
 
-The full artifact rebuild may use the in-silico PaCO2 distribution at
-`Data/In Silico TCCO2 Database.dta`, or the local alias
-`Data/in_silico_tcco2_db.dta`, when that restricted local file is present. The
-static browser app does not require that `.dta`; it uses the shipped binned prior
-`Data/paco2_public_prior.csv`, which retains 1 mmHg prior weights but omits
-exact bin counts. Generate exact count-bearing manuscript outputs only into
-`.pytest_tmp/`, `.tmp/`, or a private manuscript workspace unless explicitly
-approved for release.
+The `public-agreement` profile rejects restricted PaCO2 inputs and promotes only the
+five outputs listed as corrected-provisional in `artifacts/STATUS.md`. The repository
+`artifacts/` destination also rejects any different study table, seed, draw count, or
+bootstrap mode. Run custom inputs and sensitivity settings to scratch instead:
+
+```bash
+uv run python scripts/rebuild_artifacts.py --profile public-agreement --input-study-table PATH --out .pytest_tmp/public-agreement-candidate --seed 202402 --n-boot 1000 --bootstrap-mode cluster_plus_withinstudy
+```
+
+The XLSX study table is the human-editable review mirror; the semantically equivalent
+CSV is the operational source for canonical promotion and browser staging. A full comparison
+requires an explicit local `.dta` and a scratch/private output directory:
+
+```bash
+uv run python scripts/rebuild_artifacts.py --profile full --paco2-path Data/in_silico_tcco2_db.dta --out .pytest_tmp/tcco2-corrected-full --seed 202401 --n-boot 1000 --thresholds 45
+```
+
+Within the repository, the full profile accepts output only under `.pytest_tmp/` or
+`.tmp/`; otherwise it requires an external private destination. The static browser
+app does not require the restricted `.dta`; it uses `Data/paco2_public_prior.csv`,
+which retains 1 mmHg normalized weights but omits exact bin counts.
 
 ## Repository Layout
 
@@ -109,13 +129,15 @@ or source-linked materials and are not part of the public branch tip.
   public 1 mmHg density prior for responsiveness.
 - Custom study tables or changed bootstrap settings trigger in-browser
   recomputation through the staged Python package.
+- Canonical and recomputed parameters must report the current agreement-method
+  revision and provisional result status; stale or mixed canonical assets fail closed.
 - User-entered values and uploads remain in the browser. The app has no backend,
   telemetry, persistence, or patient-value URLs.
 
 ## Data Access And Dictionary
 
-- Canonical Conway study inputs are maintained in `Data/conway_studies.csv` and
-  `Data/conway_studies.xlsx`.
+- The canonical Conway table is maintained as a human-editable XLSX review mirror and a
+  semantically equivalent CSV operational source for promotion and browser staging.
 - The public PaCO2 prior for app deployment is maintained in
   `Data/paco2_public_prior.csv`; exact count-bearing prior bins are restricted
   local/generated outputs and should not be committed.

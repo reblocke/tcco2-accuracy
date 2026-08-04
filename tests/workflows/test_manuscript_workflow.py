@@ -4,7 +4,10 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
+from tcco2_accuracy.core.conway_meta import AGREEMENT_METHOD_VERSION, RESULTS_STATUS
+from tcco2_accuracy.reporting import manuscript as manuscript_reporting
 from tcco2_accuracy.workflows import bootstrap, manuscript
 
 
@@ -56,6 +59,35 @@ def test_manuscript_workflow_smoke(tmp_path: Path) -> None:
     assert table3[["likelihood_paco2_q500", "prior_paco2_q500"]].notna().all().all()
 
     assert "Error-model parameters used" in result.snippets
+
+
+def test_manuscript_parameters_only_never_loads_paco2(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    data_by_group = [
+        ("main", _synthetic_conway_group("main", -0.2)),
+        ("icu", _synthetic_conway_group("icu", -0.5)),
+        ("arf", _synthetic_conway_group("arf", 1.1)),
+        ("lft", _synthetic_conway_group("lft", -0.1)),
+    ]
+    draws = bootstrap.run_bootstrap(n_boot=4, seed=123, data_by_group=data_by_group).draws
+
+    def _deny_restricted_load(*args, **kwargs):
+        raise AssertionError("parameter-only reporting attempted to load restricted PaCO2 data")
+
+    monkeypatch.setattr(manuscript_reporting, "load_paco2_distribution", _deny_restricted_load)
+    result = manuscript.run_manuscript_parameters(params=draws, out_dir=tmp_path)
+
+    assert {path.name for path in tmp_path.iterdir()} == {
+        "manuscript_parameters.csv",
+        "manuscript_parameters.md",
+    }
+    assert result.parameters["agreement_method_version"].unique().tolist() == [
+        AGREEMENT_METHOD_VERSION
+    ]
+    assert result.parameters["results_status"].unique().tolist() == [RESULTS_STATUS]
+    assert AGREEMENT_METHOD_VERSION in result.markdown
+    assert RESULTS_STATUS in result.markdown
 
 
 def _synthetic_conway_group(group_name: str, offset: float) -> pd.DataFrame:
