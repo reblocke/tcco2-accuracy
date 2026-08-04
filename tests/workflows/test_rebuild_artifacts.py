@@ -343,6 +343,58 @@ def test_public_agreement_does_not_promote_partial_or_unexpected_outputs(
     assert not out_dir.exists()
 
 
+def test_public_agreement_promotion_rolls_back_after_replacement_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    script = _load_script()
+    staged_dir = tmp_path / "staged"
+    out_dir = tmp_path / "out"
+    staged_dir.mkdir()
+    out_dir.mkdir()
+
+    filenames = sorted(script.PUBLIC_AGREEMENT_ARTIFACTS)
+    for filename in filenames:
+        (staged_dir / filename).write_bytes(f"new:{filename}\n".encode())
+
+    preexisting = {
+        filenames[0]: b"old:first\x00\n",
+        filenames[2]: b"old:third\n",
+        filenames[4]: b"old:fifth\n",
+    }
+    for filename, payload in preexisting.items():
+        (out_dir / filename).write_bytes(payload)
+    unrelated = out_dir / "STATUS.md"
+    unrelated.write_bytes(b"unrelated manifest\n")
+    before = {
+        filename: (out_dir / filename).read_bytes() if (out_dir / filename).exists() else None
+        for filename in filenames
+    }
+
+    real_replace = script.os.replace
+    replacement_calls = 0
+
+    def _fail_after_two_replacements(src: Path, dst: Path) -> None:
+        nonlocal replacement_calls
+        replacement_calls += 1
+        if replacement_calls == 3:
+            raise OSError("injected sequential promotion failure")
+        real_replace(src, dst)
+
+    monkeypatch.setattr(script.os, "replace", _fail_after_two_replacements)
+
+    with pytest.raises(OSError, match="injected sequential promotion failure"):
+        script._promote_public_agreement_artifacts(staged_dir, out_dir)
+
+    assert replacement_calls >= 3
+    for filename, expected in before.items():
+        destination = out_dir / filename
+        if expected is None:
+            assert not destination.exists()
+        else:
+            assert destination.read_bytes() == expected
+    assert unrelated.read_bytes() == b"unrelated manifest\n"
+
+
 def test_full_requires_existing_explicit_paco2_and_scratch_or_external_output(
     tmp_path: Path,
 ) -> None:

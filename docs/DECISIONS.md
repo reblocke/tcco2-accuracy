@@ -49,6 +49,9 @@
 - Browser UI copy avoids clinical correctness wording and reports threshold classification with
   posterior mass summaries because the app is a research interpretation tool, not clinical decision
   support.
+- Browser initialization and recalculation failures fail closed: before an error is displayed, the
+  app removes prior result-provenance attributes, hides and resets metrics, and purges the prior
+  Plotly chart so a failed custom run cannot appear to retain a valid result.
 - Agreement calculations, canonical browser parameters, and public agreement artifacts carry
   method revision `agreement_natural_log_tau2_direct_v1` and status `provisional`. Pages may deploy
   this corrected provisional method, but independent biostatistical review remains a final-release
@@ -62,6 +65,9 @@
   `cluster_plus_withinstudy`. Path aliases resolving to those canonical locations are accepted;
   custom studies or settings must write to scratch. `artifacts/STATUS.md` remains the hand-authored
   authority because scientific status and frozen-output decisions cannot be inferred from CLI args.
+  Promotion snapshots the complete five-file destination state before the first replacement. If
+  any replacement fails, all five destinations are rolled back byte-for-byte and files absent
+  before the attempt are removed; unrelated manifest and frozen files are never part of promotion.
 - Pure numerical code is separated under `src/tcco2_accuracy/core/`; top-level modules remain
   compatibility wrappers for existing public imports.
 - Malformed continuity-ledger paths are retired; durable project decisions belong in this file or

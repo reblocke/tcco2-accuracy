@@ -20,6 +20,9 @@ synthetic_a,-1.0,4.0,20,20,1,0,0,1
 synthetic_b,0.5,9.0,24,24,1,1,0,0
 synthetic_c,1.5,16.0,30,30,1,0,1,0
 """
+INVALID_STUDY_CSV = """study_id,bias
+invalid_a,-1.0
+"""
 
 
 @pytest.fixture(scope="session")
@@ -109,6 +112,48 @@ def test_static_app_uploaded_studies_use_current_provisional_method(page, web_se
     assert page.locator("body").get_attribute("data-results-status") == default_status
     assert default_method == EXPECTED_AGREEMENT_METHOD_VERSION
     assert default_status == EXPECTED_RESULTS_STATUS
+
+
+def test_static_app_failed_recalculation_clears_previous_result(page, web_server: str) -> None:
+    page.goto(web_server, wait_until="domcontentloaded")
+    page.get_by_text("Calculation complete.").wait_for(timeout=180_000)
+
+    assert page.locator("#metric-interval").inner_text() != "-"
+    assert page.locator("#posterior-chart .main-svg").count() >= 1
+    assert page.locator("body").get_attribute("data-params-source") == "payload_params"
+
+    page.locator("details.panel > summary").click()
+    page.locator("#study-file").set_input_files(
+        {
+            "name": "invalid_studies.csv",
+            "mimeType": "text/csv",
+            "buffer": INVALID_STUDY_CSV.encode(),
+        }
+    )
+    page.locator("#n-boot").evaluate(
+        "element => { element.min = '1'; element.step = '1'; element.value = '1'; }"
+    )
+    page.locator("#n-param-draws").evaluate(
+        "element => { element.step = '1'; element.value = '1'; }"
+    )
+    page.locator("#calculate").click()
+
+    expect(page.locator("#status")).to_have_text("Calculation failed.", timeout=180_000)
+    expect(page.locator("#error")).to_be_visible()
+    expect(page.locator("#error")).not_to_be_empty()
+    expect(page.locator("#metrics")).to_be_hidden()
+    expect(page.locator("#metric-interval")).to_have_text("-")
+    expect(page.locator("#metric-probability")).to_have_text("-")
+    expect(page.locator("#metric-decision")).to_have_text("-")
+    expect(page.locator("#posterior-chart")).to_be_hidden()
+    expect(page.locator("#posterior-chart .main-svg")).to_have_count(0)
+    expect(page.locator("#chart-caption")).to_be_empty()
+    expect(page.locator("#decision-text")).to_have_text(
+        "Run a calculation to show posterior threshold mass."
+    )
+    assert page.locator("body").get_attribute("data-agreement-method-version") is None
+    assert page.locator("body").get_attribute("data-results-status") is None
+    assert page.locator("body").get_attribute("data-params-source") is None
 
 
 def test_static_app_prior_weighted_chart_uses_posterior_focused_axis(page, web_server: str) -> None:

@@ -337,8 +337,46 @@ def _promote_public_agreement_artifacts(staged_dir: Path, out_dir: Path) -> None
         )
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    for filename in sorted(PUBLIC_AGREEMENT_ARTIFACTS):
-        os.replace(staged_dir / filename, out_dir / filename)
+    prior_artifacts = {
+        filename: (out_dir / filename).read_bytes() if (out_dir / filename).exists() else None
+        for filename in sorted(PUBLIC_AGREEMENT_ARTIFACTS)
+    }
+    try:
+        for filename in sorted(PUBLIC_AGREEMENT_ARTIFACTS):
+            os.replace(staged_dir / filename, out_dir / filename)
+    except BaseException as exc:
+        rollback_errors = _restore_public_agreement_artifacts(
+            staged_dir,
+            out_dir,
+            prior_artifacts,
+        )
+        if rollback_errors:
+            exc.add_note(
+                "Public agreement artifact rollback was incomplete: " + "; ".join(rollback_errors)
+            )
+        raise
+
+
+def _restore_public_agreement_artifacts(
+    staged_dir: Path,
+    out_dir: Path,
+    prior_artifacts: dict[str, bytes | None],
+) -> list[str]:
+    """Restore the complete allowlisted destination state after promotion failure."""
+
+    rollback_errors: list[str] = []
+    for filename, prior_bytes in prior_artifacts.items():
+        destination = out_dir / filename
+        try:
+            if prior_bytes is None:
+                destination.unlink(missing_ok=True)
+                continue
+            restore_path = staged_dir / f".rollback-{filename}"
+            restore_path.write_bytes(prior_bytes)
+            os.replace(restore_path, destination)
+        except Exception as rollback_exc:  # pragma: no cover - requires filesystem failure
+            rollback_errors.append(f"{filename}: {rollback_exc}")
+    return rollback_errors
 
 
 if __name__ == "__main__":

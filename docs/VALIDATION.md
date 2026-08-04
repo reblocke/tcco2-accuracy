@@ -76,7 +76,8 @@
   and uploaded study-table recomputation.
 - Staging: `tests/contracts/test_stage_web_python.py` verifies package/data staging into `web/assets/`.
 - E2E: `tests/e2e/test_web_app.py` verifies Pyodide loads, default calculation completes, metrics render,
-  and threshold changes update the browser result.
+  threshold changes update the browser result, and a failed custom-study recalculation clears prior
+  metrics, chart output, and result-provenance attributes before displaying the error.
 - Scientific claim: browser-facing outputs are a serialization of the authoritative Python model, not
   a separate JavaScript implementation.
 - Version gate: canonical parameter assets must contain exactly one current method revision and
@@ -90,7 +91,9 @@
 - Promotion to repository `artifacts/` requires the canonical CSV, seed 202401, 1,000 draws per
   subgroup, and `cluster_plus_withinstudy`. Contract tests reject each noncanonical option before
   workflow execution, preserve existing deployed bytes on failure, enforce CSV/XLSX semantic
-  parity, and verify that browser staging copies the canonical parameter artifact unchanged.
+  parity, and verify that browser staging copies the canonical parameter artifact unchanged. A
+  fault-injection regression also fails sequential promotion after multiple replacements and checks
+  exact restoration of every preexisting artifact plus removal of newly introduced files.
 - `--profile full` requires an explicit restricted source and a scratch/private output directory.
   It is a comparison workflow only until TCCO2-006 and the governance review are complete.
 - Final tag, removal of provisional copy, manuscript unfreeze, submission-readiness claims, and final
