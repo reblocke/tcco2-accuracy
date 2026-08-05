@@ -14,6 +14,11 @@ Suitable contributions include:
 ## Ground rules
 
 - Do not add or commit any protected health information (PHI) or other restricted patient-level data.
+- Do not commit exact-count or reconstructable restricted-derived summaries, including normalized
+  PaCO2-bin weights. Removing a count column does not by itself make a distribution public-safe.
+- Follow `docs/data_release_contract.json`; restricted outputs may be written only to
+  `.pytest_tmp/`, `.tmp/`, or an explicitly approved external private workspace. Complete
+  `docs/restricted_data_provenance.template.json` before proposing any restricted-data release.
 - Prefer small, reviewable pull requests.
 - Maintain a clear mapping from scripts to outputs (figures/tables) and keep outputs out of version control unless
   they are intentionally archived artifacts.
@@ -45,7 +50,9 @@ For a narrower Python-only check:
 make test
 ```
 
-For workflow or artifact changes, also describe any generated outputs and the exact rebuild command used.
+For workflow or artifact changes, also describe any generated outputs and the exact rebuild command
+used. Do not regenerate or promote frozen PaCO2-dependent outputs without explicit scientific and
+governance approval.
 
 ## Style
 

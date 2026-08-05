@@ -91,10 +91,16 @@
   conservation is a per-draw invariant; lower or upper componentwise quantiles are not additive.
 
 ## In-silico PaCO2 distribution
-- Source file: `Data/In Silico TCCO2 Database.dta` by package default, with
-  `Data/in_silico_tcco2_db.dta` accepted as a local alias, or an explicitly supplied `.dta`
-  path in workflow loaders.
-- The static browser app uses `Data/paco2_public_prior.csv` by default so it can run without the full `.dta` or public exact bin counts.
+- Restricted workflows require in-memory `paco2_data` or an explicitly supplied private `.dta`
+  path. Package and workflow loaders do not auto-discover repository-local extracts. Historical
+  local filenames may still be passed explicitly for compatibility.
+- The static browser app defaults to likelihood-only inference and stages no PaCO2 prior. It can run
+  without the restricted `.dta`; prior-weighted inference requires an explicit user-supplied binned
+  prior that remains client-side.
+- Exact counts and normalized weights derived from the restricted source are both private-only
+  unless release is explicitly approved; a weight vector may reconstruct the exact source histogram
+  even when count columns are absent. Generate them only under `.pytest_tmp/`, `.tmp/`, or an
+  explicitly approved external private workspace.
 - Drop genuinely missing `paco2` rows, then require every retained value to be finite and strictly
   positive; PaCO2 values are in mmHg. Do not apply an unvalidated hard upper cutoff.
 - If `subgroup` is already supplied, rows with genuinely missing `paco2` are dropped first. Every
@@ -106,3 +112,16 @@
   2) `icu`: `is_inp == 1` and `cc_time == 1` and `is_emer == 0` and `is_amb == 0`.
   3) `ed_inp`: `is_emer == 1` or `is_inp == 1` (after removing `pft`/`icu`).
 - ED membership is included in `ed_inp` by construction.
+
+## Data-release boundary
+
+- `docs/data_release_contract.json` defines current-tree and Pages allowlists, prohibited paths and
+  schemas, canonical agreement-artifact hashes, and retained frozen aggregate outputs.
+- `docs/restricted_data_provenance.template.json` is required before restricted-data use or release
+  review. Unknown authority, provenance, permission, and retention fields remain
+  `HUMAN REVIEW REQUIRED`.
+- Retained PaCO2-dependent aggregates remain frozen historical comparators and are not
+  release-approved. No downstream regeneration, promotion, or unfreezing occurs without the locked
+  analysis specification and independent review.
+- Current-tree remediation does not rewrite history; prior commits, tags, clones, caches, and
+  historical deployments may still contain removed material.

@@ -56,7 +56,8 @@ function postToWorker(type, payload = {}) {
 async function initialize() {
   try {
     await postToWorker("init");
-    elements.status.textContent = "Runtime ready. Default data are loaded from repo assets.";
+    elements.status.textContent =
+      "Runtime ready. Agreement data are loaded; prior-weighted mode requires an upload.";
     await calculate();
   } catch (error) {
     clearResult();
@@ -90,6 +91,11 @@ async function buildPayload() {
     mode === "prior_weighted"
       ? await readUploadAsCsv(document.querySelector("#prior-file").files[0])
       : null;
+  if (mode === "prior_weighted" && !priorCsv) {
+    throw new Error(
+      "Prior-weighted mode requires an uploaded binned PaCO2 prior (CSV or XLSX).",
+    );
+  }
   const nBoot = Number(document.querySelector("#n-boot").value);
   const seed = Number(document.querySelector("#seed").value);
   const bootstrapMode = document.querySelector("#bootstrap-mode").value;
@@ -113,7 +119,6 @@ async function buildPayload() {
     use_canonical_params: useCanonicalParams,
     study_csv: studyCsv || null,
     prior_bins_csv: priorCsv || null,
-    prior_source: priorCsv ? "uploaded_bins" : "public_prior",
   };
 }
 
@@ -125,7 +130,7 @@ async function readUploadAsCsv(file) {
   if (name.endsWith(".csv")) {
     return file.text();
   }
-  if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
+  if (name.endsWith(".xlsx")) {
     if (!globalThis.XLSX) {
       throw new Error("XLSX upload support is unavailable; upload CSV instead.");
     }

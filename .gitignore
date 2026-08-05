@@ -37,10 +37,25 @@ temp.log
 /web/assets/data/
 /web/assets/py/
 
-# Restricted or exact-count PaCO2 outputs
-/Data/paco2_prior_bins.csv
-/Data/paco2_prior_bins.xlsx
-/artifacts/figure_paco2_distribution_bins.csv
+# Restricted or exact-count PaCO2 outputs. Broad stem rules prevent a format
+# change (for example CSV -> XLSX) from bypassing the current-tree contract.
+*.xls
+/Data/paco2_public_prior.*
+/Data/paco2_prior_bins.*
+/artifacts/paco2_distribution_summary.*
+/artifacts/conditional_classification_t*.*
+/artifacts/figure_misclassification_vs_paco2.*
+/artifacts/figure_paco2_distribution_bins.*
+/artifacts/inference_demo.*
+/artifacts/manuscript_table1.*
+/artifacts/manuscript_confusion_matrix.*
+!/artifacts/manuscript_confusion_matrix.md
+/artifacts/manuscript_table2_two_stage.*
+!/artifacts/manuscript_table2_two_stage.md
+/artifacts/two_stage_summary.*
+!/artifacts/two_stage_summary.md
+/tests/fixtures/paco2_distribution_summary.*
+/scripts/run_all_workflows.py
 
 # Local drafts and publisher/source mirrors removed from the public branch
 /Drafts/

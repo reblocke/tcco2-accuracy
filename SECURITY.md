@@ -26,4 +26,9 @@ Include:
 ## Handling sensitive data
 
 - Do not commit patient-level data or any restricted datasets.
+- Treat exact-count and reconstructable restricted-derived distributions as sensitive even when
+  direct identifiers and count columns are absent.
 - If you discover sensitive data has been committed, report it immediately via the private paths above.
+- The current public-tree contract is `docs/data_release_contract.json`. It does not erase copies in
+  prior commits, tags, clones, caches, or historical deployments; report any concern about those
+  surfaces privately rather than opening a public issue.

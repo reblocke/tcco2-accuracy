@@ -86,17 +86,32 @@ uv run python scripts/rebuild_artifacts.py --profile public-agreement --input-st
 ```
 
 The XLSX study table is the human-editable review mirror; the semantically equivalent
-CSV is the operational source for canonical promotion and browser staging. A full comparison
-requires an explicit local `.dta` and a scratch/private output directory:
+CSV is the operational source for canonical promotion and browser staging. PaCO2-dependent
+outputs remain frozen. A future private comparison requires an explicit restricted source and an
+approved scratch/private output directory; it is not a promotion command:
 
 ```bash
-uv run python scripts/rebuild_artifacts.py --profile full --paco2-path Data/in_silico_tcco2_db.dta --out .pytest_tmp/tcco2-corrected-full --seed 202401 --n-boot 1000 --thresholds 45
+uv run python scripts/rebuild_artifacts.py --profile full \
+  --paco2-path /approved/restricted/source/in_silico_tcco2_db.dta \
+  --out /approved/private/workspace/tcco2-corrected-full \
+  --seed 202401 --n-boot 1000 --thresholds 45
 ```
 
 Within the repository, the full profile accepts output only under `.pytest_tmp/` or
-`.tmp/`; otherwise it requires an external private destination. The static browser
-app does not require the restricted `.dta`; it uses `Data/paco2_public_prior.csv`,
-which retains 1 mmHg normalized weights but omits exact bin counts.
+`.tmp/`; otherwise it requires an explicitly approved external private destination. Do not run
+this workflow to regenerate, promote, or unfreeze downstream results in the current wave.
+
+To build a private prior, supply both paths explicitly:
+
+```bash
+uv run python scripts/build_paco2_prior_bins.py \
+  --input /approved/restricted/source/in_silico_tcco2_db.dta \
+  --output /approved/private/workspace/paco2_prior_bins.csv --include-counts
+```
+
+Normalized restricted-derived weights are not automatically public-safe: they may reconstruct the
+exact source distribution even without a `count` column. The static app therefore stages no PaCO2
+prior and defaults to likelihood-only inference.
 
 ## Repository Layout
 
@@ -106,7 +121,7 @@ src/tcco2_accuracy/        I/O, contracts, wrappers, reporting, workflows
 tests/                     Core, workflow, contract, and browser tests
 web/                       Static GitHub Pages app
 scripts/                   Staging, artifact, and data-prep commands
-Data/                      Canonical public CSV/XLSX inputs and public prior
+Data/                      Canonical public reference inputs and provenance
 artifacts/                 Small aggregate review/manuscript outputs
 docs/                      Architecture, deployment, validation, and decisions
 Code/                      Stata reference code
@@ -116,8 +131,8 @@ uv.lock                    Locked Python environment
 ```
 
 Internal drafts, editable poster decks, third-party PDFs, RData source archives,
-local Stata `.dta` files, and exact count-bearing PaCO2 outputs are local-only
-or source-linked materials and are not part of the public branch tip.
+local Stata `.dta` files, and exact or reconstructable restricted-derived PaCO2 outputs are
+local-only or source-linked materials and are not part of the public branch tip.
 
 ## Static App Model
 
@@ -125,8 +140,9 @@ or source-linked materials and are not part of the public branch tip.
 - JavaScript handles controls, uploads, worker messaging, and plotting.
 - The posterior chart uses a posterior-focused x-axis for readability; numeric
   summaries still use the full posterior/prior support.
-- Default calculations use repo-shipped canonical bootstrap parameters and the
-  public 1 mmHg density prior for responsiveness.
+- Default calculations use repo-shipped canonical bootstrap parameters in likelihood-only mode.
+- Prior-weighted inference requires an explicit binned-prior upload. No repository prior is staged
+  or fetched; the uploaded prior remains client-side with the rest of the inputs.
 - Custom study tables or changed bootstrap settings trigger in-browser
   recomputation through the staged Python package.
 - Canonical and recomputed parameters must report the current agreement-method
@@ -140,18 +156,25 @@ or source-linked materials and are not part of the public branch tip.
 
 - The canonical Conway table is maintained as a human-editable XLSX review mirror and a
   semantically equivalent CSV operational source for promotion and browser staging.
-- The public PaCO2 prior for app deployment is maintained in
-  `Data/paco2_public_prior.csv`; exact count-bearing prior bins are restricted
-  local/generated outputs and should not be committed.
-- No patient-level protected health information (PHI) is included in this
-  repository.
+- Exact counts, binned distributions, and normalized weights derived from the restricted PaCO2
+  source must not be tracked. Generate them only under `.pytest_tmp/`, `.tmp/`, or an explicitly
+  approved external private workspace.
+- No patient-level protected health information (PHI) is included in the current tracked tree.
 - Public/restricted asset boundaries are documented in
   `docs/DATA_GOVERNANCE.md` and `Data/PROVENANCE.md`.
+- The machine-readable current-tree authority is
+  [`docs/data_release_contract.json`](docs/data_release_contract.json). Complete
+  [`docs/restricted_data_provenance.template.json`](docs/restricted_data_provenance.template.json)
+  before restricted-data use or release review; unresolved fields remain
+  `HUMAN REVIEW REQUIRED`.
 - Variable and artifact documentation is available in [data_dictionary.md](data_dictionary.md)
   and [data_dictionary.csv](data_dictionary.csv).
 
 If future analyses require restricted data, do not commit raw files. Provide
-synthetic examples and access instructions instead.
+synthetic examples and access instructions instead. This remediation does not rewrite Git history:
+prior commits, tags, clones, caches, and historical deployments remain possible disclosure surfaces
+pending institutional review. Retained rounded/aggregate downstream artifacts are listed in
+`artifacts/STATUS.md`; they remain frozen and are not release-approved.
 
 ## Quality Checks
 

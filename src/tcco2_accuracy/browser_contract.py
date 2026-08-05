@@ -26,7 +26,11 @@ def compute_ui_payload(payload: dict[str, Any]) -> dict[str, Any]:
     """Compute a serializable UI result from a browser payload."""
 
     subgroup = str(payload.get("subgroup", "all")).strip().lower()
-    mode = str(payload.get("mode", "prior_weighted")).strip().lower()
+    mode = str(payload.get("mode", "likelihood_only")).strip().lower()
+    if mode == "prior_weighted" and not _has_frame_payload(payload, "prior_bins"):
+        raise ValueError(
+            "Prior-weighted mode requires an explicitly uploaded binned PaCO2 prior table."
+        )
     params = _params_from_payload(payload, subgroup)
     provenance = _browser_params_provenance(params)
 
@@ -36,7 +40,9 @@ def compute_ui_payload(payload: dict[str, Any]) -> dict[str, Any]:
     if mode == "prior_weighted":
         prior_bins = _required_frame(payload, "prior_bins")
         prior_values, prior_weights = prior_distribution_from_bins(prior_bins, subgroup)
-        prior_source = str(payload.get("prior_source") or "provided_bins")
+        # Derive provenance from the validated payload shape rather than
+        # caller-supplied free text.
+        prior_source = "provided_bins"
 
     result = predict_paco2_from_tcco2(
         tcco2=_float_payload(payload, "tcco2", 50.0),

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
 import numpy as np
@@ -8,13 +7,11 @@ import pandas as pd
 import pytest
 from scipy import stats
 
-from tcco2_accuracy.data import (
-    PACO2_PUBLIC_PRIOR_PATH,
-    load_paco2_distribution,
-    load_paco2_prior,
-    prepare_paco2_distribution,
-)
+from tcco2_accuracy.data import load_paco2_prior
 from tcco2_accuracy.ui_api import predict_paco2_from_tcco2
+
+ROOT = Path(__file__).resolve().parents[2]
+SYNTHETIC_PRIOR_PATH = ROOT / "tests" / "fixtures" / "synthetic_paco2_prior.csv"
 
 
 def test_single_draw_likelihood_matches_normal() -> None:
@@ -35,6 +32,33 @@ def test_single_draw_likelihood_matches_normal() -> None:
     assert result.paco2_q_low == pytest.approx(stats.norm.ppf(0.025, loc=mean, scale=sd))
     assert result.paco2_q_high == pytest.approx(stats.norm.ppf(0.975, loc=mean, scale=sd))
     assert result.p_ge_threshold == pytest.approx(0.5)
+
+
+def test_ui_api_defaults_to_likelihood_only_without_prior() -> None:
+    params = pd.DataFrame({"delta": [0.0], "sigma2": [4.0], "tau2": [0.0]})
+
+    result = predict_paco2_from_tcco2(
+        tcco2=45.0,
+        subgroup="pft",
+        threshold=45.0,
+        params_draws=params,
+    )
+
+    assert result.mode == "likelihood_only"
+    assert result.prior_prob is None
+
+
+def test_ui_api_prior_weighted_requires_explicit_prior() -> None:
+    params = pd.DataFrame({"delta": [0.0], "sigma2": [4.0], "tau2": [0.0]})
+
+    with pytest.raises(ValueError, match="requires an explicitly supplied.*prior"):
+        predict_paco2_from_tcco2(
+            tcco2=45.0,
+            subgroup="pft",
+            threshold=45.0,
+            mode="prior_weighted",
+            params_draws=params,
+        )
 
 
 def test_prior_weighting_moves_threshold_probability() -> None:
@@ -215,11 +239,14 @@ def test_all_setting_maps_to_main_params() -> None:
 
 
 def test_ui_api_inference_smoke_all() -> None:
-    root = Path(__file__).resolve().parents[2]
-    params_path = root / "artifacts" / "bootstrap_params.csv"
+    params_path = ROOT / "artifacts" / "bootstrap_params.csv"
     params = pd.read_csv(params_path)
 
-    prior_result = load_paco2_prior("all", default_bins_path=PACO2_PUBLIC_PRIOR_PATH)
+    prior_result = load_paco2_prior(
+        "all",
+        uploaded_bytes=SYNTHETIC_PRIOR_PATH.read_bytes(),
+        uploaded_name=SYNTHETIC_PRIOR_PATH.name,
+    )
     assert prior_result.error is None
     assert prior_result.values is not None
 
@@ -237,48 +264,3 @@ def test_ui_api_inference_smoke_all() -> None:
     assert np.isfinite(result.paco2_q_high)
     assert result.paco2_q_low < result.paco2_q_high
     assert 0.0 <= result.p_ge_threshold <= 1.0
-
-
-def test_inference_demo_regression_optional() -> None:
-    root = Path(__file__).resolve().parents[2]
-    demo_path = root / "artifacts" / "inference_demo.md"
-    params_path = root / "artifacts" / "bootstrap_params.csv"
-    paco2_path = root / "Data" / "In Silico TCCO2 Database.dta"
-    if not (demo_path.exists() and params_path.exists() and paco2_path.exists()):
-        pytest.skip("Required demo artifacts or data not available.")
-
-    demo_value = _extract_demo_probability(demo_path)
-    if demo_value is None:
-        pytest.skip("Unable to parse inference_demo.md output.")
-
-    params = pd.read_csv(params_path)
-    paco2_data = prepare_paco2_distribution(load_paco2_distribution(paco2_path))
-    paco2_values = paco2_data.loc[paco2_data["subgroup"] == "pft", "paco2"].to_numpy()
-
-    result = predict_paco2_from_tcco2(
-        tcco2=45.0,
-        subgroup="pft",
-        threshold=45.0,
-        mode="prior_weighted",
-        params_draws=params,
-        paco2_prior_values=paco2_values,
-    )
-
-    assert result.p_ge_threshold == pytest.approx(demo_value, abs=0.05)
-
-
-def _extract_demo_probability(path: Path) -> float | None:
-    lines = path.read_text().splitlines()
-    in_prior_section = False
-    pattern = re.compile(r"\|\s+pft\s+\|\s+45\s+\|.*\|\s+([0-9.]+)\s+\|")
-    for line in lines:
-        if line.strip().startswith("## Prior-weighted"):
-            in_prior_section = True
-            continue
-        if in_prior_section and line.strip().startswith("## "):
-            break
-        if in_prior_section:
-            match = pattern.search(line)
-            if match:
-                return float(match.group(1))
-    return None

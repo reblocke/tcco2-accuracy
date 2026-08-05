@@ -58,7 +58,7 @@ def predict_paco2_from_tcco2(
     tcco2: float,
     subgroup: SubgroupLabel,
     threshold: float = 45.0,
-    mode: InferenceMode = "prior_weighted",
+    mode: InferenceMode = "likelihood_only",
     interval: float = 0.95,
     params_draws: pd.DataFrame | None = None,
     paco2_prior_values: np.ndarray | None = None,
@@ -94,6 +94,10 @@ def predict_paco2_from_tcco2(
     quantiles = (lower_q, 0.5, upper_q)
 
     if mode == "prior_weighted":
+        if paco2_prior_values is None:
+            raise ValueError(
+                "Prior-weighted mode requires an explicitly supplied PaCO2 prior distribution."
+            )
         paco2_values = validate_prior(paco2_prior_values)
         prior_weights = _validate_prior_weights(paco2_prior_weights, paco2_values)
         # Prior-weighted updates the empirical PaCO2 pretest prior with the TcCO2 likelihood.

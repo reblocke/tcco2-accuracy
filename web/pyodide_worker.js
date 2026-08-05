@@ -57,10 +57,7 @@ async function stagePythonPackage(pyodide) {
 async function compute(inputPayload) {
   const pyodide = await initializePyodide();
   const defaults = await defaultAssets();
-  const payload = {
-    ...inputPayload,
-    prior_bins_csv: inputPayload.prior_bins_csv || defaults.priorBins,
-  };
+  const payload = { ...inputPayload };
   if (inputPayload.use_canonical_params) {
     payload.params_csv = defaults.params;
     delete payload.study_csv;
@@ -83,8 +80,7 @@ function defaultAssets() {
     defaultAssetsPromise = Promise.all([
       fetchText("assets/data/bootstrap_params.csv"),
       fetchText("assets/data/conway_studies.csv"),
-      fetchText("assets/data/paco2_public_prior.csv"),
-    ]).then(([params, studies, priorBins]) => ({ params, studies, priorBins }));
+    ]).then(([params, studies]) => ({ params, studies }));
   }
   return defaultAssetsPromise;
 }

@@ -32,11 +32,36 @@
   records. Do not mirror third-party PDFs, duplicated supplement folders, or
   binary RData source archives in the public branch tip.
 
-## `paco2_public_prior.csv`
+## Restricted PaCO2 source and derived distributions
 
-- Source: restricted local in-silico PaCO2 distribution used by the project workflows. The source file is not redistributed; local paths may include `Data/in_silico_tcco2_db.dta` or `Data/In Silico TCCO2 Database.dta`.
-- Transformation: weight-only 1 mmHg binned PaCO2 prior weights by group; exact bin counts are omitted. The public schema is limited to `group,paco2_bin,weight`.
-- Regeneration: `uv run python scripts/build_paco2_prior_bins.py --input Data/in_silico_tcco2_db.dta --output Data/paco2_public_prior.csv`.
-- Access terms: governed by the original restricted data access terms and any applicable data-use agreement assumptions. Exact count-bearing prior bins are local/generated outputs and should not be committed.
-- Local exact outputs: `Data/paco2_prior_bins.csv` and `artifacts/figure_paco2_distribution_bins.csv` may be regenerated for private manuscript work, but they are ignored and intentionally absent from the public tree.
-- Governance reference: see [`docs/DATA_GOVERNANCE.md`](../docs/DATA_GOVERNANCE.md).
+- Source: a restricted local in-silico PaCO2 distribution used by private project workflows. The
+  source is not redistributed; local paths may include `Data/in_silico_tcco2_db.dta` or
+  `Data/In Silico TCCO2 Database.dta`.
+- Release status: ownership, IRB/protocol, waiver, DUA/authorization, extract date, source system,
+  unit of observation, repeated-patient handling, included fields, permissions, and retention have
+  not been authoritatively resolved in this public repository. Start from
+  [`docs/restricted_data_provenance.template.json`](../docs/restricted_data_provenance.template.json);
+  every unresolved field remains `HUMAN REVIEW REQUIRED`.
+- Derived-data rule: exact counts, binned distributions, and normalized weights derived from this
+  source are restricted-derived. A normalized weight vector may reconstruct the exact source
+  histogram even when its `count` column is omitted, so weight-only output is not automatically
+  public-safe.
+- Current-tree disposition: `Data/paco2_public_prior.csv`, exact prior bins, and count-bearing or
+  reconstructable downstream tables are intentionally absent from the tracked branch tip and are
+  not staged to Pages.
+- Private regeneration requires explicit input and output paths, for example:
+
+```bash
+uv run python scripts/build_paco2_prior_bins.py \
+  --input /approved/restricted/source/in_silico_tcco2_db.dta \
+  --output /approved/private/workspace/paco2_prior_bins.csv --include-counts
+```
+
+  In-repository outputs are permitted only under `.pytest_tmp/` or `.tmp/`; otherwise the output
+  must be an explicitly approved external private workspace.
+- Machine-readable governance authority:
+  [`docs/data_release_contract.json`](../docs/data_release_contract.json). It governs the current
+  tracked tree and deployed Pages assets, not prior commits, tags, clones, caches, or historical
+  deployments. This remediation does not rewrite Git history.
+- Human-readable governance reference: see
+  [`docs/DATA_GOVERNANCE.md`](../docs/DATA_GOVERNANCE.md).

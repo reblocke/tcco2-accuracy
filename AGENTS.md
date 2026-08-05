@@ -13,7 +13,8 @@
 - `tests/core/`, `tests/contracts/`, `tests/workflows/`, and `tests/e2e/` - purpose-specific QA/test code.
 - `web/` - static GitHub Pages app; generated staged Python/data assets are created under `web/assets/` by `make stage-web`.
 - `scripts/stage_web_python.py` - stages Python and data assets for the browser app.
-- `Data/` - canonical public CSV/XLSX inputs, public prior weights, and data provenance notes.
+- `Data/` - canonical public CSV/XLSX reference inputs and data provenance notes; restricted-derived
+  PaCO2 priors are not public-tree assets.
 - `artifacts/` - small derived outputs intended for review/manuscript workflows.
 - `Code/` - Stata reference code; `Code/Legacy/` is read-only reference material.
 - `llms.txt` and `web/llms.txt` - machine-readable repository and app indexes.
@@ -30,6 +31,8 @@
 - Serve static app: `make serve`
 - Rebuild public agreement artifacts: `uv run python scripts/rebuild_artifacts.py --profile public-agreement --input-study-table Data/conway_studies.csv --out artifacts --seed 202401 --n-boot 1000 --bootstrap-mode cluster_plus_withinstudy`
 - Rebuild full restricted outputs to scratch: `uv run python scripts/rebuild_artifacts.py --profile full --paco2-path PATH --out .pytest_tmp/full-artifacts`
+- Build a restricted-derived prior only to an approved private destination:
+  `uv run python scripts/build_paco2_prior_bins.py --input PATH --output /approved/private/path/paco2_prior_bins.csv`
 
 ## Authority
 1. Conway Thorax 2019 paper, Figshare source record, and repository provenance docs.
@@ -48,18 +51,23 @@ When Stata conflicts with the paper or docs, implement the paper/docs and record
 - Current citable project outputs are abstracts only: CHEST 2025 `10.1016/j.chest.2025.07.3877` and ATS 2025 `10.1164/ajrccm.2025.211.Abstracts.A2683`.
 - Do not add full manuscript Markdown until a submitted preprint, accepted author manuscript, or explicit public manuscript source is supplied.
 - Do not commit patient-level or large raw extracts. Use small, de-identified fixtures under `tests/fixtures/`.
-- Do not commit exact count-bearing PaCO2 prior or distribution-bin outputs; keep them in `.pytest_tmp/`,
-  `.tmp/`, or a private manuscript workspace unless explicitly approved.
+- Do not commit exact count-bearing or reconstructable restricted-derived PaCO2 outputs. Normalized
+  weights can preserve an exact restricted distribution even without a count column. Write them
+  only under `.pytest_tmp/`, `.tmp/`, or an explicitly approved external private workspace.
 - Do not commit external RData source archives or mirrored publisher PDFs. Link DOI/Figshare records instead.
 - Keep core math pure and isolate I/O in package I/O, workflow modules, or the browser contract.
 - Do not edit generated `web/assets/py/` or `web/assets/data/` by hand; stage them from canonical sources.
 - Python remains the single numerical source of truth. JavaScript may manage UI state, uploads, worker calls, and plotting, but must not reimplement the statistical model.
 - Browser app changes must keep user-entered values client-side: no backend, telemetry, persistence, or PHI-bearing URLs unless explicitly approved.
+- Browser inference defaults to likelihood-only. Prior-weighted inference requires a user-supplied
+  client-side prior upload; do not stage or fetch a repository prior.
 - Keep `pyproject.toml` and `uv.lock` authoritative for dependencies.
 - Generated scratch outputs belong in `.pytest_tmp/` or `.tmp/` and should not be tracked.
 - The repository `artifacts/` destination accepts only the promotion contract in
   `artifacts/STATUS.md`; custom study tables or bootstrap settings must use scratch output.
 - Keep `README.md`, `llms.txt`, `web/llms.txt`, `CITATION.cff`, and the data dictionary internally consistent after repository-surface changes.
+- Keep human documentation aligned with `docs/data_release_contract.json`; use
+  `docs/restricted_data_provenance.template.json` before any restricted-data rebuild or release review.
 
 ## Skill Triggers
 - Planning a non-trivial change: `.agents/skills/implementation-strategy/SKILL.md`.
@@ -76,6 +84,8 @@ When Stata conflicts with the paper or docs, implement the paper/docs and record
 - Validation targets and small artifacts are updated when behavior changes.
 - Decisions, divergences, browser-runtime choices, and data provenance changes are documented.
 - Public/restricted data boundaries remain aligned with `docs/DATA_GOVERNANCE.md` and `Data/PROVENANCE.md`.
+- Contract checks reject prohibited tracked paths and exact or reconstructable restricted-derived
+  schemas, while preserving the five canonical agreement-artifact hashes.
 - `CITATION.cff` validates with CFF tooling after citation edits.
 - Static hygiene checks find no placeholder ORCID, stale "no DOI" wording, generic LLM appendix, tracked drafts, tracked third-party PDFs, `.Rhistory`, `data.Rdata`, local `.dta`, or tracked generated `web/assets/py` and `web/assets/data`.
 - The final report names changed files, verification commands, warnings, skips, and remaining risks.

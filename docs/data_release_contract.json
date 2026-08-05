@@ -1,0 +1,129 @@
+{
+  "contract_version": "1.0.0",
+  "scope": {
+    "applies_to": "current tracked tree and deployed Pages assets",
+    "history_rewritten": false,
+    "history_note": "Prior commits, tags, clones, caches, and historical deployments remain a disclosure surface pending institutional review.",
+    "allowlist_precedence": "Only exact paths with matching hashes in the canonical or retained-frozen maps may override a broad prohibited path glob."
+  },
+  "private_output_roots": [
+    ".pytest_tmp/",
+    ".tmp/",
+    "explicit path outside the repository"
+  ],
+  "pages_data_allowlist": [
+    "web/assets/data/bootstrap_params.csv",
+    "web/assets/data/conway_studies.csv"
+  ],
+  "canonical_agreement_artifacts": {
+    "artifacts/meta_loa_check.md": "07cadb67fb354f88b64d7aa8c033fca19fa4a1f3073e8900c7049748a1bb415a",
+    "artifacts/bootstrap_params.csv": "a1ea54f15d2eb6ba5340fcc4622fbb3eb7c249635b017ef84c2d5f240d8ebe86",
+    "artifacts/bootstrap_summary.md": "f37dbc04db7a6083d2f1f46e4dec51f54d2e45acd57b7e501a9d41b79a87d90a",
+    "artifacts/manuscript_parameters.csv": "292f382c769604437ade0d57e8fc6b4a0e20d485e79263e003d525bd239ce4a9",
+    "artifacts/manuscript_parameters.md": "329278cfa89dcd3776ece63da9a93650c51dc902ce633b5e8a06eb558e68b5f0"
+  },
+  "retained_frozen_aggregate_artifacts": {
+    "artifacts/conway_table1_fixture_summary.md": "c08e3053fe01c81a0125e00c1d889354c25072c19e4d0f8e39ed65e0c6c74fdf",
+    "artifacts/manuscript_confusion_matrix.md": "ace5091cbf36f4234e4dcf6d73c689ebb61e622ffc4827e65d6582d42583fcae",
+    "artifacts/manuscript_results_snippets.md": "b68b245f304b46ff8f01eb6ac51a8710fedcb670099e82e73605aaf9ccab16ef",
+    "artifacts/manuscript_table2_two_stage.md": "c057c70a4a1d400e9da44dedea370e7705f7e87a48389276695ca3cd0635099f",
+    "artifacts/manuscript_table3_prediction_intervals.csv": "cc2bf75a047f203fde1fa9f481ce6d35d95bb6b66dd014add3150e68202bdc54",
+    "artifacts/manuscript_table3_prediction_intervals.md": "1c2701ea12d0248c8b70a77c6c61e5c2645ee38face217f8a09d510a0c9e6f0d",
+    "artifacts/simulation_summary.md": "805e92dff9b772a6f90a55602f2203ab327fac8fe9f56a5e1f4de08ea0a9b16e",
+    "artifacts/two_stage_summary.md": "0cd11a58d1709089904b42083e3aa795118b537eb6e95fc374200d2f3965d3b6"
+  },
+  "prohibited_tracked_globs": [
+    "Data/paco2_public_prior.*",
+    "Data/paco2_prior_bins.*",
+    "artifacts/paco2_distribution_summary.*",
+    "artifacts/conditional_classification_t*.*",
+    "artifacts/figure_misclassification_vs_paco2.*",
+    "artifacts/figure_paco2_distribution_bins.*",
+    "artifacts/inference_demo.*",
+    "artifacts/manuscript_table1.*",
+    "artifacts/manuscript_confusion_matrix.*",
+    "artifacts/manuscript_table2_two_stage.*",
+    "artifacts/two_stage_summary.*",
+    "tests/fixtures/paco2_distribution_summary.*",
+    "scripts/run_all_workflows.py"
+  ],
+  "ignored_private_paths": [
+    "Data/paco2_public_prior.csv",
+    "Data/paco2_public_prior.xlsx",
+    "Data/legacy_uninspectable.xls",
+    "Data/paco2_prior_bins.csv",
+    "Data/paco2_prior_bins.xlsx",
+    "artifacts/paco2_distribution_summary.md",
+    "artifacts/paco2_distribution_summary.txt",
+    "artifacts/conditional_classification_t45.csv",
+    "artifacts/conditional_classification_t45.md",
+    "artifacts/conditional_classification_t45.xlsx",
+    "artifacts/figure_misclassification_vs_paco2.csv",
+    "artifacts/figure_misclassification_vs_paco2.xlsx",
+    "artifacts/figure_paco2_distribution_bins.csv",
+    "artifacts/inference_demo.md",
+    "artifacts/inference_demo.txt",
+    "artifacts/manuscript_table1.csv",
+    "artifacts/manuscript_table1.md",
+    "artifacts/manuscript_table1.xlsx",
+    "artifacts/manuscript_confusion_matrix.csv",
+    "artifacts/manuscript_confusion_matrix.xlsx",
+    "artifacts/manuscript_table2_two_stage.csv",
+    "artifacts/manuscript_table2_two_stage.xlsx",
+    "artifacts/two_stage_summary.csv",
+    "artifacts/two_stage_summary.xlsx",
+    "tests/fixtures/paco2_distribution_summary.csv",
+    "tests/fixtures/paco2_distribution_summary.xlsx",
+    "scripts/run_all_workflows.py"
+  ],
+  "structured_schema_extensions": [".csv", ".tsv", ".xlsx"],
+  "prohibited_tracked_extensions": [".xls"],
+  "prohibited_structured_schemas": [
+    {
+      "id": "restricted_encounter_denominator",
+      "roots": [""],
+      "required_columns": ["n_encounters"]
+    },
+    {
+      "id": "exact_paco2_bin_counts",
+      "roots": [""],
+      "required_columns": ["paco2_bin", "count"]
+    },
+    {
+      "id": "paco2_group_count_summary",
+      "roots": [""],
+      "required_columns": ["group", "count"],
+      "required_column_prefixes": ["paco2_"]
+    },
+    {
+      "id": "paco2_subgroup_count_summary",
+      "roots": [""],
+      "required_columns": ["subgroup", "count"],
+      "required_column_prefixes": ["paco2_"]
+    },
+    {
+      "id": "reconstructable_prior_weights",
+      "roots": [""],
+      "required_columns": ["paco2_bin", "weight"]
+    },
+    {
+      "id": "exact_restricted_prevalence_triplet",
+      "roots": [""],
+      "required_columns": ["prevalence_q025", "prevalence_q500", "prevalence_q975"]
+    }
+  ],
+  "prohibited_text_patterns": [
+    "\\bN encounters\\b",
+    "\\bSubgroup priors:.*\\(n=\\d+\\)",
+    "\\|\\s*PaCO2 bin\\s*\\|\\s*Count\\s*\\|",
+    "\\|\\s*(?:Subgroup|Group)\\s*\\|\\s*Count\\s*\\|\\s*PaCO2\\b",
+    "\\bempirical count/weight\\b"
+  ],
+  "prohibited_text_extensions": [".md", ".txt", ".rst"],
+  "synthetic_fixture_schema_exemptions": {
+    "tests/fixtures/synthetic_paco2_prior.csv": ["reconstructable_prior_weights"]
+  },
+  "synthetic_fixture_artifacts": {
+    "tests/fixtures/synthetic_paco2_prior.csv": "08fcfa76380157cb8f613d19559dea29289d71d70cd5e661893b7a6248419e46"
+  }
+}

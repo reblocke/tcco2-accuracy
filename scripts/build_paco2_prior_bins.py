@@ -1,4 +1,4 @@
-"""Build public or local binned PaCO2 prior distributions."""
+"""Build private/scratch binned PaCO2 prior distributions."""
 
 from __future__ import annotations
 
@@ -6,10 +6,10 @@ import argparse
 from pathlib import Path
 
 from tcco2_accuracy.data import (
-    PACO2_PUBLIC_PRIOR_PATH,
     build_paco2_prior_bins,
     load_paco2_distribution,
 )
+from tcco2_accuracy.workflows._private_output import require_private_output_path
 
 
 def parse_args() -> argparse.Namespace:
@@ -17,14 +17,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--input",
         type=Path,
-        default=None,
-        help="In-silico PaCO2 .dta source. Defaults to package path/fallback lookup.",
+        required=True,
+        help="Restricted in-silico PaCO2 .dta source.",
     )
     parser.add_argument(
         "--output",
         type=Path,
-        default=PACO2_PUBLIC_PRIOR_PATH,
-        help="Output CSV for the binned prior.",
+        required=True,
+        help="Private/scratch output CSV for the binned prior.",
     )
     parser.add_argument(
         "--xlsx",
@@ -48,6 +48,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    output_path = require_private_output_path(args.output)
+    xlsx_path = require_private_output_path(args.xlsx) if args.xlsx is not None else None
     data = load_paco2_distribution(args.input)
     # build_paco2_prior_bins pools subgroups into "all" using subgroup sample sizes.
     prior_bins = build_paco2_prior_bins(data, bin_width=float(args.bin_width))
@@ -55,12 +57,13 @@ def main() -> None:
     if not args.include_counts:
         prior_bins = prior_bins[["group", "paco2_bin", "weight"]]
 
-    # Store a compact public prior so the static app can run without the full .dta.
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    prior_bins.to_csv(args.output, index=False)
+    # Normalized weights remain restricted-derived even when exact counts are omitted.
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    prior_bins.to_csv(output_path, index=False)
 
-    if args.xlsx is not None:
-        prior_bins.to_excel(args.xlsx, index=False)
+    if xlsx_path is not None:
+        xlsx_path.parent.mkdir(parents=True, exist_ok=True)
+        prior_bins.to_excel(xlsx_path, index=False)
 
 
 if __name__ == "__main__":

@@ -7,8 +7,9 @@
 - The distinction between 73 reported studies and 76 modeled effect rows, together with
   any estimator, clustering, or estimand changes, remains outside the TCCO2-003/004
   correction and requires separate review.
-- Exact count-bearing tracked artifacts require a separate governance disposition before
-  the repository as a whole can be described as public-safe.
+- Institutional disposition of prior commits, tags, clones, caches, and historical deployments that
+  may retain exact-count or reconstructable restricted-derived outputs remains unresolved. The
+  current-tree remediation does not answer that historical-disclosure question.
 
 ## Workflow and monorepo stabilization
 - The repository remains a monorepo for this wave: Python package, static browser app, source/reference
@@ -21,15 +22,27 @@
 - The public app deployment target is static GitHub Pages. See `docs/adr/0001-streamlit-to-pages.md`.
 - Browser computation loads staged Python through Pyodide in a worker. JavaScript manages UI,
   uploads, and plotting but does not duplicate the statistical model.
-- Browser default inference uses staged canonical/public assets: `Data/conway_studies.csv`,
-  `Data/paco2_public_prior.csv`, and `artifacts/bootstrap_params.csv`.
-- Offline PaCO2 distribution loading accepts `Data/In Silico TCCO2 Database.dta` and the local alias
-  `Data/in_silico_tcco2_db.dta`; the static app still uses a public weight-only prior asset instead
-  of `.dta`.
-- Public PaCO2 prior assets retain 1 mmHg normalized weights but omit exact bin counts. Exact
-  count-bearing prior bins and PaCO2 distribution figure bins are restricted local/generated outputs
-  and are ignored rather than tracked. Current-tree remediation is the active governance decision;
-  Git history rewriting is out of scope for this pass.
+- Historical behavior (superseded 2026-08-05 below): browser default inference staged
+  `Data/conway_studies.csv`, `Data/paco2_public_prior.csv`, and `artifacts/bootstrap_params.csv`;
+  the weight-only prior was treated as public because exact count columns were omitted.
+- 2026-08-05: Browser default inference is likelihood-only and stages only the Conway study table
+  and canonical bootstrap parameters. Prior-weighted inference requires a user-supplied binned-prior
+  upload that remains client-side; the app neither stages nor fetches a repository PaCO2 prior.
+- 2026-08-05: Exact counts and normalized weights derived from the restricted PaCO2 source are both
+  restricted-derived because weights may reconstruct the exact histogram. The current tree removes
+  `Data/paco2_public_prior.csv` and prohibited count-bearing/reconstructable outputs. Private
+  regeneration is limited to `.pytest_tmp/`, `.tmp/`, or an explicitly approved external private
+  workspace.
+- 2026-08-05: `docs/data_release_contract.json` is the machine-readable current-tree and Pages
+  authority. `docs/restricted_data_provenance.template.json` is the unresolved human-review record;
+  unknown fields remain `HUMAN REVIEW REQUIRED`. Known restricted-output stems are blocked across
+  file formats, structured schema checks include BOM-safe CSV/TSV and every XLSX sheet, and retained
+  frozen aggregates plus the synthetic prior fixture are hash-locked against accidental
+  regeneration. Legacy binary `.xls` is unsupported and prohibited from tracking.
+- 2026-08-05: Restricted PaCO2 package and workflow loaders no longer auto-discover repository-local
+  extracts. Callers must supply in-memory `paco2_data` or an explicit private source path.
+- 2026-08-05: This wave does not rewrite Git history. Prior commits, tags, clones, caches, and
+  historical deployments remain possible disclosure surfaces pending institutional review.
 - Pyodide 0.29.0, Plotly.js 2.35.2, and SheetJS 0.18.5 are pinned CDN browser dependencies.
 - User-entered values and uploads remain client-side; the app has no backend, telemetry,
   persistence, or patient-value URL state.
@@ -44,8 +57,8 @@
   readable when the prior has a long tail. This does not change posterior/prior arrays or numeric
   summaries.
 - Prior-weighted browser plots include a Python-computed `Likelihood (scaled)` curve normalized to
-  bin mass for visual comparison; likelihood-only mode omits it because it duplicates the displayed
-  posterior shape. This does not change posterior/prior arrays or numeric summaries.
+  bin mass for visual comparison after an explicit prior upload; likelihood-only mode omits it
+  because it duplicates the displayed distribution shape. This does not change numeric summaries.
 - Browser UI copy avoids clinical correctness wording and reports threshold classification with
   posterior mass summaries because the app is a research interpretation tool, not clinical decision
   support.
@@ -60,6 +73,9 @@
   only. Full PaCO2-dependent regeneration requires an explicit restricted input and a scratch/private
   output directory. In-repository full output is permitted only below `.pytest_tmp/` or `.tmp/`;
   otherwise the destination must be an external private path.
+- Retained rounded/aggregate PaCO2-dependent artifacts are frozen historical comparators, not
+  corrected or release-approved outputs. They remain frozen; this governance correction does not
+  regenerate, promote, or unfreeze them.
 - Canonical promotion to repository `artifacts/` is additionally locked to
   `Data/conway_studies.csv`, seed 202401, 1,000 draws per subgroup, and
   `cluster_plus_withinstudy`. Path aliases resolving to those canonical locations are accepted;
@@ -122,7 +138,7 @@
   be finite and strictly ordered and may be negative. Frozen PaCO2-dependent outputs remain frozen.
 - 2026-08-05: Prepared PaCO2 inputs drop genuinely missing PaCO2 rows first; every retained row
   requires one of the three record-level subgroup labels. Raw assignment flags are binary when
-  present; public priors require exactly all four allowed group labels. Conway export never permits
+  present; supplied binned priors require exactly all four allowed group labels. Conway export never permits
   missing/blank identifiers or non-integer observed counts, even when other source checks are
   configured as permissive.
 - `format_inference_demo` only supports a single threshold and raises a ValueError otherwise in `src/tcco2_accuracy/workflows/infer.py`.

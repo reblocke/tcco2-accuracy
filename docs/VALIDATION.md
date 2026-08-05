@@ -68,9 +68,10 @@
 - Purpose: ingest PaCO2 distributions and assign mutually exclusive subgroups.
 - Invariants: subgroup assignment, prepared-label allowlisting, raw binary-flag validation, and
   quantile checks in `tests/core/test_paco2_distribution.py`.
-- Artifacts: `artifacts/paco2_distribution_summary.md`.
-- Status: frozen at the legacy agreement-method wave pending downstream regeneration and governance
-  review; no current corrected-method claim is made from this artifact.
+- Artifacts: no restricted-derived distribution summary or prior is tracked. Tests use a clearly
+  synthetic prior fixture.
+- Status: the former distribution summary and reconstructable prior were removed from the current
+  tree under `docs/data_release_contract.json`. Private future rebuilds remain frozen and gated.
 
 ### Forward simulation
 - Purpose: propagate bootstrap parameters through TcCO2 accuracy metrics.
@@ -78,14 +79,16 @@
   z values of ±8 and ±12 in `tests/core/test_simulation.py`. Survival and LR calculations are
   performed without `1-cdf` subtraction.
 - Artifacts: `artifacts/simulation_summary.md`.
-- Status: frozen at the legacy agreement-method wave; no current corrected-method claim is made.
+- Status: retained as a frozen aggregate legacy-method comparator; it is not corrected or
+  release-approved.
 
 ### Inverse inference
 - Purpose: compute TcCO2 → PaCO2 posterior intervals and exceedance probabilities.
 - Invariants: likelihood/prior checks, exact survival-tail checks at z values of ±8 and ±12 in
   `tests/core/test_inference.py`, and determinism in `tests/workflows/test_workflows.py`.
-- Artifacts: `artifacts/inference_demo.md`.
-- Status: frozen at the legacy agreement-method wave; no current corrected-method claim is made.
+- Artifacts: the detailed inference demo was removed. Prediction-interval CSV/Markdown files remain
+  tracked only as frozen aggregate legacy-method comparators.
+- Status: no current corrected-method or release-approved downstream claim is made.
 
 ### Conditional misclassification curves
 - Purpose: summarize conditional TN/FP/FN/TP probabilities by true PaCO2 bin.
@@ -93,34 +96,39 @@
   independence, decimal-width exact-edge handling, and 44.49/44.50/44.99/45.00/45.01 mmHg boundary checks in
   `tests/core/test_hybrid_bootstrap_and_conditional.py`. `paco2_bin` and `paco2_bin_upper`
   identify `[lower, upper)`; truth is never derived from either edge.
-- Artifacts: `artifacts/conditional_classification_t45.csv`, `artifacts/conditional_classification_t45.md`.
-- Status: frozen at the legacy agreement-method wave; no current corrected-method claim is made.
+- Artifacts: detailed conditional-classification CSV/Markdown files were removed from the current
+  tracked tree.
+- Status: future private regeneration remains frozen; no current corrected-method claim is made.
 
 ### Two-stage probability stability
 - Purpose: calculate lower, reflex, and upper-zone probabilities without normal-tail cancellation.
 - Invariants: zone mass, stable `[8 SD, 12 SD)` interval probability, positive mass for an ordered
   interval only `1e-16` SD wide, nonzero 12-SD survival, and finite extreme-tail LR checks in
   `tests/core/test_two_stage.py`.
-- Status: implementation corrected for future private rebuilds; tracked PaCO2-dependent artifacts
-  remain frozen and were not regenerated.
+- Status: implementation corrected for future private rebuilds; retained rounded
+  `artifacts/two_stage_summary.md` and `artifacts/manuscript_table2_two_stage.md` remain frozen,
+  were not regenerated, and are not release-approved. Their detailed CSVs were removed.
 
 ### Manuscript reporting outputs
 - Purpose: generate manuscript-ready tables, figures, and results snippets.
 - Invariants: smoke test in `tests/workflows/test_manuscript_workflow.py`.
-- Artifacts: `artifacts/manuscript_table1.csv`, `artifacts/manuscript_table2_two_stage.csv`,
-  `artifacts/manuscript_table3_prediction_intervals.csv`, `artifacts/manuscript_results_snippets.md`.
+- Artifacts: retained files are enumerated in `artifacts/STATUS.md`; detailed Table 1 and selected
+  exact/reconstructable CSV outputs were removed under the release contract.
 - Status: frozen at the legacy agreement-method wave. These values must not be copied into a final
   manuscript or described as corrected until the downstream regeneration gate is complete.
 
 ### Browser contract and static app
 - Purpose: verify that the Pages app calls the Python source of truth through a JSON-safe contract.
-- Invariants: `tests/contracts/test_browser_contract.py` compares contract outputs to `predict_paco2_from_tcco2`
-  for canonical prior-weighted inference and exercises subgroups, inference modes, custom priors,
-  and uploaded study-table recomputation.
-- Staging: `tests/contracts/test_stage_web_python.py` verifies package/data staging into `web/assets/`.
-- E2E: `tests/e2e/test_web_app.py` verifies Pyodide loads, default calculation completes, metrics render,
-  threshold changes update the browser result, and a failed custom-study recalculation clears prior
-  metrics, chart output, and result-provenance attributes before displaying the error.
+- Invariants: `tests/contracts/test_browser_contract.py` compares contract outputs to
+  `predict_paco2_from_tcco2`, verifies likelihood-only default behavior, requires an explicit
+  synthetic prior for prior-weighted mode, and exercises subgroups and uploaded study-table
+  recomputation.
+- Staging: `tests/contracts/test_stage_web_python.py` verifies package/data staging into
+  `web/assets/` and confirms no PaCO2 prior is staged.
+- E2E: `tests/e2e/test_web_app.py` verifies Pyodide loads, the default likelihood-only calculation
+  completes, an uploaded synthetic prior enables prior-weighted mode, a missing prior fails closed,
+  threshold changes update the browser result, and failed recalculation clears prior metrics, chart
+  output, and result-provenance attributes before displaying the error.
 - Scientific claim: browser-facing outputs are a serialization of the authoritative Python model, not
   a separate JavaScript implementation.
 - Version gate: canonical parameter assets must contain exactly one current method revision and
@@ -132,6 +140,15 @@
   study calculations are marked `single_model`.
 
 ## Artifact and release gates
+- `docs/data_release_contract.json` rejects prohibited tracked paths and exact or reconstructable
+  restricted-derived schemas, verifies that only Conway/bootstrap data are staged to Pages, and
+  preserves exact hashes for the five canonical agreement artifacts and eight retained frozen
+  downstream comparators. Alternate known output extensions and prohibited CSV/TSV/XLSX schemas
+  are covered so a format change does not bypass the gate. Legacy binary `.xls` is unsupported and
+  prohibited from the tracked tree because the locked environment cannot inspect it reliably.
+- `docs/restricted_data_provenance.template.json` retains `HUMAN REVIEW REQUIRED` for unresolved
+  ownership, IRB/protocol, waiver, DUA/authorization, extract, source-system, observation-unit,
+  repeated-patient, permissions, and retention fields.
 - `artifacts/STATUS.md` is the current/frozen manifest. Only five public Conway-derived outputs are
   promoted by `--profile public-agreement`; restricted PaCO2 loaders must be unreachable in that
   profile.
@@ -143,6 +160,14 @@
   exact restoration of every preexisting artifact plus removal of newly introduced files.
 - `--profile full` requires an explicit restricted source and a scratch/private output directory.
   It is a comparison workflow only until TCCO2-006 and the governance review are complete.
+- Restricted-derived prior or exact-count regeneration is allowed only under `.pytest_tmp/`,
+  `.tmp/`, or an explicitly approved external private workspace. The browser defaults to
+  likelihood-only and does not stage or fetch such a prior.
+- Retained rounded/aggregate downstream files remain frozen historical comparators, not
+  release-approved outputs. No PaCO2-dependent result was regenerated, promoted, or unfrozen in
+  this governance wave.
+- Current-tree remediation does not rewrite Git history. Prior commits, tags, clones, caches, and
+  historical deployments remain possible disclosure surfaces pending institutional review.
 - Final tag, removal of provisional copy, manuscript unfreeze, submission-readiness claims, and final
   downstream promotion require independent biostatistical review plus resolution of the remaining
   source/reference and exact-count governance tickets.

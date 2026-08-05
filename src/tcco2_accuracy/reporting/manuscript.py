@@ -96,6 +96,14 @@ def run_manuscript_outputs(
 ) -> ManuscriptWorkflowResult:
     """Generate manuscript-ready tables, figures, and result snippets."""
 
+    if out_dir is not None:
+        # Import locally to avoid a reporting/workflows package initialization cycle.
+        from ..workflows._private_output import require_private_output_path
+
+        out_dir = require_private_output_path(out_dir)
+
+    if paco2_data is None and paco2_path is None:
+        raise ValueError("Provide paco2_data or an explicit private paco2_path.")
     if params is None:
         # Keep the workflow import local so this reporting module remains safe to
         # import before the eager ``tcco2_accuracy.workflows`` package initializer.
@@ -202,7 +210,6 @@ def run_manuscript_outputs(
     }
 
     if out_dir is not None:
-        out_dir = Path(out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
         _write_csv(out_dir / "manuscript_parameters.csv", parameters)
         write_text(out_dir / "manuscript_parameters.md", parameters_md)
