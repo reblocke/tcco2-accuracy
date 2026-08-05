@@ -15,8 +15,12 @@
 3. Lock the analysis specification: estimand, PaCO2 sampling unit, repeated patients, publication
    clustering, bootstrap model, supported range, proportional bias, subgroup mappings, ED/inpatient
    definition, and row-level Conway provenance.
-4. Close downstream safety and governance gaps: missing-group behavior, stable tail calculations,
-   conditional-bin truth assignment, input validation, and exact-count/IRB/DUA provenance.
+4. Preserve the closed downstream safety gates: missing groups fail closed, tail calculations are
+   stable, conditional truth uses original values, scientific inputs fail closed, the browser
+   defaults to likelihood-only, and exact/reconstructable restricted-derived outputs stay outside
+   the tracked tree and Pages. Keep `docs/data_release_contract.json` authoritative and resolve every
+   `HUMAN REVIEW REQUIRED` field in `docs/restricted_data_provenance.template.json` before any
+   restricted-data release review.
 5. Rebuild downstream results only in a private workspace, jointly propagate agreement and target-
    distribution uncertainty, run clustering/model sensitivities with at least 10,000 release draws,
    and document Monte Carlo stability before approved aggregate promotion.
@@ -27,3 +31,6 @@
 Throughout these priorities, keep the browser contract aligned with the Python numerical source of
 truth, keep user inputs client-side, and update validation artifacts only for intentional scientific
 changes.
+
+Current-tree exact-count remediation does not rewrite prior commits, tags, clones, caches, or
+historical deployments. Institutional disposition of those surfaces remains a separate gate.

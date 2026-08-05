@@ -12,7 +12,7 @@ make stage-web
 make serve
 ```
 
-Open http://127.0.0.1:8000 and verify the default calculation completes.
+Open http://127.0.0.1:8000 and verify the default likelihood-only calculation completes.
 
 ## GitHub Setup
 1. Enable GitHub Pages for the repository.
@@ -24,4 +24,8 @@ Open http://127.0.0.1:8000 and verify the default calculation completes.
 - Pyodide, Plotly.js, and SheetJS are pinned CDN dependencies loaded by the browser.
 - User-entered values and uploads are processed client-side only.
 - The default app does not require `Data/In Silico TCCO2 Database.dta`.
+- Pages stages only `conway_studies.csv` and `bootstrap_params.csv` as data assets. It must not
+  contain or fetch `paco2_public_prior.csv`, exact prior bins, or another restricted-derived prior.
+- Prior-weighted inference requires an explicit user upload and fails closed without one.
+- `docs/data_release_contract.json` is the machine-readable current-tree and Pages allowlist.
 - If Pyodide CDN availability is a deployment concern, vendor Pyodide assets in a follow-up decision and update `docs/DECISIONS.md`.

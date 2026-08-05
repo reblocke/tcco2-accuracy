@@ -1,22 +1,16 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import pytest
 
 from tcco2_accuracy.data import (
     DEFAULT_PACO2_QUANTILES,
-    INSILICO_PACO2_PATH,
     PACO2_REQUIRED_COLUMNS,
     PACO2_SUBGROUP_ORDER,
-    load_paco2_distribution,
     paco2_subgroup_summary,
     prepare_paco2_distribution,
 )
-
-FIXTURE_PATH = Path(__file__).resolve().parents[1] / "fixtures" / "paco2_distribution_summary.csv"
 
 
 @pytest.fixture()
@@ -53,12 +47,21 @@ def test_paco2_units_mmhg(paco2_data: pd.DataFrame) -> None:
     assert medians.loc["icu"] == pytest.approx(52.5)
 
 
-def test_paco2_distribution_summary_matches_fixture() -> None:
-    if not INSILICO_PACO2_PATH.exists():
-        pytest.skip("In-silico PaCO2 .dta not available.")
-    summary = paco2_subgroup_summary(load_paco2_distribution(), quantiles=DEFAULT_PACO2_QUANTILES)
-    expected = pd.read_csv(FIXTURE_PATH)
-    pd.testing.assert_frame_equal(summary, expected, check_exact=False, atol=0.01)
+def test_paco2_distribution_summary_matches_synthetic_rows(paco2_data: pd.DataFrame) -> None:
+    summary = paco2_subgroup_summary(paco2_data, quantiles=DEFAULT_PACO2_QUANTILES)
+    expected = pd.DataFrame(
+        {
+            "group": ["pft", "ed_inp", "icu"],
+            "count": [2, 2, 2],
+            "paco2_q025": [40.05, 45.375, 50.125],
+            "paco2_q250": [40.5, 48.75, 51.25],
+            "paco2_q500": [41.0, 52.5, 52.5],
+            "paco2_q750": [41.5, 56.25, 53.75],
+            "paco2_q975": [41.95, 59.625, 54.875],
+        }
+    )
+
+    pd.testing.assert_frame_equal(summary, expected, check_exact=False, atol=1e-12)
 
 
 @pytest.mark.parametrize("value", [0.0, -1.0, np.inf, -np.inf, "not-numeric"])

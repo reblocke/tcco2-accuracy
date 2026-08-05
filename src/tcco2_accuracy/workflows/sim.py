@@ -18,6 +18,7 @@ from ..io import (
 )
 from ..utils import n_draws_per_group
 from . import bootstrap as bootstrap_workflow
+from ._private_output import require_private_output_path
 
 
 @dataclass(frozen=True)
@@ -46,7 +47,7 @@ def run_forward_simulation_summary(
 
     Reads:
         - Conway bootstrap parameters (if ``params`` is not provided).
-        - PaCO2 distribution data (if ``paco2_data`` is not provided).
+        - PaCO2 distribution data from explicit ``paco2_data`` or ``paco2_path``.
 
     Writes:
         - ``simulation_summary.md`` in ``out_dir`` when provided.
@@ -64,6 +65,11 @@ def run_forward_simulation_summary(
         uses ``seed`` for sampling.
     """
 
+    if out_dir is not None:
+        out_dir = require_private_output_path(out_dir)
+
+    if paco2_data is None and paco2_path is None:
+        raise ValueError("Provide paco2_data or an explicit private paco2_path.")
     if params is None:
         # Bootstrap mode controls the parameter uncertainty propagated downstream.
         params = bootstrap_workflow.run_bootstrap(
@@ -89,7 +95,7 @@ def run_forward_simulation_summary(
         summary, thresholds=thresholds, n_boot=n_boot_per_group, mode=mode
     )
     if out_dir is not None:
-        write_text(Path(out_dir) / "simulation_summary.md", markdown)
+        write_text(out_dir / "simulation_summary.md", markdown)
     invariants = {
         "groups": int(summary["group"].nunique()) if not summary.empty else 0,
         "thresholds": ",".join(f"{value:g}" for value in thresholds),

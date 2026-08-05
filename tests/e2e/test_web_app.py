@@ -14,6 +14,7 @@ from playwright.sync_api import expect
 from scripts.stage_web_python import stage_web_python
 
 ROOT = Path(__file__).resolve().parents[2]
+SYNTHETIC_PRIOR_PATH = ROOT / "tests" / "fixtures" / "synthetic_paco2_prior.csv"
 EXPECTED_AGREEMENT_METHOD_VERSION = "agreement_natural_log_tau2_direct_v1"
 EXPECTED_RESULTS_STATUS = "provisional"
 SYNTHETIC_STUDY_CSV = """study_id,bias,s2,n_pairs,n_participants,c,is_icu,is_arf,is_lft
@@ -46,6 +47,8 @@ def web_server() -> str:
 
 
 def test_static_app_default_calculation(page, web_server: str) -> None:
+    requested_urls: list[str] = []
+    page.on("request", lambda request: requested_urls.append(request.url))
     page.goto(web_server, wait_until="domcontentloaded")
 
     revision_notice = page.locator("#revision-notice")
@@ -56,6 +59,9 @@ def test_static_app_default_calculation(page, web_server: str) -> None:
     expect(revision_notice).to_contain_text("Research use only—not for clinical decision-making")
     page.get_by_text("Calculation complete.").wait_for(timeout=180_000)
 
+    expect(page.locator("input[name='mode'][value='likelihood_only']")).to_be_checked()
+    expect(page.locator("input[name='mode'][value='prior_weighted']")).not_to_be_checked()
+    assert not any("assets/data/paco2" in url for url in requested_urls)
     assert page.locator("body").get_attribute("data-agreement-method-version") == (
         EXPECTED_AGREEMENT_METHOD_VERSION
     )
@@ -193,6 +199,12 @@ def test_static_app_prior_weighted_chart_uses_posterior_focused_axis(page, web_s
     page.goto(web_server, wait_until="domcontentloaded")
     page.get_by_text("Calculation complete.").wait_for(timeout=180_000)
 
+    page.locator("details.panel > summary").click()
+    page.locator("#prior-file").set_input_files(SYNTHETIC_PRIOR_PATH)
+    page.locator("input[name='mode'][value='prior_weighted']").check()
+    page.locator("#calculate").click()
+    _wait_for_trace_names(page, ["Posterior", "Likelihood (scaled)", "Prior"])
+
     state = _chart_state(page)
 
     assert state["trace_names"] == ["Posterior", "Likelihood (scaled)", "Prior"]
@@ -200,11 +212,31 @@ def test_static_app_prior_weighted_chart_uses_posterior_focused_axis(page, web_s
     assert state["showlegend"] is False
     assert "Likelihood (scaled)" in state["annotation_text"]
     assert "Prior" in state["annotation_text"]
-    assert state["range_width"] < state["trace_width"] * 0.4
+    assert state["range_width"] < state["trace_width"]
     assert "Median" in state["annotation_text"]
     assert "PI low" in state["annotation_text"]
     assert "PI high" in state["annotation_text"]
-    assert state["annotation_lanes"] > 1
+
+
+def test_static_app_prior_weighted_requires_upload_and_clears_result(page, web_server: str) -> None:
+    page.goto(web_server, wait_until="domcontentloaded")
+    page.get_by_text("Calculation complete.").wait_for(timeout=180_000)
+
+    assert page.locator("#metric-interval").inner_text() != "-"
+    assert page.locator("#posterior-chart .main-svg").count() >= 1
+
+    page.locator("input[name='mode'][value='prior_weighted']").check()
+    page.locator("#calculate").click()
+
+    expect(page.locator("#status")).to_have_text("Calculation failed.")
+    expect(page.locator("#error")).to_contain_text(
+        "Prior-weighted mode requires an uploaded binned PaCO2 prior"
+    )
+    expect(page.locator("#metrics")).to_be_hidden()
+    expect(page.locator("#metric-interval")).to_have_text("-")
+    expect(page.locator("#posterior-chart")).to_be_hidden()
+    expect(page.locator("#posterior-chart .main-svg")).to_have_count(0)
+    assert page.locator("body").get_attribute("data-params-source") is None
 
 
 def test_static_app_likelihood_only_chart_uses_posterior_focused_axis(
@@ -247,10 +279,6 @@ def _chart_state(page) -> dict[str, bool | float | int | str | list[str]]:
           const range = chart._fullLayout.xaxis.range.map(Number);
           const traceX = chart.data[0].x.map(Number);
           const annotations = chart.layout.annotations ?? [];
-          const markerAnnotations = annotations.filter((annotation) => annotation.yref === "paper");
-          const annotationYs = markerAnnotations.map((annotation) =>
-            Number(annotation.y).toFixed(3)
-          );
           return {
             range_width: range[1] - range[0],
             trace_width: Math.max(...traceX) - Math.min(...traceX),
@@ -258,7 +286,6 @@ def _chart_state(page) -> dict[str, bool | float | int | str | list[str]]:
             yaxis_title: chart._fullLayout.yaxis.title.text,
             showlegend: Boolean(chart._fullLayout.showlegend),
             annotation_text: annotations.map((annotation) => annotation.text),
-            annotation_lanes: new Set(annotationYs).size,
           };
         }
         """

@@ -20,6 +20,7 @@ Inputs:
 - Clinical setting selector: all, ambulatory/PFT, ED/inpatient, ICU.
 - Optional custom study table upload as CSV/XLSX.
 - Optional custom binned PaCO2 prior upload as CSV/XLSX.
+- Prior-weighted mode requires that upload; the default likelihood-only mode does not use a prior.
 
 Outputs:
 - PaCO2 median and prediction interval.
@@ -39,11 +40,22 @@ Privacy and runtime:
 
 Default assets:
 - web/assets/data/conway_studies.csv is staged from Data/conway_studies.csv.
-- web/assets/data/paco2_public_prior.csv is staged from Data/paco2_public_prior.csv.
 - web/assets/data/bootstrap_params.csv is staged from artifacts/bootstrap_params.csv.
+- No PaCO2 prior is staged or fetched. Normalized restricted-derived weights may reconstruct the
+  source distribution even without count columns, so prior weighting is upload-only and client-side.
 - Repository canonical promotion guards that bootstrap artifact against noncanonical study inputs,
   seeds, draw counts, or modes; custom rebuilds cannot replace deployed parameters.
 - web/assets/py/ is staged from src/tcco2_accuracy by make stage-web.
+
+Default behavior:
+- Inference mode is likelihood-only.
+- Selecting prior-weighted mode without an uploaded binned prior fails closed and clears stale results.
+- Uploaded prior data stay in the browser; the app has no backend, telemetry, persistence, or patient-value URLs.
+
+Governance:
+- docs/data_release_contract.json in the repository defines the current-tree and Pages asset contract.
+- PaCO2-dependent manuscript and downstream files remain frozen and are not release-approved.
+- Current-tree remediation did not rewrite prior commits or tags; historical repositories, clones, caches, and deployments may remain disclosure surfaces.
 
 Citations:
 - CHEST 2025 abstract DOI: https://doi.org/10.1016/j.chest.2025.07.3877

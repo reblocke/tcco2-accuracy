@@ -15,6 +15,7 @@ from ..inference import infer_paco2_by_subgroup
 from ..simulation import DEFAULT_CLASSIFICATION_THRESHOLDS
 from ..utils import n_draws_per_group, threshold_label
 from . import bootstrap as bootstrap_workflow
+from ._private_output import require_private_output_path
 
 DEFAULT_TCCO2_VALUES: tuple[float, ...] = (35.0, 45.0, 55.0)
 
@@ -47,7 +48,7 @@ def run_inference_demo(
 
     Reads:
         - Conway bootstrap parameters (if ``params`` is not provided).
-        - PaCO2 distribution data (if ``paco2_data`` is not provided).
+        - PaCO2 distribution data from explicit ``paco2_data`` or ``paco2_path``.
 
     Writes:
         - ``inference_demo.md`` in ``out_dir`` when provided.
@@ -66,6 +67,11 @@ def run_inference_demo(
         requires a single threshold value.
     """
 
+    if out_dir is not None:
+        out_dir = require_private_output_path(out_dir)
+
+    if paco2_data is None and paco2_path is None:
+        raise ValueError("Provide paco2_data or an explicit private paco2_path.")
     if params is None:
         # Bootstrap mode determines how parameter uncertainty enters inference intervals.
         params = bootstrap_workflow.run_bootstrap(
@@ -109,7 +115,7 @@ def run_inference_demo(
         paco2_data=paco2_data,
     )
     if out_dir is not None:
-        write_text(Path(out_dir) / "inference_demo.md", markdown)
+        write_text(out_dir / "inference_demo.md", markdown)
     invariants = {
         "groups": int(summary["group"].nunique()) if not summary.empty else 0,
         "tcco2_values": ",".join(f"{value:g}" for value in tcco2_values),

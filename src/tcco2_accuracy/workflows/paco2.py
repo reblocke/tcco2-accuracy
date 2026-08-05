@@ -16,6 +16,7 @@ from ..data import (
     paco2_subgroup_summary,
     prepare_paco2_distribution,
 )
+from ._private_output import require_private_output_path
 
 
 @dataclass(frozen=True)
@@ -35,8 +36,7 @@ def run_paco2_summary(
     """Summarize PaCO2 distributions by subgroup.
 
     Reads:
-        - PaCO2 distribution data from ``paco2_path`` when provided, otherwise
-          the bundled `Data/In Silico TCCO2 Database.dta`.
+        - PaCO2 distribution data from explicit ``paco2_data`` or ``paco2_path``.
 
     Writes:
         - ``paco2_distribution_summary.md`` in ``out_dir`` when provided.
@@ -49,6 +49,11 @@ def run_paco2_summary(
         Deterministic; no random sampling is used.
     """
 
+    if out_dir is not None:
+        out_dir = require_private_output_path(out_dir)
+
+    if paco2_data is None and paco2_path is None:
+        raise ValueError("Provide paco2_data or an explicit private paco2_path.")
     provided_data = paco2_data is not None
     if paco2_data is None:
         paco2_data = load_paco2_distribution(paco2_path)
@@ -59,10 +64,10 @@ def run_paco2_summary(
     elif provided_data:
         source = "in-memory"
     else:
-        source = "Data/In Silico TCCO2 Database.dta"
+        source = str(paco2_path)
     markdown = format_paco2_summary(summary, source=source)
     if out_dir is not None:
-        write_text(Path(out_dir) / "paco2_distribution_summary.md", markdown)
+        write_text(out_dir / "paco2_distribution_summary.md", markdown)
     counts = prepared["subgroup"].value_counts()
     invariants = {
         "total": int(prepared.shape[0]),

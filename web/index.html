@@ -86,11 +86,11 @@
           <fieldset>
             <legend>Inference mode</legend>
             <label class="inline">
-              <input type="radio" name="mode" value="prior_weighted" checked />
+              <input type="radio" name="mode" value="prior_weighted" />
               Prior-weighted
             </label>
             <label class="inline">
-              <input type="radio" name="mode" value="likelihood_only" />
+              <input type="radio" name="mode" value="likelihood_only" checked />
               Likelihood-only
             </label>
           </fieldset>
@@ -109,11 +109,11 @@
           <div class="advanced-grid">
             <label>
               Study table override (CSV/XLSX)
-              <input id="study-file" type="file" accept=".csv,.xlsx,.xls,text/csv" />
+              <input id="study-file" type="file" accept=".csv,.xlsx,text/csv" />
             </label>
             <label>
-              Binned PaCO2 prior override (CSV/XLSX)
-              <input id="prior-file" type="file" accept=".csv,.xlsx,.xls,text/csv" />
+              Binned PaCO2 prior upload (required for prior-weighted mode; CSV/XLSX)
+              <input id="prior-file" type="file" accept=".csv,.xlsx,text/csv" />
             </label>
             <label>
               Bootstrap draws

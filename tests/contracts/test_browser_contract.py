@@ -12,11 +12,12 @@ from tcco2_accuracy.data import PACO2_PRIOR_GROUPS, prior_distribution_from_bins
 from tcco2_accuracy.ui_api import predict_paco2_from_tcco2
 
 ROOT = Path(__file__).resolve().parents[2]
+SYNTHETIC_PRIOR_PATH = ROOT / "tests" / "fixtures" / "synthetic_paco2_prior.csv"
 
 
-def test_browser_contract_matches_ui_api_canonical_prior_weighted() -> None:
+def test_browser_contract_matches_ui_api_with_synthetic_uploaded_prior() -> None:
     params_csv = _read_text(ROOT / "artifacts" / "bootstrap_params.csv")
-    prior_csv = _read_text(ROOT / "Data" / "paco2_public_prior.csv")
+    prior_csv = _read_text(SYNTHETIC_PRIOR_PATH)
     payload = {
         "tcco2": 50.0,
         "subgroup": "all",
@@ -72,16 +73,19 @@ def test_browser_contract_canonical_cases_are_serializable(subgroup: str, mode: 
         "mode": mode,
         "interval": 0.95,
         "params_csv": _read_text(ROOT / "artifacts" / "bootstrap_params.csv"),
-        "prior_bins_csv": _read_text(ROOT / "Data" / "paco2_public_prior.csv"),
         "n_param_draws": 50,
         "seed": 123,
     }
+    if mode == "prior_weighted":
+        payload["prior_bins_csv"] = _read_text(SYNTHETIC_PRIOR_PATH)
 
     result = compute_ui_payload(payload)
 
     assert result["subgroup"] == subgroup
     assert result["mode"] == mode
-    assert result["paco2_q_low"] < result["paco2_q_high"]
+    assert result["paco2_q_low"] <= result["paco2_median"] <= result["paco2_q_high"]
+    if mode == "likelihood_only":
+        assert result["paco2_q_low"] < result["paco2_q_high"]
     assert 0.0 <= result["p_ge_threshold"] <= 1.0
     assert isinstance(result["paco2_bin"], list)
     assert isinstance(result["posterior_prob"], list)
@@ -104,6 +108,7 @@ def test_browser_contract_accepts_custom_prior_bins() -> None:
         "subgroup": "pft",
         "threshold": 45.0,
         "mode": "prior_weighted",
+        "prior_source": "public_prior",
         "params_csv": _read_text(ROOT / "artifacts" / "bootstrap_params.csv"),
         "prior_bins_csv": prior_csv,
         "n_param_draws": 25,
@@ -114,6 +119,34 @@ def test_browser_contract_accepts_custom_prior_bins() -> None:
 
     assert result["metadata"]["prior_source"] == "provided_bins"
     assert 0.0 <= result["p_ge_threshold"] <= 1.0
+
+
+def test_browser_contract_defaults_to_likelihood_only_without_prior() -> None:
+    payload = {
+        "tcco2": 50.0,
+        "subgroup": "all",
+        "params_csv": _read_text(ROOT / "artifacts" / "bootstrap_params.csv"),
+        "n_param_draws": 25,
+        "seed": 1,
+    }
+
+    result = compute_ui_payload(payload)
+
+    assert result["mode"] == "likelihood_only"
+    assert result["metadata"]["prior_source"] == "not_used"
+    assert result["prior_prob"] is None
+
+
+def test_browser_contract_prior_weighted_requires_explicit_prior() -> None:
+    payload = {
+        "tcco2": 50.0,
+        "subgroup": "all",
+        "mode": "prior_weighted",
+        "params_csv": _read_text(ROOT / "artifacts" / "bootstrap_params.csv"),
+    }
+
+    with pytest.raises(ValueError, match="requires an explicitly uploaded.*prior"):
+        compute_ui_payload(payload)
 
 
 def test_browser_contract_accepts_weight_only_prior_bins() -> None:
@@ -255,7 +288,7 @@ def test_browser_contract_rejects_missing_requested_parameter_group() -> None:
 
 
 def test_browser_contract_validates_prior_record_payloads_like_csv() -> None:
-    prior = pd.read_csv(ROOT / "Data" / "paco2_public_prior.csv")
+    prior = pd.read_csv(SYNTHETIC_PRIOR_PATH)
     prior.loc[prior.index[0], "paco2_bin"] = 0.0
     payload = {
         "tcco2": 50.0,

@@ -15,6 +15,7 @@ from ..data import PACO2_SUBGROUP_ORDER, load_paco2_distribution, prepare_paco2_
 from ..simulation import DEFAULT_SUMMARY_QUANTILES
 from ..utils import n_draws_per_group, threshold_label
 from . import bootstrap as bootstrap_workflow
+from ._private_output import require_private_output_path
 
 
 @dataclass(frozen=True)
@@ -43,7 +44,7 @@ def run_conditional_classification(
 
     Reads:
         - Conway bootstrap parameters (if ``params`` is not provided).
-        - PaCO2 distribution data (if ``paco2_data`` is not provided).
+        - PaCO2 distribution data from explicit ``paco2_data`` or ``paco2_path``.
 
     Writes:
         - ``conditional_classification_t{threshold}.csv`` and ``.md`` in ``out_dir`` when provided.
@@ -53,6 +54,11 @@ def run_conditional_classification(
         the conditional misclassification curves.
     """
 
+    if out_dir is not None:
+        out_dir = require_private_output_path(out_dir)
+
+    if paco2_data is None and paco2_path is None:
+        raise ValueError("Provide paco2_data or an explicit private paco2_path.")
     if params is None:
         params = bootstrap_workflow.run_bootstrap(
             n_boot=n_boot,
@@ -102,7 +108,6 @@ def run_conditional_classification(
         bootstrap_mode=bootstrap_mode,
     )
     if out_dir is not None:
-        out_dir = Path(out_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
         token = threshold_label(threshold)
         curves.to_csv(out_dir / f"conditional_classification_t{token}.csv", index=False)

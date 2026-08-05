@@ -42,14 +42,28 @@ The RData/count exporter's permissive options may relax other source checks, but
 missing or blank study identifiers or non-integer observed `n_pairs`/`n_participants` values.
 
 ## PaCO2 priors
-The public prior for browser prior-weighted inference lives separately in
-`Data/paco2_public_prior.csv`. Updating the Conway study table does not change
-this prior; use the prior build script if the restricted in-silico distribution
-changes. Exact count-bearing prior bins are local/generated outputs and should
-not be committed. PaCO2 prior support values must be finite and strictly positive; there is no
-evidence-based hard upper validation bound. When rebuilding from a source distribution, genuinely
-missing PaCO2 rows are dropped, while malformed, infinite, zero, or negative retained values fail.
-Prior group labels must contain exactly `pft`, `ed_inp`, `icu`, and `all`, with no blanks or extras.
+Updating the Conway study table does not change a PaCO2 prior. The repository and Pages app do not
+ship one: browser inference defaults to likelihood-only, and prior-weighted mode requires an
+explicit client-side binned-prior upload. Exact counts and normalized weights derived from the
+restricted source are both restricted-derived; weight-only bins may reconstruct the exact source
+distribution and are not automatically public-safe.
+
+Private prior generation requires explicit paths, for example:
+
+```bash
+uv run python scripts/build_paco2_prior_bins.py \
+  --input /approved/restricted/source/in_silico_tcco2_db.dta \
+  --output /approved/private/workspace/paco2_prior_bins.csv --include-counts
+```
+
+Use `.pytest_tmp/`, `.tmp/`, or an explicitly approved external private workspace. Do not write a
+restricted-derived prior into `Data/`, `artifacts/`, or staged web assets. PaCO2 prior support values
+must be finite and strictly positive; there is no evidence-based hard upper validation bound. When
+rebuilding from a source distribution, genuinely missing PaCO2 rows are dropped, while malformed,
+infinite, zero, or negative retained values fail. Prior group labels must contain exactly `pft`,
+`ed_inp`, `icu`, and `all`, with no blanks or extras. Governance is defined by
+`docs/data_release_contract.json` and the unresolved source record starts from
+`docs/restricted_data_provenance.template.json`.
 
 ## Validate the table locally
 ```bash

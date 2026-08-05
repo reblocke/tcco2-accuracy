@@ -1,0 +1,48 @@
+{
+  "template_version": "1.0.0",
+  "status": "HUMAN REVIEW REQUIRED",
+  "record": {
+    "dataset_name": "HUMAN REVIEW REQUIRED",
+    "ownership": {
+      "data_owner": "HUMAN REVIEW REQUIRED",
+      "institutional_custodian": "HUMAN REVIEW REQUIRED"
+    },
+    "irb_or_protocol": {
+      "identifier": "HUMAN REVIEW REQUIRED",
+      "determination": "HUMAN REVIEW REQUIRED"
+    },
+    "consent_or_waiver": {
+      "basis": "HUMAN REVIEW REQUIRED",
+      "documentation_location": "HUMAN REVIEW REQUIRED"
+    },
+    "dua_or_authorization": {
+      "identifier": "HUMAN REVIEW REQUIRED",
+      "permitted_uses": "HUMAN REVIEW REQUIRED",
+      "publication_authority": "HUMAN REVIEW REQUIRED"
+    },
+    "extract": {
+      "date": "HUMAN REVIEW REQUIRED",
+      "source_system": "HUMAN REVIEW REQUIRED",
+      "query_or_version": "HUMAN REVIEW REQUIRED"
+    },
+    "unit_of_observation": "HUMAN REVIEW REQUIRED",
+    "repeated_patients": {
+      "present": "HUMAN REVIEW REQUIRED",
+      "identification_method": "HUMAN REVIEW REQUIRED",
+      "analysis_handling": "HUMAN REVIEW REQUIRED"
+    },
+    "fields_included": [
+      "HUMAN REVIEW REQUIRED"
+    ],
+    "permissions": {
+      "who_may_access": "HUMAN REVIEW REQUIRED",
+      "approved_storage": "HUMAN REVIEW REQUIRED",
+      "redistribution": "HUMAN REVIEW REQUIRED"
+    },
+    "retention": {
+      "required_period": "HUMAN REVIEW REQUIRED",
+      "review_date": "HUMAN REVIEW REQUIRED",
+      "destruction_or_archive_process": "HUMAN REVIEW REQUIRED"
+    }
+  }
+}

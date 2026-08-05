@@ -48,4 +48,6 @@ human review and study additions.
   to agree.
 - The RData/count exporter always rejects missing or blank study identifiers and non-integer
   observed counts. `--no-strict` and `--allow-missing-counts` do not relax those checks.
-- Public PaCO2 prior weights used for browser prior-weighted inference are maintained separately in `Data/paco2_public_prior.csv`.
+- PaCO2 priors are separate from Conway study inputs. No restricted-derived prior is tracked or
+  staged; browser prior-weighted inference requires an explicit client-side upload, while the
+  default is likelihood-only. See `docs/data_release_contract.json`.

@@ -22,11 +22,10 @@ The app under `web/` is static HTML/CSS/JS. It uses:
 - `web/assets/data/` for generated staged canonical CSV assets.
 - `web/assets/py/` for generated staged Python source copied from an explicit allowlist.
 
-The posterior chart uses a posterior-focused x-axis so long prior tails do not
-compress the clinically relevant posterior view. The full posterior/prior arrays
-still drive all numeric summaries. In prior-weighted mode, the optional
-likelihood overlay is computed in Python and JavaScript only renders the
-serialized curve.
+The posterior chart uses a posterior-focused x-axis. The default likelihood-only path derives its
+display and numeric summaries without a PaCO2 prior. In prior-weighted mode, a user-supplied prior
+and the Python-computed likelihood drive the full calculation; JavaScript only renders the
+serialized curves.
 
 ## Browser Contract
 `tcco2_accuracy.browser_contract` exposes JSON-like functions for the browser:
@@ -47,15 +46,16 @@ be edited by hand.
 
 Staged assets:
 - `Data/conway_studies.csv`
-- `Data/paco2_public_prior.csv`
 - `artifacts/bootstrap_params.csv`
 - Python source files required by the browser contract
 
 ## Data Strategy
-The browser default path uses repo-shipped static assets only. It does not
-require the large in-silico `.dta`. It uses a public weight-only 1 mmHg prior
-asset without exact bin counts. Offline workflows may still use the `.dta` when
-present for artifact generation and exact local prior-bin rebuilding.
+The browser default path uses repo-shipped agreement assets only and performs likelihood-only
+inference. It does not require the restricted in-silico `.dta`, stage a PaCO2 prior, or fetch one.
+Prior weighting is upload-only and remains client-side. Offline workflows may use an explicitly
+authorized `.dta` only with outputs under `.pytest_tmp/`, `.tmp/`, or an explicitly approved
+external private workspace. Normalized restricted-derived weights are governed like exact counts
+because they may reconstruct the source distribution. See `docs/data_release_contract.json`.
 
 ## Privacy Boundary
 The app has no backend, telemetry, persistence, or PHI-bearing URL state.

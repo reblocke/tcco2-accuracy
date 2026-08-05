@@ -40,7 +40,6 @@ __all__ = [
     "PACO2_PRIOR_BINS_PATH",
     "PACO2_PRIOR_BINS_XLSX_PATH",
     "PACO2_PRIOR_GROUPS",
-    "PACO2_PUBLIC_PRIOR_PATH",
     "PACO2_PRIOR_REQUIRED_COLUMNS",
     "PACO2_REQUIRED_COLUMNS",
     "PACO2_SUBGROUP_ORDER",
@@ -84,7 +83,6 @@ INSILICO_PACO2_PATH = REPO_ROOT / "Data" / "In Silico TCCO2 Database.dta"
 INSILICO_PACO2_FALLBACK_PATHS = (REPO_ROOT / "Data" / "in_silico_tcco2_db.dta",)
 PACO2_PRIOR_BINS_PATH = REPO_ROOT / "Data" / "paco2_prior_bins.csv"
 PACO2_PRIOR_BINS_XLSX_PATH = REPO_ROOT / "Data" / "paco2_prior_bins.xlsx"
-PACO2_PUBLIC_PRIOR_PATH = REPO_ROOT / "Data" / "paco2_public_prior.csv"
 
 
 @dataclass(frozen=True)
@@ -119,7 +117,7 @@ def load_conway_studies(path: Path | None = None) -> pd.DataFrame:
             path = CONWAY_LEGACY_DTA_PATH
     if path.suffix.lower() == ".csv":
         data = pd.read_csv(path)
-    elif path.suffix.lower() in {".xlsx", ".xls"}:
+    elif path.suffix.lower() == ".xlsx":
         data = pd.read_excel(path)
     elif path.suffix.lower() == ".dta":
         data = pd.read_stata(path)
@@ -218,15 +216,13 @@ def _to_conway_analysis(studies: pd.DataFrame) -> pd.DataFrame:
 
 
 def load_paco2_distribution(path: Path | None = None) -> pd.DataFrame:
-    """Return the in-silico PaCO2 distribution."""
+    """Return an explicitly identified private in-silico PaCO2 distribution."""
 
     if path is None:
-        for candidate in (INSILICO_PACO2_PATH, *INSILICO_PACO2_FALLBACK_PATHS):
-            if candidate.exists():
-                path = candidate
-                break
-        else:
-            path = INSILICO_PACO2_PATH
+        raise ValueError(
+            "An explicit private PaCO2 source path is required; repository files are not "
+            "auto-discovered."
+        )
     return pd.read_stata(path, convert_categoricals=False)
 
 
@@ -235,7 +231,7 @@ def load_paco2_prior_bins(path: Path) -> pd.DataFrame:
 
     if path.suffix.lower() == ".csv":
         data = pd.read_csv(path)
-    elif path.suffix.lower() in {".xlsx", ".xls"}:
+    elif path.suffix.lower() == ".xlsx":
         data = pd.read_excel(path)
     else:
         raise ValueError(f"Unsupported prior bin format: {path.suffix}")
@@ -248,7 +244,7 @@ def load_paco2_prior_bins_bytes(file_bytes: bytes, filename: str) -> pd.DataFram
     buffer = io.BytesIO(file_bytes)
     if filename.lower().endswith(".csv"):
         data = pd.read_csv(buffer)
-    elif filename.lower().endswith((".xlsx", ".xls")):
+    elif filename.lower().endswith(".xlsx"):
         data = pd.read_excel(buffer)
     else:
         raise ValueError("Uploaded prior must be CSV/XLSX.")
@@ -259,16 +255,18 @@ def load_default_paco2_prior(
     subgroup: str,
     bins_path: Path | None = None,
 ) -> np.ndarray:
-    """Load a count-expanded default prior for a subgroup.
+    """Load a count-expanded prior from an explicit private path.
 
-    This compatibility helper requires a count-based prior table. Browser
-    inference uses ``load_paco2_prior`` so it can consume the public weight-only
-    prior without reconstructing counts.
+    This compatibility helper requires a count-based prior table. No repository
+    default is selected because restricted-derived priors must remain explicit.
     """
 
-    bins_path = bins_path or PACO2_PRIOR_BINS_PATH
+    if bins_path is None:
+        raise ValueError(
+            "An explicit private PaCO2 prior-bin path is required; no repository default is used."
+        )
     if not bins_path.exists():
-        raise FileNotFoundError(f"Default PaCO2 prior bins not found: {bins_path}")
+        raise FileNotFoundError(f"PaCO2 prior bins not found: {bins_path}")
     bins = load_paco2_prior_bins(bins_path)
     # "all" is a pooled prior weighted by subgroup sample sizes.
     return prior_values_from_bins(bins, subgroup.strip().lower())
@@ -281,7 +279,7 @@ def load_paco2_prior(
     default_bins_path: Path | None = None,
     insilico_path: Path | None = None,
 ) -> PriorLoadResult:
-    """Load PaCO2 prior values with UI-friendly precedence and metadata."""
+    """Load PaCO2 prior values only from an upload or explicit private path."""
 
     subgroup_key = subgroup.strip().lower()
     if subgroup_key not in PACO2_PRIOR_GROUPS:
@@ -299,23 +297,22 @@ def load_paco2_prior(
             paths_checked=tuple(paths_checked),
         )
 
-    bins_path = default_bins_path or PACO2_PUBLIC_PRIOR_PATH
-    paths_checked.append(bins_path)
-    if bins_path.exists():
-        # Binned weights represent the public PaCO2 pretest density prior.
-        bins = load_paco2_prior_bins(bins_path)
-        values, weights = prior_distribution_from_bins(bins, subgroup_key)
-        return PriorLoadResult(
-            values=values,
-            weights=weights,
-            bins=bins,
-            source="public_prior",
-            paths_checked=tuple(paths_checked),
-        )
+    if default_bins_path is not None:
+        paths_checked.append(default_bins_path)
+        if default_bins_path.exists():
+            bins = load_paco2_prior_bins(default_bins_path)
+            values, weights = prior_distribution_from_bins(bins, subgroup_key)
+            return PriorLoadResult(
+                values=values,
+                weights=weights,
+                bins=bins,
+                source="explicit_bins",
+                paths_checked=tuple(paths_checked),
+            )
 
-    insilico_path = insilico_path or INSILICO_PACO2_PATH
-    paths_checked.append(insilico_path)
-    if insilico_path.exists():
+    if insilico_path is not None:
+        paths_checked.append(insilico_path)
+    if insilico_path is not None and insilico_path.exists():
         prepared = prepare_paco2_distribution(load_paco2_distribution(insilico_path))
         if subgroup_key == "all":
             # Pooled prior uses all subgroups weighted by their sample sizes.
@@ -334,7 +331,10 @@ def load_paco2_prior(
             paths_checked=tuple(paths_checked),
         )
 
-    message = "PaCO2 prior data not found. Provide a binned prior CSV or the in-silico database."
+    message = (
+        "PaCO2 prior data not found. Provide an uploaded binned prior or an explicit private "
+        "prior/source path."
+    )
     error = PriorLoadError(message=message, paths_checked=tuple(paths_checked))
     return PriorLoadResult(
         values=None,

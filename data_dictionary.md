@@ -12,11 +12,10 @@ The machine-readable companion is `data_dictionary.csv`.
 | `Data/conway_studies.xlsx` | Human-editable review mirror of the canonical CSV | Public |
 | `Data/conway_studies_template.xlsx` | Template for future study additions | Public |
 | `Data/data_counts.csv` | Source-derived count fallback for Conway export workflows | Public, review provenance before reuse |
-| `Data/paco2_public_prior.csv` | Weight-only PaCO2 prior used by the browser app | Public |
 
-The Conway study table follows `docs/CONWAY_DATA_SCHEMA.md`. The public PaCO2
-prior keeps 1 mmHg bins and normalized weights only; exact bin counts are not
-included.
+The Conway study table follows `docs/CONWAY_DATA_SCHEMA.md`. No restricted-derived PaCO2 prior is
+shipped or staged. Normalized weights can remain reconstructable when a denominator is known, so
+prior-weighted browser inference requires an explicit client-side upload.
 
 The RData/count exporter rejects missing or blank study identifiers and non-integer observed
 counts even when `--no-strict` or `--allow-missing-counts` is selected.
@@ -39,13 +38,17 @@ counts even when `--no-strict` or `--allow-missing-counts` is selected.
 The table and every requested subgroup analysis must be non-empty. Overlapping Conway study flags
 are intentional and differ from the mutually exclusive record-level PaCO2 distribution groups.
 
-## Public Prior Fields
+## Uploaded or Private Prior Fields
 
 | Field | Definition | Validation |
 | --- | --- | --- |
 | `group` | Clinical setting group | After normalization, exactly all four labels `pft`, `ed_inp`, `icu`, and `all`; no blanks, missing groups, or extras |
 | `paco2_bin` | PaCO2 prior support value | Finite and strictly positive, mmHg; no hard upper cutoff |
-| `weight` | Normalized public prior weight | Nonnegative; should sum approximately 1 within group |
+| `weight` | Normalized uploaded/private prior weight | Nonnegative; should sum approximately 1 within group |
+
+The schema is public, but a prior generated from restricted data remains restricted-derived even
+when it contains weights rather than counts. `tests/fixtures/synthetic_paco2_prior.csv` is a clearly
+synthetic test-only example.
 
 ## Scientific Numeric Inputs
 
@@ -74,8 +77,9 @@ PaCO2 values and then aggregated. The production bin contract is
 
 ## Browser App Uploads
 
-The app accepts optional CSV/XLSX uploads for a custom Conway-compatible study
-table and a custom binned PaCO2 prior. These files are parsed in the browser and
+The app accepts an optional CSV/XLSX upload for a custom Conway-compatible study table.
+Prior-weighted mode additionally requires a binned PaCO2 prior upload; likelihood-only mode does
+not use a prior. These files are parsed in the browser and
 passed to the Pyodide worker. They are not sent to a backend, persisted, logged,
 or encoded in URLs. Uploaded study tables and prior supports must satisfy the same validation
 contract as canonical inputs.
@@ -105,12 +109,14 @@ Classification metrics, two-stage summaries, prediction intervals, confusion
 matrices, and result snippets remain frozen until corrected downstream regeneration
 and governance review. Aggregate outputs must not contain patient-level rows,
 identifiers, exact restricted-source counts, or small-cell reconstruction fields.
+The exact current-tree allowlists and SHA-256 values are machine-readable in
+`docs/data_release_contract.json`.
 
 | Asset | Purpose | Current status |
 | --- | --- | --- |
 | `artifacts/STATUS.md` | Current/frozen artifact manifest and promotion gates | Current documentation |
 | `artifacts/bootstrap_params.csv` | Canonical browser bootstrap parameters | Corrected-provisional |
-| PaCO2-dependent artifacts listed in `artifacts/STATUS.md` | Simulation, inference, classification, and manuscript review outputs | Frozen legacy-method |
+| Rounded/aggregate PaCO2-dependent artifacts retained in `artifacts/STATUS.md` | Simulation, classification, two-stage, prediction-interval, and manuscript review outputs | Frozen legacy-method; not release-approved |
 
 ## Restricted Or Local-Only Assets
 
@@ -118,10 +124,14 @@ identifiers, exact restricted-source counts, or small-cell reconstruction fields
 | --- | --- |
 | `Data/in_silico_tcco2_db.dta` | Local restricted source input; never track |
 | `Data/In Silico TCCO2 Database.dta` | Alternate local restricted source filename; never track |
-| `Data/paco2_prior_bins.csv` | Exact count-bearing prior output; keep local/generated unless explicitly approved |
-| `artifacts/figure_paco2_distribution_bins.csv` | Exact count-bearing figure data; keep local/generated unless explicitly approved |
+| Restricted-derived prior CSV/XLSX, including normalized weights | Generate only under `.pytest_tmp/`, `.tmp/`, or an explicit external private workspace; never stage |
+| Exact-count PaCO2 summaries, conditional curves, figures, and manuscript tables | Generate only under `.pytest_tmp/`, `.tmp/`, or an explicit external private workspace; never track |
 | `web/assets/data/` | Generated staged data for Pages; do not hand-edit |
 | `web/assets/py/` | Generated staged Python package for Pyodide; do not hand-edit |
+
+Use `docs/restricted_data_provenance.template.json` before any private rebuild. Unresolved ownership,
+IRB/protocol, waiver, authorization, extraction, observation-unit, repeated-patient, field,
+permission, and retention items remain `HUMAN REVIEW REQUIRED`.
 
 ## Review Flags
 
@@ -133,3 +143,6 @@ identifiers, exact restricted-source counts, or small-cell reconstruction fields
   decision-making.
 - Corrected browser outputs remain provisional pending independent biostatistical
   review; frozen downstream artifacts must not be described as corrected.
+- This is current-tree remediation only. Prior commits, tags, clones, caches, and historical Pages
+  deployments may retain earlier disclosures; history rewriting requires a separate institutional
+  decision.
