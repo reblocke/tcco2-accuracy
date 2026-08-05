@@ -19,8 +19,24 @@ def test_likelihood_only_matches_normal() -> None:
     assert row["paco2_q500"] == pytest.approx(mean)
     assert row["paco2_q025"] == pytest.approx(stats.norm.ppf(0.025, loc=mean, scale=sd))
     assert row["paco2_q975"] == pytest.approx(stats.norm.ppf(0.975, loc=mean, scale=sd))
-    expected_prob = 1 - stats.norm.cdf(45.0, loc=mean, scale=sd)
+    expected_prob = stats.norm.sf(45.0, loc=mean, scale=sd)
     assert row["p_ge_45"] == pytest.approx(expected_prob)
+
+
+def test_likelihood_survival_preserves_extreme_normal_tails() -> None:
+    params = pd.DataFrame({"delta": [0.0], "sigma2": [1.0], "tau2": [0.0]})
+
+    result = infer_paco2([20.0], params, thresholds=[8.0, 12.0, 28.0, 32.0])
+
+    row = result.iloc[0]
+    expected = {
+        "p_ge_8": 1.0,
+        "p_ge_12": 0.9999999999999993,
+        "p_ge_28": 6.22096057427174e-16,
+        "p_ge_32": 1.776482112077654e-33,
+    }
+    for column, value in expected.items():
+        assert row[column] == pytest.approx(value, rel=1e-14, abs=0.0)
 
 
 def test_likelihood_monotonicity() -> None:

@@ -31,7 +31,7 @@ def run_conditional_classification(
     conway_path: Path | None = None,
     threshold: float = 45.0,
     bin_width: float = 1.0,
-    bin_method: str = "round",
+    bin_method: str = "cut",
     seed: int | None = None,
     n_boot: int = 1000,
     bootstrap_mode: str = "cluster_plus_withinstudy",
@@ -138,7 +138,10 @@ def format_conditional_summary(
         f"Bootstrap mode: {bootstrap_mode}.",
         f"Parameter routing: {_format_parameter_routes(curves)}.",
         "",
-        "Each row corresponds to a PaCO2 bin with empirical count/weight.",
+        "Each row corresponds to a half-open PaCO2 bin [paco2_bin, paco2_bin_upper) "
+        "with empirical count/weight.",
+        "Truth and test-positive probability are calculated from each original unbinned PaCO2 "
+        "value before display-bin aggregation.",
         "TN/FP/FN/TP columns report bootstrap quantiles of conditional probabilities.",
     ]
     if curves.empty:
@@ -149,7 +152,7 @@ def format_conditional_summary(
         [
             "",
             "Columns: group, requested_group, parameter_group_used, threshold, "
-            "paco2_bin, count, weight,",
+            "paco2_bin, paco2_bin_upper, count, weight,",
             "tn_q025/tn_q50/tn_q975, fp_q025/fp_q50/fp_q975,",
             "fn_q025/fn_q50/fn_q975, tp_q025/tp_q50/tp_q975.",
         ]

@@ -81,7 +81,7 @@ def mixture_survival(
     """Return mixture survival probabilities at thresholds."""
 
     z_scores = (thresholds[:, None] - means[None, :]) / sd_total[None, :]
-    return np.mean(1 - stats.norm.cdf(z_scores), axis=1)
+    return np.mean(stats.norm.sf(z_scores), axis=1)
 
 
 def mixture_quantiles(
