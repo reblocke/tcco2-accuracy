@@ -36,8 +36,8 @@ def run_conditional_classification(
     n_boot: int = 1000,
     bootstrap_mode: str = "cluster_plus_withinstudy",
     n_draws: int | None = None,
-    fallback: ParameterFallback = "error",
     out_dir: Path | None = None,
+    fallback: ParameterFallback = "error",
 ) -> ConditionalWorkflowResult:
     """Run conditional TN/FP/FN/TP curves by PaCO2 bin.
 
@@ -136,6 +136,7 @@ def format_conditional_summary(
         f"Bin width: {bin_width:g} ({bin_method}).",
         f"Bootstrap draws: {n_boot} per subgroup (seed={seed_label}).",
         f"Bootstrap mode: {bootstrap_mode}.",
+        f"Parameter routing: {_format_parameter_routes(curves)}.",
         "",
         "Each row corresponds to a PaCO2 bin with empirical count/weight.",
         "TN/FP/FN/TP columns report bootstrap quantiles of conditional probabilities.",
@@ -154,3 +155,12 @@ def format_conditional_summary(
         ]
     )
     return "\n".join(lines)
+
+
+def _format_parameter_routes(frame: pd.DataFrame) -> str:
+    if frame.empty or not {"requested_group", "parameter_group_used"}.issubset(frame.columns):
+        return "unavailable"
+    routes = frame[["requested_group", "parameter_group_used"]].drop_duplicates()
+    return ", ".join(
+        f"{row.requested_group}->{row.parameter_group_used}" for row in routes.itertuples()
+    )

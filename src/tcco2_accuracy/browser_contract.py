@@ -97,12 +97,19 @@ def build_bootstrap_payload(payload: dict[str, Any]) -> dict[str, Any]:
         seed=_optional_int_payload(payload, "seed"),
         bootstrap_mode=str(payload.get("bootstrap_mode") or DEFAULT_BOOTSTRAP_MODE),
     )
+    params = params.copy()
+    params["requested_group"] = subgroup
+    params["parameter_group_used"] = "single_model"
     provenance = _browser_params_provenance(params)
     return {
         "subgroup": subgroup,
         "n_rows": int(params.shape[0]),
         "params": _json_records(params),
-        "metadata": provenance,
+        "metadata": {
+            **provenance,
+            "requested_group": subgroup,
+            "parameter_group_used": "single_model",
+        },
     }
 
 

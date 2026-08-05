@@ -61,6 +61,15 @@ def test_manuscript_workflow_smoke(tmp_path: Path) -> None:
     assert {"requested_group", "parameter_group_used"}.issubset(table3.columns)
     assert table3[["likelihood_paco2_q500", "prior_paco2_q500"]].notna().all().all()
 
+    for name in (
+        "table1",
+        "confusion_matrix",
+        "two_stage_summary",
+        "table2",
+        "table3",
+        "snippets",
+    ):
+        assert "Parameter routing:" in result.markdown[name]
     assert "Error-model parameters used" in result.snippets
 
 

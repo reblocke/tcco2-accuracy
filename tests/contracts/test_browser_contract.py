@@ -157,11 +157,15 @@ def test_browser_contract_recomputes_from_uploaded_study_table() -> None:
     assert bootstrap["metadata"] == {
         "agreement_method_version": AGREEMENT_METHOD_VERSION,
         "results_status": RESULTS_STATUS,
+        "requested_group": "pft",
+        "parameter_group_used": "single_model",
     }
     assert {row["agreement_method_version"] for row in bootstrap["params"]} == {
         AGREEMENT_METHOD_VERSION
     }
     assert {row["results_status"] for row in bootstrap["params"]} == {RESULTS_STATUS}
+    assert {row["requested_group"] for row in bootstrap["params"]} == {"pft"}
+    assert {row["parameter_group_used"] for row in bootstrap["params"]} == {"single_model"}
 
 
 @pytest.mark.parametrize(

@@ -39,8 +39,8 @@ def run_forward_simulation_summary(
     bootstrap_mode: str = "cluster_plus_withinstudy",
     n_draws: int | None = None,
     n_mc: int | None = None,
-    fallback: ParameterFallback = "error",
     out_dir: Path | None = None,
+    fallback: ParameterFallback = "error",
 ) -> SimulationWorkflowResult:
     """Run forward simulation summaries for TcCO2 accuracy.
 

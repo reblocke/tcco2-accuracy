@@ -40,8 +40,8 @@ def run_inference_demo(
     bootstrap_mode: str = "cluster_plus_withinstudy",
     n_draws: int | None = None,
     include_prior: bool = True,
-    fallback: ParameterFallback = "error",
     out_dir: Path | None = None,
+    fallback: ParameterFallback = "error",
 ) -> InferenceWorkflowResult:
     """Run inference demo tables for TcCO2 → PaCO2.
 

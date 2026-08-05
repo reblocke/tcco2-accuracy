@@ -808,6 +808,7 @@ def _format_table1(table1: pd.DataFrame, true_threshold: float) -> str:
         "",
         "Median with 95% CI (bootstrap percentile) for TcCO2 classification metrics.",
         f"Threshold for TcCO2 ≥ {true_threshold:g} mmHg.",
+        f"Parameter routing: {_format_parameter_routes(table1)}.",
         "",
     ]
     headers = [
@@ -862,6 +863,7 @@ def _format_confusion_matrix(confusion: pd.DataFrame, true_threshold: float) -> 
         "",
         "Median with 95% CI (bootstrap percentile).",
         f"Threshold for TcCO2 ≥ {true_threshold:g} mmHg.",
+        f"Parameter routing: {_format_parameter_routes(confusion)}.",
         "",
     ]
     headers = ["Setting", "TP/1000", "FP/1000", "FN/1000", "TN/1000"]
@@ -887,6 +889,7 @@ def _format_two_stage_summary(summary: pd.DataFrame, policy: TwoStagePolicy) -> 
         "Median with 95% CI (bootstrap percentile).",
         f"Zones: <{policy.lower:g}, {policy.lower:g}–{policy.upper:g}, >{policy.upper:g} mmHg.",
         f"True hypercapnia threshold: {policy.true_threshold:g} mmHg.",
+        f"Parameter routing: {_format_parameter_routes(summary)}.",
         "",
     ]
     headers = [
@@ -932,6 +935,7 @@ def _format_table2(table2: pd.DataFrame, policy: TwoStagePolicy) -> str:
         "Median with 95% CI (bootstrap percentile).",
         f"Zones: <{policy.lower:g}, {policy.lower:g}–{policy.upper:g}, >{policy.upper:g} mmHg.",
         f"True hypercapnia threshold: {policy.true_threshold:g} mmHg.",
+        f"Parameter routing: {_format_parameter_routes(table2)}.",
         "",
     ]
     headers = [
@@ -977,6 +981,7 @@ def _format_table3(prediction_intervals: pd.DataFrame, threshold: float) -> str:
         "",
         "Median with 95% prediction interval (PI).",
         f"P(PaCO2≥{threshold:g}) reported for each mode.",
+        f"Parameter routing: {_format_parameter_routes(prediction_intervals)}.",
         "",
     ]
     headers = [
@@ -1036,7 +1041,12 @@ def _build_results_snippets(
     two_stage_lower: float,
     two_stage_upper: float,
 ) -> str:
-    snippets = ["# Manuscript results snippets", ""]
+    snippets = [
+        "# Manuscript results snippets",
+        "",
+        f"Parameter routing: {_format_parameter_routes(table1)}.",
+        "",
+    ]
 
     param_lines = []
     for _, row in parameters.iterrows():
@@ -1111,6 +1121,15 @@ def _build_results_snippets(
     )
 
     return "\n".join(snippets)
+
+
+def _format_parameter_routes(frame: pd.DataFrame) -> str:
+    if frame.empty or not {"requested_group", "parameter_group_used"}.issubset(frame.columns):
+        return "unavailable"
+    routes = frame[["requested_group", "parameter_group_used"]].drop_duplicates()
+    return ", ".join(
+        f"{row.requested_group}->{row.parameter_group_used}" for row in routes.itertuples()
+    )
 
 
 def _markdown_table(headers: Sequence[str], rows: Iterable[Sequence[str]]) -> str:
