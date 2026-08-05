@@ -36,6 +36,7 @@ App behavior:
 - User-entered values and uploaded CSV/XLSX files remain in the browser.
 - Generated staged assets under web/assets/py/ and web/assets/data/ come from make stage-web and must not be edited by hand.
 - Canonical browser parameters must contain exactly one current agreement-method revision and provisional status; stale or mixed assets fail closed.
+- Grouped parameters fail closed when a requested mapped group is missing; browser output metadata records requested_group and parameter_group_used.
 
 Public data:
 - Data/conway_studies.csv is the operational canonical promotion and browser-staging source; Data/conway_studies.xlsx is its human-editable review mirror. They must remain semantically equal.

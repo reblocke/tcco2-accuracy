@@ -324,7 +324,7 @@ def _simulate_with_all(
     group_params = select_group_params(
         params,
         "all",
-        warn_on_fallback=False,
+        fallback="error",
         map_all_to_main=True,
     )
     if n_draws is not None and n_draws < group_params.shape[0]:
@@ -405,6 +405,8 @@ def _build_table1(
     base_columns = [
         "group",
         "label",
+        "requested_group",
+        "parameter_group_used",
         "threshold",
         "n_encounters",
         "n_patients",
@@ -427,7 +429,13 @@ def _build_confusion_matrix(sim_summary: pd.DataFrame, true_threshold: float) ->
         for suffix in ("q025", "q500", "q975")
         if f"{metric}_{suffix}" in ordered.columns
     ]
-    base_columns = ["group", "label", "threshold"]
+    base_columns = [
+        "group",
+        "label",
+        "requested_group",
+        "parameter_group_used",
+        "threshold",
+    ]
     keep = [col for col in base_columns + quantile_columns if col in ordered.columns]
     return ordered[keep]
 
@@ -449,7 +457,7 @@ def _build_two_stage_summary(
         group_params = select_group_params(
             params,
             subgroup,
-            warn_on_fallback=False,
+            fallback="error",
             map_all_to_main=True,
         )
         summary = summarize_two_stage_draws(
@@ -460,13 +468,19 @@ def _build_two_stage_summary(
             seed=_next_seed(rng),
         )
         summary.insert(0, "group", subgroup)
+        summary.insert(1, "requested_group", str(group_params["requested_group"].iloc[0]))
+        summary.insert(
+            2,
+            "parameter_group_used",
+            str(group_params["parameter_group_used"].iloc[0]),
+        )
         frames.append(summary)
 
     paco2_values = prepared["paco2"].to_numpy(dtype=float)
     all_params = select_group_params(
         params,
         "all",
-        warn_on_fallback=False,
+        fallback="error",
         map_all_to_main=True,
     )
     all_summary = summarize_two_stage_draws(
@@ -477,6 +491,12 @@ def _build_two_stage_summary(
         seed=_next_seed(rng),
     )
     all_summary.insert(0, "group", "all")
+    all_summary.insert(1, "requested_group", str(all_params["requested_group"].iloc[0]))
+    all_summary.insert(
+        2,
+        "parameter_group_used",
+        str(all_params["parameter_group_used"].iloc[0]),
+    )
     frames.append(all_summary)
 
     summary = pd.concat(frames, ignore_index=True)
@@ -523,7 +543,7 @@ def _build_prediction_table(
     all_params = select_group_params(
         params,
         "all",
-        warn_on_fallback=False,
+        fallback="error",
         map_all_to_main=True,
     )
     all_likelihood = infer_paco2(
@@ -535,6 +555,12 @@ def _build_prediction_table(
         n_draws=n_draws,
     )
     all_likelihood.insert(0, "group", "all")
+    all_likelihood.insert(1, "requested_group", str(all_params["requested_group"].iloc[0]))
+    all_likelihood.insert(
+        2,
+        "parameter_group_used",
+        str(all_params["parameter_group_used"].iloc[0]),
+    )
     likelihood = pd.concat([likelihood, all_likelihood], ignore_index=True)
 
     if include_prior:
@@ -548,6 +574,12 @@ def _build_prediction_table(
             n_draws=n_draws,
         )
         all_prior.insert(0, "group", "all")
+        all_prior.insert(1, "requested_group", str(all_params["requested_group"].iloc[0]))
+        all_prior.insert(
+            2,
+            "parameter_group_used",
+            str(all_params["parameter_group_used"].iloc[0]),
+        )
         prior = pd.concat([prior, all_prior], ignore_index=True)
 
     likelihood = _order_groups(likelihood)
@@ -557,7 +589,11 @@ def _build_prediction_table(
     else:
         prior = _order_groups(prior)
         prior = _rename_mode_columns(prior, "prior")
-        combined = likelihood.merge(prior, on=["group", "tcco2"], how="left")
+        combined = likelihood.merge(
+            prior,
+            on=["group", "requested_group", "parameter_group_used", "tcco2"],
+            how="left",
+        )
     group_values = combined["group"].astype(str)
     combined["label"] = group_values.map(MANUSCRIPT_GROUP_LABELS).fillna(group_values)
     return combined
@@ -612,7 +648,7 @@ def _build_misclassification_curves(
         group_params = select_group_params(
             params,
             subgroup,
-            warn_on_fallback=False,
+            fallback="error",
             map_all_to_main=True,
         )
         curves = conditional_classification_curves(
@@ -624,13 +660,19 @@ def _build_misclassification_curves(
             seed=_next_seed(rng),
         )
         curves.insert(0, "group", subgroup)
+        curves.insert(1, "requested_group", str(group_params["requested_group"].iloc[0]))
+        curves.insert(
+            2,
+            "parameter_group_used",
+            str(group_params["parameter_group_used"].iloc[0]),
+        )
         frames.append(curves)
 
     all_paco2 = prepared["paco2"].to_numpy(dtype=float)
     all_params = select_group_params(
         params,
         "all",
-        warn_on_fallback=False,
+        fallback="error",
         map_all_to_main=True,
     )
     all_curves = conditional_classification_curves(
@@ -642,6 +684,12 @@ def _build_misclassification_curves(
         seed=_next_seed(rng),
     )
     all_curves.insert(0, "group", "all")
+    all_curves.insert(1, "requested_group", str(all_params["requested_group"].iloc[0]))
+    all_curves.insert(
+        2,
+        "parameter_group_used",
+        str(all_params["parameter_group_used"].iloc[0]),
+    )
     frames.append(all_curves)
 
     curves = pd.concat(frames, ignore_index=True)
@@ -666,7 +714,7 @@ def _order_groups(df: pd.DataFrame) -> pd.DataFrame:
 def _rename_mode_columns(frame: pd.DataFrame, prefix: str) -> pd.DataFrame:
     renamed = frame.copy()
     for column in list(renamed.columns):
-        if column in {"group", "tcco2"}:
+        if column in {"group", "requested_group", "parameter_group_used", "tcco2"}:
             continue
         renamed = renamed.rename(columns={column: f"{prefix}_{column}"})
     return renamed
@@ -760,6 +808,7 @@ def _format_table1(table1: pd.DataFrame, true_threshold: float) -> str:
         "",
         "Median with 95% CI (bootstrap percentile) for TcCO2 classification metrics.",
         f"Threshold for TcCO2 ≥ {true_threshold:g} mmHg.",
+        f"Parameter routing: {_format_parameter_routes(table1)}.",
         "",
     ]
     headers = [
@@ -814,6 +863,7 @@ def _format_confusion_matrix(confusion: pd.DataFrame, true_threshold: float) -> 
         "",
         "Median with 95% CI (bootstrap percentile).",
         f"Threshold for TcCO2 ≥ {true_threshold:g} mmHg.",
+        f"Parameter routing: {_format_parameter_routes(confusion)}.",
         "",
     ]
     headers = ["Setting", "TP/1000", "FP/1000", "FN/1000", "TN/1000"]
@@ -839,6 +889,7 @@ def _format_two_stage_summary(summary: pd.DataFrame, policy: TwoStagePolicy) -> 
         "Median with 95% CI (bootstrap percentile).",
         f"Zones: <{policy.lower:g}, {policy.lower:g}–{policy.upper:g}, >{policy.upper:g} mmHg.",
         f"True hypercapnia threshold: {policy.true_threshold:g} mmHg.",
+        f"Parameter routing: {_format_parameter_routes(summary)}.",
         "",
     ]
     headers = [
@@ -884,6 +935,7 @@ def _format_table2(table2: pd.DataFrame, policy: TwoStagePolicy) -> str:
         "Median with 95% CI (bootstrap percentile).",
         f"Zones: <{policy.lower:g}, {policy.lower:g}–{policy.upper:g}, >{policy.upper:g} mmHg.",
         f"True hypercapnia threshold: {policy.true_threshold:g} mmHg.",
+        f"Parameter routing: {_format_parameter_routes(table2)}.",
         "",
     ]
     headers = [
@@ -929,6 +981,7 @@ def _format_table3(prediction_intervals: pd.DataFrame, threshold: float) -> str:
         "",
         "Median with 95% prediction interval (PI).",
         f"P(PaCO2≥{threshold:g}) reported for each mode.",
+        f"Parameter routing: {_format_parameter_routes(prediction_intervals)}.",
         "",
     ]
     headers = [
@@ -988,7 +1041,12 @@ def _build_results_snippets(
     two_stage_lower: float,
     two_stage_upper: float,
 ) -> str:
-    snippets = ["# Manuscript results snippets", ""]
+    snippets = [
+        "# Manuscript results snippets",
+        "",
+        f"Parameter routing: {_format_parameter_routes(table1)}.",
+        "",
+    ]
 
     param_lines = []
     for _, row in parameters.iterrows():
@@ -1063,6 +1121,15 @@ def _build_results_snippets(
     )
 
     return "\n".join(snippets)
+
+
+def _format_parameter_routes(frame: pd.DataFrame) -> str:
+    if frame.empty or not {"requested_group", "parameter_group_used"}.issubset(frame.columns):
+        return "unavailable"
+    routes = frame[["requested_group", "parameter_group_used"]].drop_duplicates()
+    return ", ".join(
+        f"{row.requested_group}->{row.parameter_group_used}" for row in routes.itertuples()
+    )
 
 
 def _markdown_table(headers: Sequence[str], rows: Iterable[Sequence[str]]) -> str:

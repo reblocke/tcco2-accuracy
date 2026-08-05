@@ -7,7 +7,7 @@ from typing import Sequence
 import numpy as np
 import pandas as pd
 
-from ._params import select_group_params
+from ._params import ParameterFallback, select_group_params
 from ._posterior import (
     extract_params as _extract_params,
 )
@@ -90,6 +90,7 @@ def infer_paco2_by_subgroup(
     use_prior: bool = False,
     seed: int | None = None,
     n_draws: int | None = None,
+    fallback: ParameterFallback = "error",
 ) -> pd.DataFrame:
     """Return posterior summaries for each PaCO2 subgroup."""
 
@@ -103,7 +104,7 @@ def infer_paco2_by_subgroup(
         paco2_values = prepared.loc[prepared["subgroup"] == subgroup, "paco2"].to_numpy(dtype=float)
         if paco2_values.size == 0:
             continue
-        group_params = select_group_params(params, subgroup)
+        group_params = select_group_params(params, subgroup, fallback=fallback)
         group_seed = int(rng.integers(0, np.iinfo(np.uint32).max))
         summaries = infer_paco2(
             tcco2_values,
@@ -115,6 +116,12 @@ def infer_paco2_by_subgroup(
             n_draws=n_draws,
         )
         summaries.insert(0, "group", subgroup)
+        summaries.insert(1, "requested_group", str(group_params["requested_group"].iloc[0]))
+        summaries.insert(
+            2,
+            "parameter_group_used",
+            str(group_params["parameter_group_used"].iloc[0]),
+        )
         frames.append(summaries)
 
     if not frames:

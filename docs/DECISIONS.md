@@ -98,6 +98,12 @@
 - PaCO2 subgroup assignment follows `docs/SPEC.md:20-27`, which includes ED in `ed_inp` by construction; this differs from `Code/2_trinetx_cleaning_do.do:8-13`, where `ed_inp_group` excludes ED (`is_emer==0`) and requires `cc_time==0`.
 - PaCO2 subgroups map to Conway bootstrap groups via the shared helper in `src/tcco2_accuracy/core/_params.py` (pft→lft, ed_inp→arf, icu→icu, all→main) to align ambulatory and acute respiratory failure sub-analyses.
 - Simulation/inference parameter validation requires finite numeric values with non-negative σ² and τ² in `src/tcco2_accuracy/core/utils.py`.
-- When subgroup-specific parameters are missing, simulation and inference use the shared selector in `src/tcco2_accuracy/core/_params.py` and fall back to all parameters (with a warning) rather than dropping the subgroup.
+- Historical behavior (superseded 2026-08-05 below): missing subgroup parameters fell back to all
+  parameter rows with a warning.
+- 2026-08-05: Grouped simulation, inference, browser, conditional, and manuscript calculations fail
+  closed when the resolved Conway parameter group is missing. An explicit `fallback="main"` option
+  selects only the pooled `main` group; it never combines unrelated group rows. Ungrouped tables are
+  treated as an explicitly supplied single model. Downstream results record the requested and used
+  parameter groups.
 - `format_inference_demo` only supports a single threshold and raises a ValueError otherwise in `src/tcco2_accuracy/workflows/infer.py`.
 - Legacy Conway study exports read bias/S2 and subgroup membership from the RData objects (`main`, `ICU`, `ARF`, `LFT`) and merge counts from `data.dta` (or `data_counts.csv` fallback); the Bolliger ICU row uses a 49/49/1 count fallback with bias/S2 pulled from `ICU` when absent from `main` to preserve the published/legacy source export (`scripts/export_conway_rdata.py:29`, `scripts/export_conway_rdata.py:107`).

@@ -131,6 +131,8 @@ or source-linked materials and are not part of the public branch tip.
   recomputation through the staged Python package.
 - Canonical and recomputed parameters must report the current agreement-method
   revision and provisional result status; stale or mixed canonical assets fail closed.
+- Grouped parameter inputs must contain the mapped setting-specific group; missing groups fail
+  closed. Result metadata records the requested group and the parameter group actually used.
 - User-entered values and uploads remain in the browser. The app has no backend,
   telemetry, persistence, or patient-value URLs.
 

@@ -51,14 +51,29 @@ def test_prior_weighted_symmetry_keeps_center() -> None:
     assert row["p_ge_40"] > 0.5
 
 
-def test_inference_missing_group_params_falls_back() -> None:
+def test_inference_missing_group_params_fails_closed() -> None:
     paco2_data = pd.DataFrame({"paco2": [35.0, 45.0, 55.0], "subgroup": ["pft", "ed_inp", "icu"]})
     params = pd.DataFrame({"group": ["main"], "delta": [0.0], "sigma2": [1.0], "tau2": [0.0]})
 
-    with pytest.warns(UserWarning, match="No parameters found"):
-        result = infer_paco2_by_subgroup([40.0], paco2_data, params, thresholds=[45.0])
+    with pytest.raises(ValueError, match="No parameters found for requested subgroup 'pft'"):
+        infer_paco2_by_subgroup([40.0], paco2_data, params, thresholds=[45.0])
+
+
+def test_inference_explicit_main_fallback_records_provenance() -> None:
+    paco2_data = pd.DataFrame({"paco2": [35.0, 45.0, 55.0], "subgroup": ["pft", "ed_inp", "icu"]})
+    params = pd.DataFrame({"group": ["main"], "delta": [0.0], "sigma2": [1.0], "tau2": [0.0]})
+
+    result = infer_paco2_by_subgroup(
+        [40.0],
+        paco2_data,
+        params,
+        thresholds=[45.0],
+        fallback="main",
+    )
 
     assert set(result["group"]) == {"pft", "ed_inp", "icu"}
+    assert set(result["requested_group"]) == {"pft", "ed_inp", "icu"}
+    assert set(result["parameter_group_used"]) == {"main"}
 
 
 def test_inference_by_subgroup_medians_monotone() -> None:

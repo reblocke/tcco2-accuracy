@@ -50,6 +50,8 @@ def compute_ui_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "subgroup": result.subgroup,
+        "requested_group": result.requested_group,
+        "parameter_group_used": result.parameter_group_used,
         "tcco2": result.tcco2,
         "threshold": result.threshold,
         "mode": result.mode,
@@ -76,6 +78,8 @@ def compute_ui_payload(payload: dict[str, Any]) -> dict[str, Any]:
             else "computed",
             "prior_source": prior_source,
             "n_params": int(params.shape[0]),
+            "requested_group": result.requested_group,
+            "parameter_group_used": result.parameter_group_used,
             **provenance,
         },
     }
@@ -93,12 +97,19 @@ def build_bootstrap_payload(payload: dict[str, Any]) -> dict[str, Any]:
         seed=_optional_int_payload(payload, "seed"),
         bootstrap_mode=str(payload.get("bootstrap_mode") or DEFAULT_BOOTSTRAP_MODE),
     )
+    params = params.copy()
+    params["requested_group"] = subgroup
+    params["parameter_group_used"] = "single_model"
     provenance = _browser_params_provenance(params)
     return {
         "subgroup": subgroup,
         "n_rows": int(params.shape[0]),
         "params": _json_records(params),
-        "metadata": provenance,
+        "metadata": {
+            **provenance,
+            "requested_group": subgroup,
+            "parameter_group_used": "single_model",
+        },
     }
 
 

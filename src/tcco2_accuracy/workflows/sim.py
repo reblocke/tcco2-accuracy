@@ -9,6 +9,7 @@ from typing import Sequence
 import pandas as pd
 
 from .._files import write_text
+from .._params import ParameterFallback
 from ..data import load_paco2_distribution
 from ..io import (
     DEFAULT_CLASSIFICATION_THRESHOLDS,
@@ -39,6 +40,7 @@ def run_forward_simulation_summary(
     n_draws: int | None = None,
     n_mc: int | None = None,
     out_dir: Path | None = None,
+    fallback: ParameterFallback = "error",
 ) -> SimulationWorkflowResult:
     """Run forward simulation summaries for TcCO2 accuracy.
 
@@ -80,6 +82,7 @@ def run_forward_simulation_summary(
         seed=seed,
         n_draws=n_draws,
         n_mc=n_mc,
+        fallback=fallback,
     )
     n_boot_per_group = n_draws_per_group(params)
     markdown = format_simulation_summary(

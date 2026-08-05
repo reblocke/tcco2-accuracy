@@ -39,6 +39,13 @@
 - Production simulation/inference draws use a zero-truncated τ² to keep between-study
   variance non-negative. Passing `truncate_tau2=False` is an explicit diagnostic-only path.
 
+## Parameter-group routing
+- PaCO2 groups map to Conway parameters as pft→lft, ed_inp→arf, icu→icu, and all→main.
+- Grouped parameter tables fail closed when the resolved group is absent. Pooled parameters may
+  be used only through the explicit `fallback="main"` API and select only `group == "main"`.
+- An ungrouped parameter table is treated as one explicitly supplied model, not as an implicit
+  fallback. Downstream rows record `requested_group` and `parameter_group_used`.
+
 ## In-silico PaCO2 distribution
 - Source file: `Data/In Silico TCCO2 Database.dta` by package default, with
   `Data/in_silico_tcco2_db.dta` accepted as a local alias, or an explicitly supplied `.dta`

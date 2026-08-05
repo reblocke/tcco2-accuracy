@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 from .._files import write_text
-from .._params import select_group_params
+from .._params import ParameterFallback, select_group_params
 from ..conditional import conditional_classification_curves
 from ..data import PACO2_SUBGROUP_ORDER, load_paco2_distribution, prepare_paco2_distribution
 from ..simulation import DEFAULT_SUMMARY_QUANTILES
@@ -37,6 +37,7 @@ def run_conditional_classification(
     bootstrap_mode: str = "cluster_plus_withinstudy",
     n_draws: int | None = None,
     out_dir: Path | None = None,
+    fallback: ParameterFallback = "error",
 ) -> ConditionalWorkflowResult:
     """Run conditional TN/FP/FN/TP curves by PaCO2 bin.
 
@@ -71,7 +72,7 @@ def run_conditional_classification(
         paco2_values = prepared.loc[prepared["subgroup"] == subgroup, "paco2"].to_numpy(dtype=float)
         if paco2_values.size == 0:
             continue
-        group_params = select_group_params(params, subgroup)
+        group_params = select_group_params(params, subgroup, fallback=fallback)
         group_seed = int(rng.integers(0, np.iinfo(np.uint32).max))
         curves = conditional_classification_curves(
             paco2_values,
@@ -84,6 +85,12 @@ def run_conditional_classification(
             seed=group_seed,
         )
         curves.insert(0, "group", subgroup)
+        curves.insert(1, "requested_group", str(group_params["requested_group"].iloc[0]))
+        curves.insert(
+            2,
+            "parameter_group_used",
+            str(group_params["parameter_group_used"].iloc[0]),
+        )
         frames.append(curves)
 
     curves = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
@@ -129,6 +136,7 @@ def format_conditional_summary(
         f"Bin width: {bin_width:g} ({bin_method}).",
         f"Bootstrap draws: {n_boot} per subgroup (seed={seed_label}).",
         f"Bootstrap mode: {bootstrap_mode}.",
+        f"Parameter routing: {_format_parameter_routes(curves)}.",
         "",
         "Each row corresponds to a PaCO2 bin with empirical count/weight.",
         "TN/FP/FN/TP columns report bootstrap quantiles of conditional probabilities.",
@@ -140,9 +148,19 @@ def format_conditional_summary(
     lines.extend(
         [
             "",
-            "Columns: group, threshold, paco2_bin, count, weight,",
+            "Columns: group, requested_group, parameter_group_used, threshold, "
+            "paco2_bin, count, weight,",
             "tn_q025/tn_q50/tn_q975, fp_q025/fp_q50/fp_q975,",
             "fn_q025/fn_q50/fn_q975, tp_q025/tp_q50/tp_q975.",
         ]
     )
     return "\n".join(lines)
+
+
+def _format_parameter_routes(frame: pd.DataFrame) -> str:
+    if frame.empty or not {"requested_group", "parameter_group_used"}.issubset(frame.columns):
+        return "unavailable"
+    routes = frame[["requested_group", "parameter_group_used"]].drop_duplicates()
+    return ", ".join(
+        f"{row.requested_group}->{row.parameter_group_used}" for row in routes.itertuples()
+    )

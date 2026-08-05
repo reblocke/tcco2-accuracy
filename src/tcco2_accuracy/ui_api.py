@@ -31,6 +31,8 @@ InferenceMode = Literal["prior_weighted", "likelihood_only"]
 @dataclass(frozen=True)
 class PredictionResult:
     subgroup: SubgroupLabel
+    requested_group: str
+    parameter_group_used: str
     tcco2: float
     threshold: float
     mode: InferenceMode
@@ -73,7 +75,15 @@ def predict_paco2_from_tcco2(
     if bin_width <= 0:
         raise ValueError("bin_width must be positive.")
 
-    params = select_group_params(params_draws, subgroup, validate=True, reset_index=True)
+    params = select_group_params(
+        params_draws,
+        subgroup,
+        validate=True,
+        reset_index=True,
+        fallback="error",
+    )
+    requested_group = str(params["requested_group"].iloc[0])
+    parameter_group_used = str(params["parameter_group_used"].iloc[0])
     rng = np.random.default_rng(seed)
     params = select_param_draws(params, n_draws=n_param_draws, rng=rng)
     deltas, sd_total = extract_params(params)
@@ -130,6 +140,8 @@ def predict_paco2_from_tcco2(
 
     return PredictionResult(
         subgroup=subgroup,
+        requested_group=requested_group,
+        parameter_group_used=parameter_group_used,
         tcco2=float(tcco2),
         threshold=float(threshold),
         mode=mode,
