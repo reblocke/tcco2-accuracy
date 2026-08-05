@@ -10,6 +10,7 @@ import pandas as pd
 from scipy import optimize, special, stats
 
 from .utils import threshold_label
+from .validate_inputs import validate_paco2_values
 
 
 def prior_log_weights(
@@ -176,12 +177,8 @@ def extract_params(params: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
 
 
 def validate_prior(paco2_prior: np.ndarray | None) -> np.ndarray:
-    """Return finite PaCO2 prior values or raise for missing/empty priors."""
+    """Return positive finite PaCO2 prior values or raise."""
 
     if paco2_prior is None:
         raise ValueError("Prior distribution must be provided.")
-    prior = np.asarray(paco2_prior, dtype=float)
-    prior = prior[np.isfinite(prior)]
-    if prior.size == 0:
-        raise ValueError("Prior distribution must be non-empty.")
-    return prior
+    return validate_paco2_values(paco2_prior)

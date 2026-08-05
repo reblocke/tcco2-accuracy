@@ -114,5 +114,16 @@
   `[paco2_bin, paco2_bin_upper)`; legacy round/floor grouping may alter display bins but never
   truth. These corrections apply to future private downstream rebuilds only; frozen tracked
   PaCO2-dependent artifacts were not regenerated or promoted.
+- 2026-08-05: Scientific inputs now fail closed on empty study tables or subgroup selections,
+  invalid study identifiers/counts/repeated-measure ratios, inconsistent variance fields, and
+  nonpositive or nonfinite retained PaCO2 supports and thresholds. Genuine missing distribution
+  rows are dropped; no unsupported PaCO2 upper bound is imposed. Conway study flags may overlap,
+  while record-level PaCO2 groups remain mutually exclusive; two-stage zone boundaries need only
+  be finite and strictly ordered and may be negative. Frozen PaCO2-dependent outputs remain frozen.
+- 2026-08-05: Prepared PaCO2 inputs drop genuinely missing PaCO2 rows first; every retained row
+  requires one of the three record-level subgroup labels. Raw assignment flags are binary when
+  present; public priors require exactly all four allowed group labels. Conway export never permits
+  missing/blank identifiers or non-integer observed counts, even when other source checks are
+  configured as permissive.
 - `format_inference_demo` only supports a single threshold and raises a ValueError otherwise in `src/tcco2_accuracy/workflows/infer.py`.
 - Legacy Conway study exports read bias/S2 and subgroup membership from the RData objects (`main`, `ICU`, `ARF`, `LFT`) and merge counts from `data.dta` (or `data_counts.csv` fallback); the Bolliger ICU row uses a 49/49/1 count fallback with bias/S2 pulled from `ICU` when absent from `main` to preserve the published/legacy source export (`scripts/export_conway_rdata.py:29`, `scripts/export_conway_rdata.py:107`).

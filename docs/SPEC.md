@@ -8,6 +8,31 @@
 - This document captures intended behavior for the Python package, workflows, and app-facing inference API.
 - Public-facing summaries should describe outputs as research estimates with uncertainty, not clinical validation.
 
+## Input validation contract
+- Conway study tables and requested subgroup analyses must be non-empty. Study identifiers are
+  stripped of leading/trailing whitespace and must then be non-empty and unique.
+- Study counts are finite integers with `n_participants > 1` and
+  `n_pairs >= n_participants`. Optional `c` must be finite, at least 1, and consistent with
+  `n_pairs / n_participants` at `rtol=1e-10`, `atol=1e-12`.
+- Each study table supplies at least one of the `sd` or `s2` columns; every value in each supplied
+  column is finite and strictly positive. When both columns are supplied, `sd²` must equal `s2`
+  within `rtol=1e-10`, `atol=1e-12`.
+- Conway `is_icu`, `is_arf`, and `is_lft` study flags may overlap. They are not interpreted as
+  mutually exclusive in the way the record-level PaCO2 groups below are.
+- Retained PaCO2 values, including PaCO2 prior support values, and clinical classification
+  thresholds are finite and strictly positive. Genuinely missing PaCO2 rows in a source
+  distribution are excluded before retained values are validated; malformed, infinite, zero, or
+  negative retained values fail closed.
+- After whitespace and case normalization, prior group labels must form exactly
+  `{pft, ed_inp, icu, all}` with no missing, blank, or additional labels.
+- No evidence-supported hard upper PaCO2 limit is currently specified. Validation therefore
+  imposes no finite upper cutoff beyond the requirement that the value be finite and positive.
+- Two-stage TcCO2 zone boundaries are finite and strictly ordered (`lower < upper`). They may be
+  negative because they are model boundaries rather than PaCO2 observations. The policy's true
+  PaCO2 threshold remains finite and strictly positive.
+- Conway RData/count export always rejects missing or blank study identifiers and non-integer
+  observed counts, including with `--no-strict` or `--allow-missing-counts`.
+
 ## Agreement variance and limits of agreement
 - Agreement calculations use method revision `agreement_natural_log_tau2_direct_v1` and remain
   provisional pending independent biostatistical review.
@@ -70,8 +95,12 @@
   `Data/in_silico_tcco2_db.dta` accepted as a local alias, or an explicitly supplied `.dta`
   path in workflow loaders.
 - The static browser app uses `Data/paco2_public_prior.csv` by default so it can run without the full `.dta` or public exact bin counts.
-- Use rows with non-missing `paco2`; PaCO2 values are in mmHg.
-- Treat `is_amb`, `is_emer`, `is_inp`, `cc_time` as binary flags (missing → 0).
+- Drop genuinely missing `paco2` rows, then require every retained value to be finite and strictly
+  positive; PaCO2 values are in mmHg. Do not apply an unvalidated hard upper cutoff.
+- If `subgroup` is already supplied, rows with genuinely missing `paco2` are dropped first. Every
+  retained row must have a non-missing subgroup label normalized to `pft`, `ed_inp`, or `icu`.
+- Otherwise, treat genuinely missing `is_amb`, `is_emer`, `is_inp`, and `cc_time` values as 0.
+  Every non-missing raw flag must be numeric binary 0/1; nonnumeric and nonbinary values fail.
 - Subgroup assignment is mutually exclusive, applied in order:
   1) `pft` (ambulatory/LFT): `is_amb == 1`.
   2) `icu`: `is_inp == 1` and `cc_time == 1` and `is_emer == 0` and `is_amb == 0`.

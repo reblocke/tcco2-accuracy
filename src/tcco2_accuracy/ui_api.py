@@ -23,6 +23,7 @@ from ._posterior import (
 )
 from .bootstrap import bootstrap_conway_parameters
 from .data import prepare_conway_meta_inputs
+from .validate_inputs import validate_threshold
 
 SubgroupLabel = Literal["pft", "ed_inp", "icu", "all"]
 InferenceMode = Literal["prior_weighted", "likelihood_only"]
@@ -74,6 +75,7 @@ def predict_paco2_from_tcco2(
         raise ValueError("interval must be between 0 and 1.")
     if bin_width <= 0:
         raise ValueError("bin_width must be positive.")
+    threshold = validate_threshold(threshold)
 
     params = select_group_params(
         params_draws,
@@ -172,10 +174,13 @@ def build_subgroup_bootstrap_draws(
 ) -> pd.DataFrame:
     """Return bootstrap parameter draws for one UI subgroup selection."""
 
-    subset = select_conway_studies_for_subgroup(studies, subgroup)
-    conway_inputs = prepare_conway_meta_inputs(subset)
+    # Validate and canonicalize the complete upload before any flag is used for
+    # subgroup selection. This prevents missing/invalid flags from influencing
+    # selection through their Python truth value.
+    conway_inputs = prepare_conway_meta_inputs(studies)
+    subset = select_conway_studies_for_subgroup(conway_inputs, subgroup)
     return bootstrap_conway_parameters(
-        conway_inputs,
+        subset,
         n_boot=n_boot,
         seed=seed,
         bootstrap_mode=bootstrap_mode,

@@ -16,6 +16,8 @@ from typing import Iterable
 import numpy as np
 import pandas as pd
 
+from tcco2_accuracy.validate_inputs import validate_conway_studies_df
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RDATA_CANDIDATES = (
     REPO_ROOT / "Data" / "data.Rdata",
@@ -220,7 +222,12 @@ def _extract_study_ids(data: pd.DataFrame, object_key: str, strict: bool) -> pd.
                 _ensure(False, message, strict)
                 raise ValueError(message)
             values = data[study_col]
-    return values.astype(str).map(_normalize_study_id)
+    if values.isna().any():
+        raise ValueError(f"RData object '{object_key}' contains missing study identifiers.")
+    study_ids = values.astype("string").map(_normalize_study_id)
+    if study_ids.eq("").any():
+        raise ValueError(f"RData object '{object_key}' contains blank study identifiers.")
+    return study_ids
 
 
 def _normalize_study_id(value: str) -> str:
@@ -364,12 +371,12 @@ def _load_counts_table(path: Path, strict: bool) -> pd.DataFrame:
 
     if {"study", "n", "n_2", "c"}.issubset(data.columns):
         counts = data.loc[:, ["study", "n", "n_2", "c"]].copy()
-        counts["study_id"] = counts["study"].astype(str).map(_normalize_study_id)
+        counts["study_id"] = _validated_count_study_ids(counts["study"], path)
         counts = counts.rename(columns={"n": "n_pairs", "n_2": "n_participants"})
         counts = counts.drop(columns="study")
     elif {"study_id", "n_pairs", "n_participants", "c"}.issubset(data.columns):
         counts = data.loc[:, ["study_id", "n_pairs", "n_participants", "c"]].copy()
-        counts["study_id"] = counts["study_id"].astype(str).map(_normalize_study_id)
+        counts["study_id"] = _validated_count_study_ids(counts["study_id"], path)
     else:
         message = (
             "Counts file is missing required columns. Expected either "
@@ -379,9 +386,19 @@ def _load_counts_table(path: Path, strict: bool) -> pd.DataFrame:
         raise ValueError(message)
 
     if counts["study_id"].duplicated().any():
-        message = "Duplicate study IDs detected in counts file."
-        _ensure(False, message, strict)
+        raise ValueError("Duplicate study IDs detected in counts file.")
     return counts
+
+
+def _validated_count_study_ids(values: pd.Series, path: Path) -> pd.Series:
+    """Return nonmissing, nonblank count-table study identifiers."""
+
+    if values.isna().any():
+        raise ValueError(f"Counts file contains missing study identifiers: {path}")
+    study_ids = values.astype("string").map(_normalize_study_id)
+    if study_ids.eq("").any():
+        raise ValueError(f"Counts file contains blank study identifiers: {path}")
+    return study_ids
 
 
 def _merge_counts(
@@ -445,6 +462,9 @@ def _finalize_table(
     canonical = canonical.copy()
     for column in ("n_pairs", "n_participants"):
         numeric = pd.to_numeric(canonical[column], errors="coerce")
+        observed = numeric.dropna().to_numpy(dtype=float)
+        if not np.all(observed == np.floor(observed)):
+            raise ValueError(f"Column `{column}` must contain integer counts.")
         if allow_missing_counts:
             canonical[column] = numeric.round().astype("Int64")
         else:
@@ -472,7 +492,10 @@ def _finalize_table(
         "is_arf",
         "is_lft",
     ]
-    return canonical[ordered]
+    result = canonical[ordered]
+    if strict and not allow_missing_counts:
+        validate_conway_studies_df(result)
+    return result
 
 
 def _ensure(condition: bool, message: str, strict: bool) -> None:

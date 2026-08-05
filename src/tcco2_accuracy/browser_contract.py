@@ -9,7 +9,11 @@ import numpy as np
 import pandas as pd
 
 from .core.conway_meta import AGREEMENT_METHOD_VERSION, RESULTS_STATUS
-from .data import load_paco2_prior_bins_bytes, prior_distribution_from_bins
+from .data import (
+    load_paco2_prior_bins_bytes,
+    prior_distribution_from_bins,
+    validate_paco2_prior_bins,
+)
 from .ui_api import build_subgroup_bootstrap_draws, predict_paco2_from_tcco2
 from .utils import validate_params_df
 from .validate_inputs import validate_conway_studies_df
@@ -169,7 +173,8 @@ def _required_frame(payload: dict[str, Any], name: str) -> pd.DataFrame:
 def _optional_frame(payload: dict[str, Any], name: str) -> pd.DataFrame | None:
     records = payload.get(f"{name}_records")
     if records is not None:
-        return pd.DataFrame(list(records))
+        frame = pd.DataFrame(list(records))
+        return validate_paco2_prior_bins(frame) if name == "prior_bins" else frame
 
     csv_text = payload.get(f"{name}_csv")
     if csv_text is not None:

@@ -69,6 +69,8 @@ def run_bootstrap(
         ]
     else:
         resolved_data_by_group = list(data_by_group)
+    if not resolved_data_by_group:
+        raise ValueError("At least one non-empty Conway subgroup analysis is required.")
     draws = bootstrap_group_draws(
         resolved_data_by_group,
         n_boot=n_boot,
