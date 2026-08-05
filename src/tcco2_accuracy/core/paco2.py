@@ -15,13 +15,29 @@ from .constants import (
     PACO2_SUBGROUP_ORDER,
 )
 from .utils import quantile_key
+from .validate_inputs import validate_paco2_values
 
 
 def prepare_paco2_distribution(data: pd.DataFrame) -> pd.DataFrame:
     """Filter PaCO2 rows and assign subgroup labels."""
 
+    if "paco2" not in data.columns:
+        raise ValueError("Missing PaCO2 columns: ['paco2']")
+    if "subgroup" in data.columns:
+        prepared = _retained_paco2_rows(data)
+        subgroup = prepared["subgroup"].astype("string").str.strip().str.lower()
+        if subgroup.isna().any() or subgroup.eq("").any():
+            raise ValueError("Prepared PaCO2 subgroup labels must be non-empty.")
+        invalid = sorted(set(subgroup) - set(PACO2_SUBGROUP_ORDER))
+        if invalid:
+            raise ValueError(
+                "Prepared PaCO2 subgroup labels must be one of "
+                f"{list(PACO2_SUBGROUP_ORDER)}; found {invalid}."
+            )
+        prepared["subgroup"] = subgroup
+        return prepared
     validate_paco2_columns(data)
-    filtered = data.loc[data["paco2"].notna()].copy()
+    filtered = _retained_paco2_rows(data)
     filtered["subgroup"] = assign_paco2_subgroup(filtered)
     return filtered
 
@@ -30,10 +46,10 @@ def assign_paco2_subgroup(data: pd.DataFrame) -> pd.Series:
     """Assign mutually exclusive PaCO2 subgroup labels."""
 
     validate_paco2_columns(data)
-    is_amb = data["is_amb"].fillna(0).astype(int)
-    is_emer = data["is_emer"].fillna(0).astype(int)
-    is_inp = data["is_inp"].fillna(0).astype(int)
-    cc_time = data["cc_time"].fillna(0).astype(int)
+    is_amb = _binary_assignment_flag(data, "is_amb")
+    is_emer = _binary_assignment_flag(data, "is_emer")
+    is_inp = _binary_assignment_flag(data, "is_inp")
+    cc_time = _binary_assignment_flag(data, "cc_time")
 
     pft_mask = is_amb == 1
     icu_mask = (is_inp == 1) & (cc_time == 1) & (is_emer == 0) & (is_amb == 0)
@@ -55,10 +71,7 @@ def paco2_subgroup_summary(
 ) -> pd.DataFrame:
     """Summarize subgroup counts and PaCO2 quantiles."""
 
-    if "subgroup" in data.columns:
-        prepared = data.loc[data["paco2"].notna()].copy()
-    else:
-        prepared = prepare_paco2_distribution(data)
+    prepared = prepare_paco2_distribution(data)
 
     quantile_list = list(quantiles)
     quantile_columns = [quantile_key("paco2", q) for q in quantile_list]
@@ -84,7 +97,7 @@ def build_paco2_prior_bins(
 
     if bin_width <= 0:
         raise ValueError("bin_width must be positive.")
-    prepared = data if "subgroup" in data.columns else prepare_paco2_distribution(data)
+    prepared = prepare_paco2_distribution(data)
     frames: list[pd.DataFrame] = []
     binned_counts: dict[str, pd.Series] = {}
     for group in PACO2_SUBGROUP_ORDER:
@@ -134,13 +147,14 @@ def validate_paco2_prior_bins(data: pd.DataFrame) -> pd.DataFrame:
     missing = PACO2_PRIOR_REQUIRED_COLUMNS - set(prior.columns)
     if missing:
         raise ValueError(f"Missing prior bin columns: {sorted(missing)}")
-    prior["group"] = prior["group"].astype(str).str.strip().str.lower()
+    prior["group"] = prior["group"].astype("string").str.strip().str.lower()
+    if prior["group"].isna().any() or prior["group"].eq("").any():
+        raise ValueError("Prior group labels must be non-empty.")
     prior["paco2_bin"] = pd.to_numeric(prior["paco2_bin"], errors="coerce")
     prior["weight"] = pd.to_numeric(prior["weight"], errors="coerce")
     if "count" in prior.columns:
         prior["count"] = pd.to_numeric(prior["count"], errors="coerce")
-    if not np.all(np.isfinite(prior["paco2_bin"])):
-        raise ValueError("Non-finite PaCO2 bin values in prior.")
+    prior["paco2_bin"] = validate_paco2_values(prior["paco2_bin"])
     if not np.all(np.isfinite(prior["weight"])):
         raise ValueError("Non-finite weights in prior.")
     if "count" in prior.columns:
@@ -151,7 +165,11 @@ def validate_paco2_prior_bins(data: pd.DataFrame) -> pd.DataFrame:
     if np.any(prior["weight"] < 0):
         raise ValueError("Prior weights must be non-negative.")
     groups = set(prior["group"])
-    missing_groups = set(PACO2_PRIOR_GROUPS) - groups
+    allowed_groups = set(PACO2_PRIOR_GROUPS)
+    invalid_groups = groups - allowed_groups
+    if invalid_groups:
+        raise ValueError(f"Unknown prior groups: {sorted(invalid_groups)}")
+    missing_groups = allowed_groups - groups
     if missing_groups:
         raise ValueError(f"Prior bins missing groups: {sorted(missing_groups)}")
     weight_sums = prior.groupby("group")["weight"].sum()
@@ -168,7 +186,7 @@ def prior_distribution_from_bins(
     subset = prior_bins.loc[prior_bins["group"] == group].sort_values("paco2_bin")
     if subset.empty:
         raise ValueError(f"No binned priors available for group '{group}'.")
-    values = subset["paco2_bin"].to_numpy(dtype=float)
+    values = validate_paco2_values(subset["paco2_bin"])
     if "count" in subset.columns:
         counts = subset["count"].to_numpy(dtype=float)
         total_count = float(np.sum(counts))
@@ -192,8 +210,9 @@ def prior_values_from_bins(prior_bins: pd.DataFrame, group: str) -> np.ndarray:
         raise ValueError(f"No binned priors available for group '{group}'.")
     if "count" not in subset.columns:
         raise ValueError("Cannot expand weight-only priors without a count column.")
+    values = validate_paco2_values(subset["paco2_bin"])
     return np.repeat(
-        subset["paco2_bin"].to_numpy(dtype=float),
+        values,
         subset["count"].to_numpy(dtype=int),
     )
 
@@ -204,3 +223,24 @@ def validate_paco2_columns(data: pd.DataFrame) -> None:
     missing = PACO2_REQUIRED_COLUMNS - set(data.columns)
     if missing:
         raise ValueError(f"Missing PaCO2 columns: {sorted(missing)}")
+
+
+def _retained_paco2_rows(data: pd.DataFrame) -> pd.DataFrame:
+    """Drop genuinely missing PaCO2 rows and validate every retained value."""
+
+    retained = data.loc[data["paco2"].notna()].copy()
+    retained["paco2"] = validate_paco2_values(retained["paco2"])
+    return retained
+
+
+def _binary_assignment_flag(data: pd.DataFrame, column: str) -> pd.Series:
+    """Return one PaCO2 assignment flag without truncating nonbinary values."""
+
+    raw = data[column]
+    values = pd.to_numeric(raw, errors="coerce")
+    if (raw.notna() & values.isna()).any():
+        raise ValueError(f"PaCO2 assignment flag `{column}` must be numeric and binary (0/1).")
+    values = values.fillna(0)
+    if not np.all(np.isfinite(values)) or not values.isin((0, 1)).all():
+        raise ValueError(f"PaCO2 assignment flag `{column}` must be binary (0/1).")
+    return values.astype(int)

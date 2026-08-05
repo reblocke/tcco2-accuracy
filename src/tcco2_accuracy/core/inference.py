@@ -39,6 +39,7 @@ from .constants import PACO2_SUBGROUP_ORDER
 from .paco2 import prepare_paco2_distribution
 from .simulation import DEFAULT_CLASSIFICATION_THRESHOLDS
 from .utils import validate_params_df
+from .validate_inputs import validate_thresholds
 
 DEFAULT_INFERENCE_QUANTILES: tuple[float, ...] = (0.025, 0.5, 0.975)
 
@@ -62,7 +63,7 @@ def infer_paco2(
     params = _select_param_draws(params, n_draws=n_draws, rng=rng)
     deltas, sd_total = _extract_params(params)
     paco2_prior_values = _validate_prior(paco2_prior) if use_prior else None
-    thresholds = [float(value) for value in thresholds]
+    thresholds = validate_thresholds(thresholds)
 
     rows: list[dict[str, float]] = []
     for tcco2 in tcco2_values:
@@ -94,9 +95,7 @@ def infer_paco2_by_subgroup(
 ) -> pd.DataFrame:
     """Return posterior summaries for each PaCO2 subgroup."""
 
-    prepared = (
-        paco2_data if "subgroup" in paco2_data.columns else prepare_paco2_distribution(paco2_data)
-    )
+    prepared = prepare_paco2_distribution(paco2_data)
     rng = np.random.default_rng(seed)
     frames: list[pd.DataFrame] = []
 

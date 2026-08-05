@@ -11,6 +11,7 @@ import pandas as pd
 from scipy import stats
 
 from .utils import validate_params_df
+from .validate_inputs import validate_paco2_values, validate_threshold
 
 BIN_METHODS = ("round", "floor", "cut")
 
@@ -27,9 +28,8 @@ def conditional_classification_curves(
 ) -> pd.DataFrame:
     """Return conditional TN/FP/FN/TP probability curves by PaCO2 bin."""
 
-    paco2_values = np.asarray(paco2_values, dtype=float)
-    if paco2_values.size == 0:
-        raise ValueError("PaCO2 values must be non-empty.")
+    paco2_values = validate_paco2_values(paco2_values)
+    threshold = validate_threshold(threshold)
     if bin_width <= 0:
         raise ValueError("bin_width must be positive.")
     if bin_method not in BIN_METHODS:

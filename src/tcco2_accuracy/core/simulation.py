@@ -21,6 +21,7 @@ from .utils import (
     safe_ratio_inf,
     validate_params_df,
 )
+from .validate_inputs import validate_paco2_values, validate_threshold, validate_thresholds
 
 DEFAULT_CLASSIFICATION_THRESHOLDS: tuple[float, ...] = (45.0,)
 DEFAULT_D_QUANTILES: tuple[float, ...] = (0.025, 0.975)
@@ -37,9 +38,7 @@ def simulate_forward(
     n_mc: int | None = None,
     fallback: ParameterFallback = "error",
 ) -> pd.DataFrame:
-    prepared = (
-        paco2_data if "subgroup" in paco2_data.columns else prepare_paco2_distribution(paco2_data)
-    )
+    prepared = prepare_paco2_distribution(paco2_data)
     random_state = np.random.default_rng(seed)
     frames: list[pd.DataFrame] = []
     for subgroup in PACO2_SUBGROUP_ORDER:
@@ -74,6 +73,8 @@ def simulate_forward_metrics(
     seed: int | None = None,
     n_mc: int | None = None,
 ) -> pd.DataFrame:
+    paco2_values = validate_paco2_values(paco2_values)
+    thresholds = validate_thresholds(thresholds)
     random_state = np.random.default_rng(seed)
     rows: list[dict[str, float | int]] = []
     params = validate_params_df(params)
@@ -141,10 +142,8 @@ def expected_classification_metrics(
     threshold_value: float,
     population_n: int | None = None,
 ) -> dict[str, float]:
-    paco2_values = np.asarray(paco2_values, dtype=float)
-    if paco2_values.size == 0:
-        raise ValueError("PaCO2 distribution must be non-empty.")
-    threshold_value = float(threshold_value)
+    paco2_values = validate_paco2_values(paco2_values)
+    threshold_value = validate_threshold(threshold_value)
     mean_tcco2 = paco2_values - delta
     z_scores = (threshold_value - mean_tcco2) / sd_total
     # Compute both tails directly. Subtracting a CDF from one loses all

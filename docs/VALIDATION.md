@@ -16,6 +16,34 @@
 - Independent biostatistical sign-off is pending. It blocks final release and downstream manuscript
   promotion, but not a visibly provisional Pages deployment.
 
+## Scientific input validation
+- Conway table validation fails closed for an empty table, an empty selected subgroup, blank or
+  duplicate identifiers after whitespace stripping, non-integer counts, `n_participants <= 1`, or
+  `n_pairs < n_participants`.
+- Export regressions require missing or blank RData/count identifiers and non-integer observed
+  counts to fail even under `--no-strict` or `--allow-missing-counts`.
+- Supplied `sd` and `s2` values must be finite and strictly positive. When both are present,
+  `sd²` and `s2` must agree at `rtol=1e-10`, `atol=1e-12`. Optional `c` must be finite,
+  at least 1, and agree with `n_pairs / n_participants` at the same tolerance.
+- Conway study flags may overlap; validation must accept a row selected into multiple Conway
+  subgroups. Record-level PaCO2 distribution groups remain mutually exclusive.
+- Retained PaCO2 observations and prior support values must be finite and strictly positive.
+  Genuinely missing source-distribution observations are dropped before validation; nonnumeric,
+  infinite, zero, and negative retained values fail closed. A finite positive value above the
+  observed support is accepted because no evidence-based upper validation bound is specified.
+- Prepared PaCO2 inputs drop rows with genuinely missing `paco2` before validating the retained
+  rows; each retained subgroup must be non-missing and normalize to `pft`, `ed_inp`, or `icu`. Raw
+  assignment flags must be binary 0/1 whenever non-missing; only genuinely missing flag values are
+  replaced by 0.
+- Prior group labels must be non-missing and nonblank and, after normalization, contain exactly
+  `pft`, `ed_inp`, `icu`, and `all`, with neither missing nor extra groups.
+- Classification thresholds, including the two-stage truth threshold, must be finite and strictly
+  positive. Two-stage TcCO2 zone boundaries must be finite and strictly ordered; negative finite
+  boundaries remain valid.
+- Regression coverage belongs in `tests/core/test_validate_inputs.py` and the affected PaCO2,
+  posterior, simulation, two-stage, workflow, and browser-contract tests. These validation changes
+  do not authorize regeneration or promotion of frozen PaCO2-dependent artifacts.
+
 ## Workflow validation stages
 
 ### Corrected agreement comparison
@@ -38,7 +66,8 @@
 
 ### PaCO2 distribution ingestion
 - Purpose: ingest PaCO2 distributions and assign mutually exclusive subgroups.
-- Invariants: subgroup assignment and quantile checks in `tests/core/test_paco2_distribution.py`.
+- Invariants: subgroup assignment, prepared-label allowlisting, raw binary-flag validation, and
+  quantile checks in `tests/core/test_paco2_distribution.py`.
 - Artifacts: `artifacts/paco2_distribution_summary.md`.
 - Status: frozen at the legacy agreement-method wave pending downstream regeneration and governance
   review; no current corrected-method claim is made from this artifact.

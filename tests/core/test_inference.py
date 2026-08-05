@@ -100,3 +100,32 @@ def test_inference_by_subgroup_medians_monotone() -> None:
 
     medians = result["paco2_q500"].to_numpy()
     assert np.all(np.diff(medians) >= 0)
+
+
+def test_inference_rejects_empty_threshold_sequence() -> None:
+    params = pd.DataFrame({"delta": [0.0], "sigma2": [1.0], "tau2": [0.0]})
+
+    with pytest.raises(ValueError, match="At least one"):
+        infer_paco2([40.0], params, thresholds=[])
+
+
+@pytest.mark.parametrize("threshold", [0.0, -1.0, np.nan, np.inf])
+def test_inference_rejects_invalid_threshold(threshold: float) -> None:
+    params = pd.DataFrame({"delta": [0.0], "sigma2": [1.0], "tau2": [0.0]})
+
+    with pytest.raises(ValueError, match="threshold"):
+        infer_paco2([40.0], params, thresholds=[threshold])
+
+
+@pytest.mark.parametrize("prior_value", [0.0, -1.0, np.nan, np.inf])
+def test_inference_rejects_invalid_prior_value(prior_value: float) -> None:
+    params = pd.DataFrame({"delta": [0.0], "sigma2": [1.0], "tau2": [0.0]})
+
+    with pytest.raises(ValueError, match="PaCO2 values"):
+        infer_paco2(
+            [40.0],
+            params,
+            thresholds=[45.0],
+            paco2_prior=[40.0, prior_value],
+            use_prior=True,
+        )

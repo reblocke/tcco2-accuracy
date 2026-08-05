@@ -16,6 +16,7 @@ from .utils import (
     safe_ratio,
     validate_params_df,
 )
+from .validate_inputs import validate_paco2_values, validate_threshold
 
 
 @dataclass(frozen=True)
@@ -27,8 +28,19 @@ class TwoStagePolicy:
     true_threshold: float
 
     def __post_init__(self) -> None:
-        if self.lower >= self.upper:
+        try:
+            lower = float(self.lower)
+            upper = float(self.upper)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("Two-stage policy boundaries must be numeric.") from exc
+        if not np.isfinite(lower) or not np.isfinite(upper):
+            raise ValueError("Two-stage policy boundaries must be finite.")
+        if lower >= upper:
             raise ValueError("Two-stage policy lower bound must be < upper bound.")
+        true_threshold = validate_threshold(self.true_threshold)
+        object.__setattr__(self, "lower", lower)
+        object.__setattr__(self, "upper", upper)
+        object.__setattr__(self, "true_threshold", true_threshold)
 
 
 def two_stage_zone_probabilities(
@@ -43,9 +55,7 @@ def two_stage_zone_probabilities(
     integrate measurement error analytically using the Normal CDF.
     """
 
-    paco2_values = np.asarray(paco2_values, dtype=float)
-    if paco2_values.size == 0:
-        raise ValueError("PaCO2 values must be non-empty.")
+    paco2_values = validate_paco2_values(paco2_values)
     if sd_total <= 0:
         raise ValueError("Total SD must be positive.")
 

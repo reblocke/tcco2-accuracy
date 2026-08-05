@@ -23,14 +23,29 @@ human review and study additions.
 - `c` (float): repeated measures per participant. If omitted, it is derived as `n_pairs / n_participants`.
 
 ## Validation rules
-- `study_id` is unique and non-empty.
-- `bias`, `sd`/`s2`, `n_pairs`, `n_participants`, `c` (if present) are finite.
-- `sd` and `s2` are strictly positive.
-- `n_pairs` and `n_participants` are positive integers.
+- The study table is non-empty. Any requested subgroup analysis must select at least one row.
+- `study_id` is stripped of leading/trailing whitespace before validation, non-empty after
+  stripping, and unique after stripping.
+- `bias` is finite.
+- The table contains at least one of the `sd` or `s2` columns. Every value in each supplied column
+  is finite and strictly positive. When both columns are supplied, `sd²` and `s2` must agree with
+  `rtol=1e-10` and `atol=1e-12`.
+- `n_pairs` and `n_participants` are finite integers, `n_participants > 1`, and
+  `n_pairs >= n_participants`.
+- If supplied, `c` is finite, `c >= 1`, and agrees with `n_pairs / n_participants` using
+  `rtol=1e-10` and `atol=1e-12`.
 - subgroup flags are boolean-like (0/1 or True/False) with no missing values.
 
 ## Notes
 - Main analysis is the full table; subgroups are selected by the `is_*` flags.
+- Conway subgroup flags are allowed to overlap: one study row may be selected into more than one
+  subgroup. This differs from the mutually exclusive PaCO2 record groups defined in
+  `docs/SPEC.md`.
 - ARF subgroup includes both Kim 2014 cohorts (normotensive + hypotensive).
-- `sd` and `s2` should be internally consistent (`s2 ≈ sd²`) if both are provided.
+- If a reported `c` is rounded and does not satisfy the ratio check, omit the column and allow the
+  package to derive the exact value; a supplied `c` column must be complete. If redundant `sd` and
+  `s2` fields are discordant, retain only the authoritative source field rather than forcing them
+  to agree.
+- The RData/count exporter always rejects missing or blank study identifiers and non-integer
+  observed counts. `--no-strict` and `--allow-missing-counts` do not relax those checks.
 - Public PaCO2 prior weights used for browser prior-weighted inference are maintained separately in `Data/paco2_public_prior.csv`.

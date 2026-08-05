@@ -8,6 +8,8 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
+from .validate_inputs import validate_conway_meta_inputs_df
+
 AGREEMENT_METHOD_VERSION = "agreement_natural_log_tau2_direct_v1"
 RESULTS_STATUS = "provisional"
 
@@ -60,8 +62,9 @@ def prepare_conway_inputs(data: pd.DataFrame) -> pd.DataFrame:
     """Prepare Conway meta-analysis inputs.
 
     Args:
-        data: Study-level Conway data with columns ``n``, ``n_2``, ``bias``, and ``s2``.
-            Optional column ``c`` (repeated measures per participant) is imputed as ``n / n_2``.
+        data: Study-level Conway data with identifier column ``study`` and numeric columns
+            ``n``, ``n_2``, ``bias``, and ``s2``. Optional column ``c`` (repeated measures per
+            participant) is derived as ``n / n_2`` when the entire column is omitted.
 
     Returns:
         DataFrame with additional columns:
@@ -72,12 +75,16 @@ def prepare_conway_inputs(data: pd.DataFrame) -> pd.DataFrame:
         - ``v_logs2``: variance of the natural-log quantity in ``logs2``.
 
     Assumptions:
-        ``n`` and ``n_2`` are positive and represent paired measurements and participants.
+        ``n`` and ``n_2`` are paired-measurement and participant counts satisfying
+        the canonical Conway input relationships.
     """
+    validate_conway_meta_inputs_df(data)
     inputs = data.copy()
+    for column in ("bias", "sd", "s2", "n", "n_2", "c"):
+        if column in inputs:
+            inputs[column] = pd.to_numeric(inputs[column], errors="raise")
     if "c" not in inputs:
         inputs["c"] = inputs["n"] / inputs["n_2"]
-    inputs["c"] = inputs["c"].fillna(inputs["n"] / inputs["n_2"])
     inputs["s2_adj"] = repeated_measures_variance(inputs["s2"], inputs["n"], inputs["c"])
     # v_bias captures finite-sample uncertainty in each study's bias estimate.
     inputs["v_bias"] = inputs["s2_adj"] / inputs["n_2"]

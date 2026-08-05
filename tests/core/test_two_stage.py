@@ -52,8 +52,8 @@ def test_two_stage_narrow_ordered_zone_retains_positive_probability() -> None:
     policy = TwoStagePolicy(lower=0.0, upper=1e-16, true_threshold=1.0)
 
     _, zone2, _ = two_stage_zone_probabilities(
-        np.array([0.0]),
-        delta=0.0,
+        np.array([1.0]),
+        delta=1.0,
         sd_total=1.0,
         policy=policy,
     )
@@ -121,3 +121,50 @@ def test_two_stage_lr_uses_log_tails_beyond_probability_underflow() -> None:
     assert metrics["zone3_prob"] == 0.0
     assert np.isfinite(metrics["zone3_lr"])
     assert metrics["zone3_lr"] == pytest.approx(np.exp(expected_log_lr), rel=1e-13)
+
+
+@pytest.mark.parametrize(
+    ("lower", "upper"),
+    [
+        (np.nan, 2.0),
+        (1.0, np.inf),
+        (-np.inf, 2.0),
+        (1.0, 1.0),
+        (2.0, 1.0),
+    ],
+)
+def test_two_stage_policy_rejects_nonfinite_or_unordered_boundaries(
+    lower: float, upper: float
+) -> None:
+    with pytest.raises(ValueError, match="boundar|lower bound"):
+        TwoStagePolicy(lower=lower, upper=upper, true_threshold=45.0)
+
+
+@pytest.mark.parametrize("threshold", [0.0, -1.0, np.nan, np.inf])
+def test_two_stage_policy_rejects_invalid_true_threshold(threshold: float) -> None:
+    with pytest.raises(ValueError, match="threshold"):
+        TwoStagePolicy(lower=40.0, upper=50.0, true_threshold=threshold)
+
+
+def test_two_stage_policy_permits_ordered_negative_boundaries() -> None:
+    policy = TwoStagePolicy(lower=-2.0, upper=-1.0, true_threshold=1.0)
+
+    zone1, zone2, zone3 = two_stage_zone_probabilities(
+        [1.0], delta=2.0, sd_total=1.0, policy=policy
+    )
+
+    assert zone1[0] + zone2[0] + zone3[0] == pytest.approx(1.0)
+
+
+def test_two_stage_policy_normalizes_numeric_scalar_inputs() -> None:
+    policy = TwoStagePolicy(lower="40", upper="50", true_threshold="45")  # type: ignore[arg-type]
+
+    assert policy == TwoStagePolicy(lower=40.0, upper=50.0, true_threshold=45.0)
+
+
+@pytest.mark.parametrize("paco2", [0.0, -1.0, np.nan, np.inf])
+def test_two_stage_rejects_invalid_paco2_values(paco2: float) -> None:
+    policy = TwoStagePolicy(lower=40.0, upper=50.0, true_threshold=45.0)
+
+    with pytest.raises(ValueError, match="PaCO2 values"):
+        two_stage_zone_probabilities([paco2], delta=0.0, sd_total=1.0, policy=policy)

@@ -254,6 +254,47 @@ def test_browser_contract_rejects_missing_requested_parameter_group() -> None:
         compute_ui_payload(payload)
 
 
+def test_browser_contract_validates_prior_record_payloads_like_csv() -> None:
+    prior = pd.read_csv(ROOT / "Data" / "paco2_public_prior.csv")
+    prior.loc[prior.index[0], "paco2_bin"] = 0.0
+    payload = {
+        "tcco2": 50.0,
+        "subgroup": "all",
+        "mode": "prior_weighted",
+        "params_csv": _read_text(ROOT / "artifacts" / "bootstrap_params.csv"),
+        "prior_bins_records": prior.to_dict(orient="records"),
+    }
+
+    with pytest.raises(ValueError, match="PaCO2 values must be positive"):
+        compute_ui_payload(payload)
+
+
+def test_browser_bootstrap_rejects_unknown_subgroup() -> None:
+    payload = {
+        "subgroup": "unknown",
+        "study_csv": _read_text(ROOT / "Data" / "conway_studies.csv"),
+        "n_boot": 2,
+        "seed": 123,
+    }
+
+    with pytest.raises(ValueError, match="Unknown Conway subgroup"):
+        build_bootstrap_payload(payload)
+
+
+def test_browser_bootstrap_validates_full_table_before_subgroup_selection() -> None:
+    studies = pd.read_csv(ROOT / "Data" / "conway_studies.csv")
+    studies.loc[studies.index[0], "is_lft"] = None
+    payload = {
+        "subgroup": "pft",
+        "study_records": studies.to_dict(orient="records"),
+        "n_boot": 2,
+        "seed": 123,
+    }
+
+    with pytest.raises(ValueError, match="is_lft.*must not be missing"):
+        build_bootstrap_payload(payload)
+
+
 def _likelihood_payload(params: pd.DataFrame) -> dict[str, object]:
     return {
         "tcco2": 50.0,

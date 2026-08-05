@@ -62,9 +62,7 @@ def run_conditional_classification(
         ).draws
     if paco2_data is None:
         paco2_data = load_paco2_distribution(paco2_path)
-    prepared = (
-        paco2_data if "subgroup" in paco2_data.columns else prepare_paco2_distribution(paco2_data)
-    )
+    prepared = prepare_paco2_distribution(paco2_data)
 
     rng = np.random.default_rng(seed)
     frames: list[pd.DataFrame] = []
