@@ -49,15 +49,27 @@ def test_manuscript_workflow_smoke(tmp_path: Path) -> None:
 
     table1 = pd.read_csv(tmp_path / "manuscript_table1.csv")
     assert {"sensitivity_q500", "specificity_q500", "lr_pos_q500"}.issubset(table1.columns)
+    assert {"requested_group", "parameter_group_used"}.issubset(table1.columns)
     assert table1[["sensitivity_q500", "specificity_q500"]].notna().all().all()
 
     table2 = pd.read_csv(tmp_path / "manuscript_table2_two_stage.csv")
     assert {"zone1_prob_q500", "zone2_prob_q500", "zone3_prob_q500"}.issubset(table2.columns)
+    assert {"requested_group", "parameter_group_used"}.issubset(table2.columns)
 
     table3 = pd.read_csv(tmp_path / "manuscript_table3_prediction_intervals.csv")
     assert {"likelihood_paco2_q500", "prior_paco2_q500"}.issubset(table3.columns)
+    assert {"requested_group", "parameter_group_used"}.issubset(table3.columns)
     assert table3[["likelihood_paco2_q500", "prior_paco2_q500"]].notna().all().all()
 
+    for name in (
+        "table1",
+        "confusion_matrix",
+        "two_stage_summary",
+        "table2",
+        "table3",
+        "snippets",
+    ):
+        assert "Parameter routing:" in result.markdown[name]
     assert "Error-model parameters used" in result.snippets
 
 

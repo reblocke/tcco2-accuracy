@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import warnings
 from pathlib import Path
 
@@ -15,6 +16,17 @@ from tcco2_accuracy.core.conway_meta import (
 )
 from tcco2_accuracy.data import CONWAY_DATA_PATH, INSILICO_PACO2_PATH, load_conway_group
 from tcco2_accuracy.workflows import bootstrap, conditional, infer, meta, paco2, sim
+
+
+def test_workflow_fallback_preserves_existing_out_dir_positional_slot() -> None:
+    for function in (
+        sim.run_forward_simulation_summary,
+        infer.run_inference_demo,
+        conditional.run_conditional_classification,
+    ):
+        parameter_names = list(inspect.signature(function).parameters)
+        assert parameter_names[-2:] == ["out_dir", "fallback"]
+
 
 PUBLISHED_FIXTURE_PATH = Path(__file__).resolve().parents[1] / "fixtures" / "conway_table1.csv"
 
@@ -110,6 +122,8 @@ def test_workflows_deterministic(tmp_path: Path) -> None:
         out_dir=out_dir2,
     )
     assert (out_dir1 / "simulation_summary.md").exists()
+    assert {"requested_group", "parameter_group_used"}.issubset(sim_result1.summary.columns)
+    assert "Parameter routing:" in sim_result1.markdown
     pdt.assert_frame_equal(sim_result1.summary, sim_result2.summary, check_exact=False, atol=1e-12)
 
     infer_result1 = infer.run_inference_demo(
@@ -127,6 +141,8 @@ def test_workflows_deterministic(tmp_path: Path) -> None:
         out_dir=out_dir2,
     )
     assert (out_dir1 / "inference_demo.md").exists()
+    assert {"requested_group", "parameter_group_used"}.issubset(infer_result1.summary.columns)
+    assert "Parameter routing:" in infer_result1.markdown
     pdt.assert_frame_equal(
         infer_result1.summary, infer_result2.summary, check_exact=False, atol=1e-12
     )
@@ -147,6 +163,8 @@ def test_workflows_deterministic(tmp_path: Path) -> None:
     )
     assert (out_dir1 / "conditional_classification_t45.csv").exists()
     assert (out_dir1 / "conditional_classification_t45.md").exists()
+    assert {"requested_group", "parameter_group_used"}.issubset(cond_result1.curves.columns)
+    assert "Parameter routing:" in cond_result1.markdown
     pdt.assert_frame_equal(cond_result1.curves, cond_result2.curves, check_exact=False, atol=1e-12)
 
 

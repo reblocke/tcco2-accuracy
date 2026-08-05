@@ -99,11 +99,26 @@ def test_expected_classification_metrics_lr_handles_zero_denominator() -> None:
     assert metrics["lr_neg"] == pytest.approx(0.0)
 
 
-def test_simulation_missing_group_params_falls_back() -> None:
+def test_simulation_missing_group_params_fails_closed() -> None:
     paco2_data = pd.DataFrame({"paco2": [35.0, 45.0, 55.0], "subgroup": ["pft", "ed_inp", "icu"]})
     params = pd.DataFrame({"group": ["main"], "delta": [1.0], "sigma2": [4.0], "tau2": [0.0]})
 
-    with pytest.warns(UserWarning, match="No parameters found"):
-        metrics = simulate_forward(paco2_data, params, thresholds=[45.0], mode="analytic")
+    with pytest.raises(ValueError, match="No parameters found for requested subgroup 'pft'"):
+        simulate_forward(paco2_data, params, thresholds=[45.0], mode="analytic")
+
+
+def test_simulation_explicit_main_fallback_records_provenance() -> None:
+    paco2_data = pd.DataFrame({"paco2": [35.0, 45.0, 55.0], "subgroup": ["pft", "ed_inp", "icu"]})
+    params = pd.DataFrame({"group": ["main"], "delta": [1.0], "sigma2": [4.0], "tau2": [0.0]})
+
+    metrics = simulate_forward(
+        paco2_data,
+        params,
+        thresholds=[45.0],
+        mode="analytic",
+        fallback="main",
+    )
 
     assert set(metrics["group"]) == {"pft", "ed_inp", "icu"}
+    assert set(metrics["requested_group"]) == {"pft", "ed_inp", "icu"}
+    assert set(metrics["parameter_group_used"]) == {"main"}

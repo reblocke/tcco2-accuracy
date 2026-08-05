@@ -48,6 +48,16 @@ table and a custom binned PaCO2 prior. These files are parsed in the browser and
 passed to the Pyodide worker. They are not sent to a backend, persisted, logged,
 or encoded in URLs.
 
+## Parameter Routing Fields
+
+| Field | Definition | Validation |
+| --- | --- | --- |
+| `requested_group` | PaCO2 setting requested by the calculation | Must match the analysis subgroup |
+| `parameter_group_used` | Conway group actually supplying parameters | Mapped group, explicit `main`, or `single_model` |
+
+Grouped inputs fail closed when the mapped parameter group is missing. `main` is used only through
+an explicit fallback request; ungrouped inputs are recorded as `single_model`.
+
 ## Aggregate Artifacts
 
 Small aggregate outputs under `artifacts/` support review and manuscript

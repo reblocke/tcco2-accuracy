@@ -7,6 +7,7 @@ import sys
 import time
 from pathlib import Path
 
+import pandas as pd
 import pytest
 from playwright.sync_api import expect
 
@@ -60,6 +61,8 @@ def test_static_app_default_calculation(page, web_server: str) -> None:
     )
     assert page.locator("body").get_attribute("data-results-status") == EXPECTED_RESULTS_STATUS
     assert page.locator("body").get_attribute("data-params-source") == "payload_params"
+    assert page.locator("body").get_attribute("data-requested-group") == "all"
+    assert page.locator("body").get_attribute("data-parameter-group-used") == "main"
     assert page.locator("#metric-interval").inner_text() != "-"
     assert page.locator("#metric-probability").inner_text() != "-"
     assert page.locator("#posterior-chart .main-svg").count() >= 1
@@ -106,6 +109,8 @@ def test_static_app_uploaded_studies_use_current_provisional_method(page, web_se
     )
     assert page.locator("#error").inner_text() == ""
     expect(page.locator("body")).to_have_attribute("data-params-source", "computed")
+    expect(page.locator("body")).to_have_attribute("data-requested-group", "all")
+    expect(page.locator("body")).to_have_attribute("data-parameter-group-used", "single_model")
     expect(page.locator("#status")).to_have_text("Calculation complete.")
 
     assert page.locator("body").get_attribute("data-agreement-method-version") == default_method
@@ -154,6 +159,34 @@ def test_static_app_failed_recalculation_clears_previous_result(page, web_server
     assert page.locator("body").get_attribute("data-agreement-method-version") is None
     assert page.locator("body").get_attribute("data-results-status") is None
     assert page.locator("body").get_attribute("data-params-source") is None
+    assert page.locator("body").get_attribute("data-requested-group") is None
+    assert page.locator("body").get_attribute("data-parameter-group-used") is None
+
+
+def test_static_app_missing_parameter_group_fails_closed_and_clears_result(
+    page, web_server: str
+) -> None:
+    params = pd.read_csv(ROOT / "artifacts" / "bootstrap_params.csv")
+    main_only = params.loc[params["group"] == "main"].to_csv(index=False)
+    page.route(
+        "**/assets/data/bootstrap_params.csv",
+        lambda route: route.fulfill(status=200, content_type="text/csv", body=main_only),
+    )
+    page.goto(web_server, wait_until="domcontentloaded")
+    page.get_by_text("Calculation complete.").wait_for(timeout=180_000)
+
+    expect(page.locator("body")).to_have_attribute("data-parameter-group-used", "main")
+    assert page.locator("#metric-interval").inner_text() != "-"
+
+    page.locator("#subgroup").select_option("pft")
+    page.locator("#calculate").click()
+
+    expect(page.locator("#status")).to_have_text("Calculation failed.", timeout=180_000)
+    expect(page.locator("#error")).to_contain_text("No parameters found for requested subgroup")
+    expect(page.locator("#metric-interval")).to_have_text("-")
+    expect(page.locator("#posterior-chart")).to_be_hidden()
+    assert page.locator("body").get_attribute("data-requested-group") is None
+    assert page.locator("body").get_attribute("data-parameter-group-used") is None
 
 
 def test_static_app_prior_weighted_chart_uses_posterior_focused_axis(page, web_server: str) -> None:

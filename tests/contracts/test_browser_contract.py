@@ -58,6 +58,8 @@ def test_browser_contract_matches_ui_api_canonical_prior_weighted() -> None:
     assert sum(browser["likelihood_prob"]) == pytest.approx(1.0)
     assert browser["metadata"]["agreement_method_version"] == AGREEMENT_METHOD_VERSION
     assert browser["metadata"]["results_status"] == RESULTS_STATUS
+    assert browser["metadata"]["requested_group"] == "all"
+    assert browser["metadata"]["parameter_group_used"] == "main"
 
 
 @pytest.mark.parametrize("subgroup", ["all", "pft", "ed_inp", "icu"])
@@ -155,11 +157,15 @@ def test_browser_contract_recomputes_from_uploaded_study_table() -> None:
     assert bootstrap["metadata"] == {
         "agreement_method_version": AGREEMENT_METHOD_VERSION,
         "results_status": RESULTS_STATUS,
+        "requested_group": "pft",
+        "parameter_group_used": "single_model",
     }
     assert {row["agreement_method_version"] for row in bootstrap["params"]} == {
         AGREEMENT_METHOD_VERSION
     }
     assert {row["results_status"] for row in bootstrap["params"]} == {RESULTS_STATUS}
+    assert {row["requested_group"] for row in bootstrap["params"]} == {"pft"}
+    assert {row["parameter_group_used"] for row in bootstrap["params"]} == {"single_model"}
 
 
 @pytest.mark.parametrize(
@@ -232,6 +238,20 @@ def test_browser_contract_default_and_uploaded_paths_share_method_provenance() -
         default_result["metadata"]["results_status"]
         == uploaded_result["metadata"]["results_status"]
     )
+    assert default_result["metadata"]["requested_group"] == "pft"
+    assert default_result["metadata"]["parameter_group_used"] == "lft"
+    assert uploaded_result["metadata"]["requested_group"] == "pft"
+    assert uploaded_result["metadata"]["parameter_group_used"] == "single_model"
+
+
+def test_browser_contract_rejects_missing_requested_parameter_group() -> None:
+    params = pd.read_csv(ROOT / "artifacts" / "bootstrap_params.csv")
+    params = params.loc[params["group"] == "main"]
+    payload = _likelihood_payload(params)
+    payload["subgroup"] = "pft"
+
+    with pytest.raises(ValueError, match="No parameters found for requested subgroup 'pft'"):
+        compute_ui_payload(payload)
 
 
 def _likelihood_payload(params: pd.DataFrame) -> dict[str, object]:

@@ -10,6 +10,7 @@ import pandas as pd
 
 from .bootstrap import bootstrap_group_draws
 from .conway_meta import conway_group_summary
+from .core._params import ParameterFallback
 from .data import load_conway_group
 from .simulation import (
     DEFAULT_CLASSIFICATION_THRESHOLDS,
@@ -218,6 +219,7 @@ def build_simulation_summary(
     seed: int | None = None,
     n_draws: int | None = None,
     n_mc: int | None = None,
+    fallback: ParameterFallback = "error",
 ) -> pd.DataFrame:
     """Generate forward simulation summaries by subgroup."""
 
@@ -229,6 +231,7 @@ def build_simulation_summary(
         seed=seed,
         n_draws=n_draws,
         n_mc=n_mc,
+        fallback=fallback,
     )
     return summarize_simulation_metrics(metrics, quantiles=DEFAULT_SUMMARY_QUANTILES)
 
@@ -250,6 +253,7 @@ def format_simulation_summary(
         "",
         f"Bootstrap draws: {n_boot} per subgroup.",
         f"Mode: {mode}. Thresholds (mmHg): {threshold_label}.",
+        f"Parameter routing: {_format_parameter_routes(summary)}.",
         "",
         "Median values shown with [2.5%, 97.5%] bootstrap intervals.",
         "",
@@ -339,6 +343,15 @@ def format_simulation_summary(
             )
 
     return "\n".join(lines)
+
+
+def _format_parameter_routes(frame: pd.DataFrame) -> str:
+    if not {"requested_group", "parameter_group_used"}.issubset(frame.columns):
+        return "unavailable"
+    routes = frame[["requested_group", "parameter_group_used"]].drop_duplicates()
+    return ", ".join(
+        f"{row.requested_group}->{row.parameter_group_used}" for row in routes.itertuples()
+    )
 
 
 def _format_interval(row: pd.Series, metric: str, precision: int) -> str:

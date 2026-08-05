@@ -9,6 +9,7 @@ from typing import Sequence
 import pandas as pd
 
 from .._files import write_text
+from .._params import ParameterFallback
 from ..data import PACO2_SUBGROUP_ORDER, load_paco2_distribution, prepare_paco2_distribution
 from ..inference import infer_paco2_by_subgroup
 from ..simulation import DEFAULT_CLASSIFICATION_THRESHOLDS
@@ -40,6 +41,7 @@ def run_inference_demo(
     n_draws: int | None = None,
     include_prior: bool = True,
     out_dir: Path | None = None,
+    fallback: ParameterFallback = "error",
 ) -> InferenceWorkflowResult:
     """Run inference demo tables for TcCO2 → PaCO2.
 
@@ -82,6 +84,7 @@ def run_inference_demo(
         use_prior=False,
         seed=seed,
         n_draws=n_draws,
+        fallback=fallback,
     )
     prior = None
     if include_prior:
@@ -93,6 +96,7 @@ def run_inference_demo(
             use_prior=True,
             seed=seed,
             n_draws=n_draws,
+            fallback=fallback,
         )
     summary = _combine_modes(likelihood, prior)
     markdown = format_inference_demo(
@@ -155,6 +159,7 @@ def format_inference_demo(
         f"Bootstrap draws: {n_boot} per subgroup (seed={seed_label}).",
         f"Parameter draws: {draw_label}.",
         f"Subgroup priors: empirical PaCO2 distributions for {counts}.",
+        f"Parameter routing: {_format_parameter_routes(likelihood)}.",
         "Interval type: 95% prediction interval (PI), not CI.",
         "",
         "## Likelihood-only (bootstrap mixture)",
@@ -207,6 +212,15 @@ def _combine_modes(likelihood: pd.DataFrame, prior: pd.DataFrame | None) -> pd.D
     if prior is not None:
         frames.append(prior.assign(mode="prior"))
     return pd.concat(frames, ignore_index=True)
+
+
+def _format_parameter_routes(frame: pd.DataFrame) -> str:
+    if frame.empty or not {"requested_group", "parameter_group_used"}.issubset(frame.columns):
+        return "unavailable"
+    routes = frame[["requested_group", "parameter_group_used"]].drop_duplicates()
+    return ", ".join(
+        f"{row.requested_group}->{row.parameter_group_used}" for row in routes.itertuples()
+    )
 
 
 def _format_interval(row: pd.Series) -> str:
