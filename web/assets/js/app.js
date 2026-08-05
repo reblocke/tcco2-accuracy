@@ -141,6 +141,8 @@ function renderResult(result) {
   document.body.dataset.agreementMethodVersion = result.metadata.agreement_method_version;
   document.body.dataset.resultsStatus = result.metadata.results_status;
   document.body.dataset.paramsSource = result.metadata.params_source;
+  document.body.dataset.requestedGroup = result.metadata.requested_group;
+  document.body.dataset.parameterGroupUsed = result.metadata.parameter_group_used;
   elements.metrics.hidden = false;
   elements.metrics.style.removeProperty("display");
   elements.chart.hidden = false;
@@ -419,6 +421,8 @@ function clearResult() {
   delete document.body.dataset.agreementMethodVersion;
   delete document.body.dataset.resultsStatus;
   delete document.body.dataset.paramsSource;
+  delete document.body.dataset.requestedGroup;
+  delete document.body.dataset.parameterGroupUsed;
   elements.metrics.hidden = true;
   elements.metrics.style.display = "none";
   elements.interval.textContent = "-";

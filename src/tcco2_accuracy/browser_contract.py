@@ -50,6 +50,8 @@ def compute_ui_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "subgroup": result.subgroup,
+        "requested_group": result.requested_group,
+        "parameter_group_used": result.parameter_group_used,
         "tcco2": result.tcco2,
         "threshold": result.threshold,
         "mode": result.mode,
@@ -76,6 +78,8 @@ def compute_ui_payload(payload: dict[str, Any]) -> dict[str, Any]:
             else "computed",
             "prior_source": prior_source,
             "n_params": int(params.shape[0]),
+            "requested_group": result.requested_group,
+            "parameter_group_used": result.parameter_group_used,
             **provenance,
         },
     }

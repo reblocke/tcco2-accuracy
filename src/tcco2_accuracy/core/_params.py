@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import warnings
 from collections.abc import Iterable
+from typing import Literal
 
 import pandas as pd
 
@@ -17,6 +17,8 @@ PACO2_TO_CONWAY_GROUP: dict[str, str] = {
     # "All" uses Conway main-analysis parameters (all studies).
     "all": "main",
 }
+
+ParameterFallback = Literal["error", "main"]
 
 
 def resolve_conway_group(
@@ -43,14 +45,28 @@ def select_group_params(
     *,
     validate: bool = False,
     reset_index: bool = False,
-    warn_on_fallback: bool = True,
+    fallback: ParameterFallback = "error",
     map_all_to_main: bool = False,
 ) -> pd.DataFrame:
-    """Return parameter rows for a PaCO2 subgroup, falling back to all rows."""
+    """Return parameter rows for a PaCO2 subgroup with explicit routing provenance.
+
+    Grouped parameter tables fail closed when the requested group is unavailable.
+    Callers may explicitly request the pooled ``main`` group as a fallback; rows
+    from unrelated groups are never silently combined. A table without a
+    ``group`` column is treated as one deliberately supplied model.
+    """
+
+    if fallback not in {"error", "main"}:
+        raise ValueError(f"Unknown parameter fallback policy: {fallback}")
 
     selected = validate_params_df(params) if validate else params
     if "group" not in selected.columns:
-        return _maybe_reset_index(selected, reset_index)
+        return _annotate_selection(
+            selected,
+            requested_group=str(subgroup),
+            parameter_group_used="single_model",
+            reset_index=reset_index,
+        )
 
     group_values = selected["group"].astype(str)
     group_key = resolve_conway_group(
@@ -60,13 +76,27 @@ def select_group_params(
     )
     group_params = selected[group_values == group_key]
     if group_params.empty:
-        if warn_on_fallback:
-            warnings.warn(
-                f"No parameters found for subgroup '{subgroup}'; falling back to all params.",
-                UserWarning,
+        available = sorted(set(group_values))
+        if fallback == "main":
+            group_key = "main"
+            group_params = selected[group_values == group_key]
+            if group_params.empty:
+                raise ValueError(
+                    "Parameter fallback requested group 'main', but it is unavailable; "
+                    f"requested subgroup='{subgroup}', available groups={available}."
+                )
+        else:
+            raise ValueError(
+                "No parameters found for requested subgroup "
+                f"'{subgroup}' (resolved group '{group_key}'); available groups={available}. "
+                "Supply the required group or explicitly set fallback='main'."
             )
-        return _maybe_reset_index(selected, reset_index)
-    return _maybe_reset_index(group_params, reset_index)
+    return _annotate_selection(
+        group_params,
+        requested_group=str(subgroup),
+        parameter_group_used=group_key,
+        reset_index=reset_index,
+    )
 
 
 def select_conway_studies_for_subgroup(studies: pd.DataFrame, subgroup: str) -> pd.DataFrame:
@@ -85,3 +115,16 @@ def select_conway_studies_for_subgroup(studies: pd.DataFrame, subgroup: str) -> 
 
 def _maybe_reset_index(frame: pd.DataFrame, reset_index: bool) -> pd.DataFrame:
     return frame.reset_index(drop=True) if reset_index else frame
+
+
+def _annotate_selection(
+    frame: pd.DataFrame,
+    *,
+    requested_group: str,
+    parameter_group_used: str,
+    reset_index: bool,
+) -> pd.DataFrame:
+    annotated = frame.copy()
+    annotated["requested_group"] = requested_group
+    annotated["parameter_group_used"] = parameter_group_used
+    return _maybe_reset_index(annotated, reset_index)

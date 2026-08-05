@@ -35,6 +35,7 @@ Privacy and runtime:
 - User-entered values and uploads stay in the browser.
 - JavaScript handles UI and plotting; Python remains the numerical source of truth.
 - Canonical and uploaded-study parameter calculations must report the current method revision and provisional status; stale or mixed canonical parameters fail closed.
+- Grouped parameter inputs fail closed when the requested mapped group is absent; successful result metadata records requested_group and parameter_group_used.
 
 Default assets:
 - web/assets/data/conway_studies.csv is staged from Data/conway_studies.csv.

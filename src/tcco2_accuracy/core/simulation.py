@@ -10,7 +10,7 @@ import pandas as pd
 from scipy import stats
 
 from ._params import PACO2_TO_CONWAY_GROUP as PACO2_TO_CONWAY_GROUP
-from ._params import select_group_params
+from ._params import ParameterFallback, select_group_params
 from .bland_altman import loa_bounds, total_sd
 from .constants import PACO2_SUBGROUP_ORDER
 from .paco2 import prepare_paco2_distribution
@@ -29,6 +29,7 @@ def simulate_forward(
     seed: int | None = None,
     n_draws: int | None = None,
     n_mc: int | None = None,
+    fallback: ParameterFallback = "error",
 ) -> pd.DataFrame:
     prepared = (
         paco2_data if "subgroup" in paco2_data.columns else prepare_paco2_distribution(paco2_data)
@@ -37,7 +38,7 @@ def simulate_forward(
     frames: list[pd.DataFrame] = []
     for subgroup in PACO2_SUBGROUP_ORDER:
         paco2_values = prepared.loc[prepared["subgroup"] == subgroup, "paco2"].to_numpy(dtype=float)
-        group_params = select_group_params(params, subgroup)
+        group_params = select_group_params(params, subgroup, fallback=fallback)
         if n_draws is not None and n_draws < group_params.shape[0]:
             chosen = random_state.choice(group_params.index.to_numpy(), size=n_draws, replace=True)
             group_params = group_params.loc[chosen].reset_index(drop=True)
@@ -202,6 +203,11 @@ def summarize_simulation_metrics(
     if metrics.empty:
         return pd.DataFrame()
     group_columns = ["group"] if "group" in metrics.columns else []
+    group_columns.extend(
+        column
+        for column in ("requested_group", "parameter_group_used")
+        if column in metrics.columns
+    )
     if "threshold" in metrics.columns:
         group_columns.append("threshold")
     value_columns = [
@@ -350,8 +356,8 @@ def _base_row_from_params(
     params_row: tuple,
     index: int,
     sd_total: float,
-) -> dict[str, float | int]:
-    base_row: dict[str, float | int] = {
+) -> dict[str, float | int | str]:
+    base_row: dict[str, float | int | str] = {
         "replicate": int(getattr(params_row, "replicate", index)),
         "delta": float(getattr(params_row, "delta")),
         "sigma2": float(getattr(params_row, "sigma2")),
@@ -360,4 +366,7 @@ def _base_row_from_params(
     }
     if hasattr(params_row, "group"):
         base_row["group"] = getattr(params_row, "group")
+    for column in ("requested_group", "parameter_group_used"):
+        if hasattr(params_row, column):
+            base_row[column] = str(getattr(params_row, column))
     return base_row

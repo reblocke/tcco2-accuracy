@@ -83,6 +83,10 @@
 - Version gate: canonical parameter assets must contain exactly one current method revision and
   provisional status; missing, stale, or mixed metadata fail closed. The UI must keep the corrected
   method, independent-review-pending, frozen-manuscript, and research-only notice visible.
+- Routing gate: grouped parameter inputs must contain the requested mapped group. Missing groups
+  fail closed in Python and Pages, clear any prior browser result, and expose no pooled fallback.
+  Successful outputs record `requested_group` and `parameter_group_used`; uploaded subgroup-specific
+  study calculations are marked `single_model`.
 
 ## Artifact and release gates
 - `artifacts/STATUS.md` is the current/frozen manifest. Only five public Conway-derived outputs are
