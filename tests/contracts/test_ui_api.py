@@ -149,6 +149,20 @@ def test_likelihood_only_result_omits_redundant_likelihood_curve() -> None:
     assert result.likelihood_prob is None
 
 
+@pytest.mark.parametrize("threshold", [0.0, -1.0, np.nan, np.inf])
+def test_ui_api_rejects_invalid_threshold(threshold: float) -> None:
+    params = pd.DataFrame({"delta": [0.0], "sigma2": [4.0], "tau2": [0.0]})
+
+    with pytest.raises(ValueError, match="threshold"):
+        predict_paco2_from_tcco2(
+            tcco2=45.0,
+            subgroup="pft",
+            threshold=threshold,
+            mode="likelihood_only",
+            params_draws=params,
+        )
+
+
 def test_decision_label_probabilities() -> None:
     params = pd.DataFrame({"delta": [0.0], "sigma2": [4.0], "tau2": [0.0]})
     prior_values = np.array([40.0, 45.0, 50.0])

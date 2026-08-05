@@ -103,10 +103,16 @@ def select_conway_studies_for_subgroup(studies: pd.DataFrame, subgroup: str) -> 
     """Return canonical Conway study rows for a PaCO2 subgroup."""
 
     group_key = resolve_conway_group(subgroup)
-    flag = CONWAY_SUBGROUP_FLAGS.get(group_key)
-    if flag is None:
+    if group_key == "main":
         subset = studies
     else:
+        flag = CONWAY_SUBGROUP_FLAGS.get(group_key)
+        if flag is None:
+            allowed = sorted({"main", *CONWAY_SUBGROUP_FLAGS})
+            raise ValueError(
+                f"Unknown Conway subgroup '{subgroup}' (resolved group '{group_key}'); "
+                f"expected one of {allowed} or a mapped PaCO2 subgroup."
+            )
         subset = studies[studies[flag].astype(bool)]
     if subset.empty:
         raise ValueError(f"No studies available for Conway group '{group_key}'.")

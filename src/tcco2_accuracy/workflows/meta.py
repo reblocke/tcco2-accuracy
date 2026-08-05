@@ -59,12 +59,16 @@ def run_meta_checks(
     group_map = groups or CONWAY_GROUPS
     provided_groups = data_by_group is not None
     if data_by_group is None:
-        data_by_group = [
+        resolved_data_by_group = [
             (group_name, load_conway_group(group_key, path=conway_path))
             for group_name, group_key in group_map.items()
         ]
+    else:
+        resolved_data_by_group = list(data_by_group)
+    if not resolved_data_by_group:
+        raise ValueError("At least one non-empty Conway subgroup analysis is required.")
     rows: list[dict[str, float | int | str]] = []
-    for group_name, group_data in data_by_group:
+    for group_name, group_data in resolved_data_by_group:
         summary = conway_group_summary(group_data, truncate_tau2=True)
         rows.append(
             {

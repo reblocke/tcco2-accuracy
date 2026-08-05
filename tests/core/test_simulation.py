@@ -158,3 +158,24 @@ def test_simulation_explicit_main_fallback_records_provenance() -> None:
     assert set(metrics["group"]) == {"pft", "ed_inp", "icu"}
     assert set(metrics["requested_group"]) == {"pft", "ed_inp", "icu"}
     assert set(metrics["parameter_group_used"]) == {"main"}
+
+
+@pytest.mark.parametrize("threshold", [0.0, -1.0, np.nan, np.inf])
+def test_expected_classification_rejects_invalid_threshold(threshold: float) -> None:
+    with pytest.raises(ValueError, match="threshold"):
+        expected_classification_metrics(
+            [40.0, 50.0], delta=0.0, sd_total=2.0, threshold_value=threshold
+        )
+
+
+@pytest.mark.parametrize("paco2", [0.0, -1.0, np.nan, np.inf])
+def test_expected_classification_rejects_invalid_paco2(paco2: float) -> None:
+    with pytest.raises(ValueError, match="PaCO2 values"):
+        expected_classification_metrics([paco2], delta=0.0, sd_total=2.0, threshold_value=45.0)
+
+
+def test_simulation_rejects_empty_threshold_sequence() -> None:
+    params = pd.DataFrame({"delta": [0.0], "sigma2": [4.0], "tau2": [0.0]})
+
+    with pytest.raises(ValueError, match="At least one"):
+        simulate_forward_metrics([40.0], params, thresholds=[], mode="analytic")

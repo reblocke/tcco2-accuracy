@@ -161,6 +161,8 @@ def load_conway_group(group: str, path: Path | None = None) -> pd.DataFrame:
         raise ValueError(f"Unknown Conway subgroup: {group}")
     flag = CONWAY_SUBGROUP_FLAGS[key]
     subset = studies[studies[flag].astype(bool)]
+    if subset.empty:
+        raise ValueError(f"No studies available for Conway subgroup '{key}'.")
     analysis = _to_conway_analysis(subset)
     analysis.attrs["group"] = key
     return analysis
@@ -184,10 +186,6 @@ def _canonicalize_conway_table(data: pd.DataFrame) -> pd.DataFrame:
     canonical = canonical.rename(
         columns={k: v for k, v in rename_map.items() if k in canonical.columns}
     )
-
-    for flag in CONWAY_SUBGROUP_FLAGS.values():
-        if flag in canonical.columns:
-            canonical[flag] = canonical[flag].fillna(0).astype(int)
 
     if "sd" not in canonical.columns and "s2" in canonical.columns:
         canonical["sd"] = np.sqrt(pd.to_numeric(canonical["s2"], errors="coerce"))

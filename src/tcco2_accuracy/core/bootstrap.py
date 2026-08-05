@@ -117,4 +117,6 @@ def bootstrap_group_draws(
         draws.insert(0, "group", group_name)
         frames.append(draws)
 
+    if not frames:
+        raise ValueError("At least one non-empty Conway subgroup analysis is required.")
     return pd.concat(frames, ignore_index=True)

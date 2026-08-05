@@ -228,6 +228,20 @@ def test_meta_checks_handles_zero_heterogeneity_without_runtime_warning() -> Non
     assert result.invariants["max_loa_abs_error"] == pytest.approx(0.0, abs=1e-12)
 
 
+@pytest.mark.parametrize("workflow", [meta.run_meta_checks, bootstrap.run_bootstrap])
+def test_meta_workflows_reject_empty_group_collection(workflow: object) -> None:
+    with pytest.raises(ValueError, match="At least one non-empty Conway subgroup"):
+        workflow(data_by_group=[])
+
+
+@pytest.mark.parametrize("workflow", [meta.run_meta_checks, bootstrap.run_bootstrap])
+def test_meta_workflows_reject_empty_subgroup_frame(workflow: object) -> None:
+    empty = _synthetic_conway_group("empty", 0.0).iloc[0:0]
+
+    with pytest.raises(ValueError, match="at least one study"):
+        workflow(data_by_group=[("empty", empty)])
+
+
 def test_format_inference_demo_requires_single_threshold() -> None:
     likelihood = pd.DataFrame(
         {

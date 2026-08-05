@@ -222,6 +222,22 @@ def test_conditional_negative_tail_remains_positive_at_z12() -> None:
     assert negative["fp_q50"] == pytest.approx(1.776482112077654e-33, rel=1e-14, abs=0.0)
 
 
+@pytest.mark.parametrize("threshold", [0.0, -1.0, np.nan, np.inf])
+def test_conditional_rejects_invalid_threshold(threshold: float) -> None:
+    params = pd.DataFrame({"delta": [0.0], "sigma2": [1.0], "tau2": [0.0]})
+
+    with pytest.raises(ValueError, match="threshold"):
+        conditional_classification_curves([40.0], params, threshold=threshold)
+
+
+@pytest.mark.parametrize("paco2", [0.0, -1.0, np.nan, np.inf])
+def test_conditional_rejects_invalid_paco2(paco2: float) -> None:
+    params = pd.DataFrame({"delta": [0.0], "sigma2": [1.0], "tau2": [0.0]})
+
+    with pytest.raises(ValueError, match="PaCO2 values"):
+        conditional_classification_curves([paco2], params, threshold=45.0)
+
+
 def _synthetic_bootstrap_data() -> pd.DataFrame:
     return pd.DataFrame(
         {
