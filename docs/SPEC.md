@@ -46,6 +46,25 @@
 - An ungrouped parameter table is treated as one explicitly supplied model, not as an implicit
   fallback. Downstream rows record `requested_group` and `parameter_group_used`.
 
+## Tail probabilities and conditional classification
+- Normal upper-tail probabilities use `sf`; their complements use `cdf` directly rather than
+  subtracting a CDF from one. Likelihood ratios derived from modeled normal probabilities aggregate
+  `logsf`/`logcdf` values with `logsumexp` before forming the ratio.
+- Two-stage middle-zone probabilities use a stable normal interval probability rather than
+  `1 - lower_tail - upper_tail`; if endpoint log probabilities are numerically indistinguishable,
+  direct density quadrature preserves the mass of a valid narrow interval.
+- Conditional classification determines true hypercapnia and test-positive probability from each
+  original unbinned PaCO2 value. Display binning never determines truth.
+- The production conditional-curve default uses half-open bins `[lower, upper)`. Output
+  `paco2_bin` is the lower edge and `paco2_bin_upper` is the excluded upper edge. Legacy `round`
+  and `floor` display grouping remains available, but uses the same raw-value truth calculation.
+  Legacy `round` uses centered half-open intervals and assigns an exact midpoint to the interval
+  beginning at that midpoint, rather than NumPy's ties-to-even convention. Bin indexing uses the
+  decimal representation of the requested width so exact decimal edges are not shifted downward
+  by binary floating-point division.
+- Component quantiles summarize each TN/FP/FN/TP distribution separately. Probability-mass
+  conservation is a per-draw invariant; lower or upper componentwise quantiles are not additive.
+
 ## In-silico PaCO2 distribution
 - Source file: `Data/In Silico TCCO2 Database.dta` by package default, with
   `Data/in_silico_tcco2_db.dta` accepted as a local alias, or an explicitly supplied `.dta`

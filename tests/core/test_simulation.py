@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
+from scipy import stats
 
 from tcco2_accuracy.data import (
     PACO2_PUBLIC_PRIOR_PATH,
@@ -97,6 +98,41 @@ def test_expected_classification_metrics_lr_handles_zero_denominator() -> None:
 
     assert metrics["lr_pos"] == np.inf
     assert metrics["lr_neg"] == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize("z", [8.0, 12.0])
+def test_expected_classification_metrics_preserves_extreme_tail_lrs(z: float) -> None:
+    paco2_values = np.array([45.0 - z, 45.0 + z])
+
+    metrics = expected_classification_metrics(
+        paco2_values,
+        delta=0.0,
+        sd_total=1.0,
+        threshold_value=45.0,
+    )
+
+    expected_lr_pos = stats.norm.sf(-z) / stats.norm.sf(z)
+    expected_lr_neg = stats.norm.cdf(-z) / stats.norm.cdf(z)
+    assert np.isfinite(metrics["lr_pos"])
+    assert metrics["lr_pos"] == pytest.approx(expected_lr_pos, rel=1e-13)
+    assert metrics["lr_neg"] == pytest.approx(expected_lr_neg, rel=1e-13, abs=0.0)
+    assert metrics["fp_rate"] > 0
+    assert metrics["fn_rate"] > 0
+
+
+def test_expected_classification_lr_uses_log_tails_beyond_probability_underflow() -> None:
+    metrics = expected_classification_metrics(
+        np.array([44.0, 45.0]),
+        delta=40.0,
+        sd_total=1.0,
+        threshold_value=45.0,
+    )
+
+    expected_log_lr = stats.norm.logsf(40.0) - stats.norm.logsf(41.0)
+    assert metrics["fp_rate"] == 0.0
+    assert metrics["tp_rate"] == 0.0
+    assert np.isfinite(metrics["lr_pos"])
+    assert metrics["lr_pos"] == pytest.approx(np.exp(expected_log_lr), rel=1e-13)
 
 
 def test_simulation_missing_group_params_fails_closed() -> None:

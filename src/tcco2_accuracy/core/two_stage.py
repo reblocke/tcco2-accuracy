@@ -10,7 +10,12 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-from .utils import quantile_key, safe_ratio, safe_ratio_inf, validate_params_df
+from .utils import (
+    _likelihood_ratio_from_log_probabilities,
+    quantile_key,
+    safe_ratio,
+    validate_params_df,
+)
 
 
 @dataclass(frozen=True)
@@ -47,10 +52,10 @@ def two_stage_zone_probabilities(
     mean_tcco2 = paco2_values - float(delta)
     lower_z = (float(policy.lower) - mean_tcco2) / float(sd_total)
     upper_z = (float(policy.upper) - mean_tcco2) / float(sd_total)
-    zone1 = stats.norm.cdf(lower_z)
-    zone3 = 1 - stats.norm.cdf(upper_z)
-    zone2 = 1 - zone1 - zone3
-    zone2 = np.clip(zone2, 0.0, 1.0)
+    log_zone1, log_zone2, log_zone3 = _two_stage_log_probabilities(lower_z, upper_z)
+    zone1 = np.exp(log_zone1)
+    zone2 = np.exp(log_zone2)
+    zone3 = np.exp(log_zone3)
     return zone1, zone2, zone3
 
 
@@ -64,6 +69,10 @@ def two_stage_metrics(
 
     paco2_values = np.asarray(paco2_values, dtype=float)
     zone1, zone2, zone3 = two_stage_zone_probabilities(paco2_values, delta, sd_total, policy)
+    mean_tcco2 = paco2_values - float(delta)
+    lower_z = (float(policy.lower) - mean_tcco2) / float(sd_total)
+    upper_z = (float(policy.upper) - mean_tcco2) / float(sd_total)
+    log_zone1, log_zone2, log_zone3 = _two_stage_log_probabilities(lower_z, upper_z)
 
     total = float(paco2_values.size)
     pos_mask = paco2_values >= float(policy.true_threshold)
@@ -90,9 +99,10 @@ def two_stage_metrics(
     zone3_neg_rate = safe_ratio(zone3_neg, neg_prevalence)
 
     # Likelihood ratios summarize how much each zone shifts the pretest odds.
-    zone1_lr = safe_ratio_inf(zone1_pos_rate, zone1_neg_rate)
-    zone2_lr = safe_ratio_inf(zone2_pos_rate, zone2_neg_rate)
-    zone3_lr = safe_ratio_inf(zone3_pos_rate, zone3_neg_rate)
+    # Log probabilities keep extreme yet representable tail ratios finite.
+    zone1_lr = _likelihood_ratio_from_log_probabilities(log_zone1[pos_mask], log_zone1[neg_mask])
+    zone2_lr = _likelihood_ratio_from_log_probabilities(log_zone2[pos_mask], log_zone2[neg_mask])
+    zone3_lr = _likelihood_ratio_from_log_probabilities(log_zone3[pos_mask], log_zone3[neg_mask])
 
     # Post-test probabilities combine zone frequency with pretest prevalence.
     zone1_post = safe_ratio(zone1_pos, zone1_prob)
@@ -129,6 +139,77 @@ def two_stage_metrics(
         "residual_fp_per_1000": float(residual_fp * 1000),
         "residual_misclass_per_1000": float(residual_total * 1000),
     }
+
+
+def _two_stage_log_probabilities(
+    lower_z: np.ndarray,
+    upper_z: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Return stable log probabilities for the three ordered normal zones."""
+
+    log_zone1 = stats.norm.logcdf(lower_z)
+    log_zone3 = stats.norm.logsf(upper_z)
+    log_larger = np.empty_like(lower_z, dtype=float)
+    log_smaller = np.empty_like(lower_z, dtype=float)
+
+    # Above zero, subtract survival functions so two nearly-one CDFs are never
+    # differenced. Elsewhere, the CDF difference is stable on its log scale.
+    positive = lower_z >= 0
+    log_larger[positive] = stats.norm.logsf(lower_z[positive])
+    log_smaller[positive] = stats.norm.logsf(upper_z[positive])
+    log_larger[~positive] = stats.norm.logcdf(upper_z[~positive])
+    log_smaller[~positive] = stats.norm.logcdf(lower_z[~positive])
+    log_zone2 = _log_probability_difference(log_larger, log_smaller)
+
+    endpoint_difference = log_larger - log_smaller
+    endpoint_scale = np.maximum.reduce(
+        [np.ones_like(log_larger), np.abs(log_larger), np.abs(log_smaller)]
+    )
+    # Route only endpoint differences comparable to floating-point roundoff to
+    # quadrature. A sqrt(eps) rule is too broad in deep tails, where the log
+    # endpoint scale is large but stable subtraction remains preferable over a
+    # fixed-order density integral across a rapidly changing interval.
+    cancellation_prone = endpoint_difference <= 64 * np.finfo(float).eps * endpoint_scale
+    use_quadrature = cancellation_prone | ~np.isfinite(log_zone2)
+    if np.any(use_quadrature):
+        log_zone2[use_quadrature] = _log_normal_interval_probability(
+            lower_z[use_quadrature],
+            upper_z[use_quadrature],
+        )
+    return log_zone1, log_zone2, log_zone3
+
+
+def _log_probability_difference(log_larger: np.ndarray, log_smaller: np.ndarray) -> np.ndarray:
+    """Return log(exp(log_larger) - exp(log_smaller)) elementwise."""
+
+    log_larger = np.asarray(log_larger, dtype=float)
+    log_smaller = np.asarray(log_smaller, dtype=float)
+    difference = np.minimum(log_smaller - log_larger, 0.0)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        result = log_larger + np.log(-np.expm1(difference))
+    result = np.where(np.isneginf(log_smaller), log_larger, result)
+    return result
+
+
+def _log_normal_interval_probability(
+    lower_z: np.ndarray,
+    upper_z: np.ndarray,
+) -> np.ndarray:
+    """Return log normal interval mass when endpoint logs are indistinguishable.
+
+    Fixed Gauss-Legendre quadrature evaluates the positive density over the
+    interval directly. This fallback is used only when log-CDF/log-SF endpoint
+    subtraction has collapsed, which occurs for valid extremely narrow zones.
+    """
+
+    lower_z = np.asarray(lower_z, dtype=float)
+    upper_z = np.asarray(upper_z, dtype=float)
+    half_width = (upper_z - lower_z) / 2
+    midpoint = lower_z + half_width
+    nodes, weights = np.polynomial.legendre.leggauss(8)
+    evaluation_points = midpoint[:, None] + half_width[:, None] * nodes[None, :]
+    log_weighted_density = stats.norm.logpdf(evaluation_points) + np.log(weights)[None, :]
+    return np.log(half_width) + np.logaddexp.reduce(log_weighted_density, axis=1)
 
 
 def summarize_two_stage_draws(

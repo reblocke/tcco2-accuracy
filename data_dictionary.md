@@ -41,6 +41,17 @@ included.
 | `paco2_bin` | PaCO2 bin value | Finite numeric, mmHg |
 | `weight` | Normalized public prior weight | Nonnegative; should sum approximately 1 within group |
 
+## Conditional Curve Fields
+
+| Field | Definition | Validation |
+| --- | --- | --- |
+| `paco2_bin` | Inclusive lower edge of a conditional-curve display bin | Finite numeric, mmHg |
+| `paco2_bin_upper` | Exclusive upper edge of that display bin | Finite numeric greater than `paco2_bin` |
+
+Conditional TN/FP/FN/TP truth and test-positive probabilities are computed from original unbinned
+PaCO2 values and then aggregated. The production bin contract is
+`[paco2_bin, paco2_bin_upper)`; display grouping never determines truth.
+
 ## Browser App Uploads
 
 The app accepts optional CSV/XLSX uploads for a custom Conway-compatible study

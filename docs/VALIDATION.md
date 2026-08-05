@@ -45,21 +45,35 @@
 
 ### Forward simulation
 - Purpose: propagate bootstrap parameters through TcCO2 accuracy metrics.
-- Invariants: moment/interval checks in `tests/core/test_simulation.py`.
+- Invariants: moment/interval checks plus finite analytic likelihood-ratio comparisons at normal
+  z values of ±8 and ±12 in `tests/core/test_simulation.py`. Survival and LR calculations are
+  performed without `1-cdf` subtraction.
 - Artifacts: `artifacts/simulation_summary.md`.
 - Status: frozen at the legacy agreement-method wave; no current corrected-method claim is made.
 
 ### Inverse inference
 - Purpose: compute TcCO2 → PaCO2 posterior intervals and exceedance probabilities.
-- Invariants: likelihood/prior checks in `tests/core/test_inference.py` and determinism in `tests/workflows/test_workflows.py`.
+- Invariants: likelihood/prior checks, exact survival-tail checks at z values of ±8 and ±12 in
+  `tests/core/test_inference.py`, and determinism in `tests/workflows/test_workflows.py`.
 - Artifacts: `artifacts/inference_demo.md`.
 - Status: frozen at the legacy agreement-method wave; no current corrected-method claim is made.
 
 ### Conditional misclassification curves
 - Purpose: summarize conditional TN/FP/FN/TP probabilities by true PaCO2 bin.
-- Invariants: probability mass and branching checks in `tests/core/test_hybrid_bootstrap_and_conditional.py`.
+- Invariants: probability mass, raw-value truth assignment, half-open edge handling, legacy-display
+  independence, decimal-width exact-edge handling, and 44.49/44.50/44.99/45.00/45.01 mmHg boundary checks in
+  `tests/core/test_hybrid_bootstrap_and_conditional.py`. `paco2_bin` and `paco2_bin_upper`
+  identify `[lower, upper)`; truth is never derived from either edge.
 - Artifacts: `artifacts/conditional_classification_t45.csv`, `artifacts/conditional_classification_t45.md`.
 - Status: frozen at the legacy agreement-method wave; no current corrected-method claim is made.
+
+### Two-stage probability stability
+- Purpose: calculate lower, reflex, and upper-zone probabilities without normal-tail cancellation.
+- Invariants: zone mass, stable `[8 SD, 12 SD)` interval probability, positive mass for an ordered
+  interval only `1e-16` SD wide, nonzero 12-SD survival, and finite extreme-tail LR checks in
+  `tests/core/test_two_stage.py`.
+- Status: implementation corrected for future private rebuilds; tracked PaCO2-dependent artifacts
+  remain frozen and were not regenerated.
 
 ### Manuscript reporting outputs
 - Purpose: generate manuscript-ready tables, figures, and results snippets.

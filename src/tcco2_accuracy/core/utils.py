@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+from scipy import special
 
 
 def threshold_label(threshold: float) -> str:
@@ -82,3 +83,35 @@ def safe_ratio_inf(numerator: float, denominator: float) -> float:
     if denominator < 0:
         return float("nan")
     return float(numerator / denominator)
+
+
+def _likelihood_ratio_from_log_probabilities(
+    numerator_log_probabilities: np.ndarray,
+    denominator_log_probabilities: np.ndarray,
+) -> float:
+    """Return a ratio of mean probabilities without tail underflow.
+
+    Each input contains per-observation log probabilities. Empty populations
+    remain undefined, an exactly zero denominator maps to infinity, and ratios
+    beyond the finite float range use the same infinity convention as
+    ``safe_ratio_inf``.
+    """
+
+    numerator = np.asarray(numerator_log_probabilities, dtype=float)
+    denominator = np.asarray(denominator_log_probabilities, dtype=float)
+    if numerator.size == 0 or denominator.size == 0:
+        return float("nan")
+
+    log_numerator = float(special.logsumexp(numerator) - np.log(numerator.size))
+    log_denominator = float(special.logsumexp(denominator) - np.log(denominator.size))
+    if np.isnan(log_numerator) or np.isnan(log_denominator):
+        return float("nan")
+    if np.isneginf(log_denominator):
+        return float("nan") if np.isneginf(log_numerator) else float("inf")
+    if np.isneginf(log_numerator):
+        return 0.0
+
+    log_ratio = log_numerator - log_denominator
+    if log_ratio > np.log(np.finfo(float).max):
+        return float("inf")
+    return float(np.exp(log_ratio))
