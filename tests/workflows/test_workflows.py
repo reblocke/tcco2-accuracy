@@ -163,8 +163,14 @@ def test_workflows_deterministic(tmp_path: Path) -> None:
     )
     assert (out_dir1 / "conditional_classification_t45.csv").exists()
     assert (out_dir1 / "conditional_classification_t45.md").exists()
-    assert {"requested_group", "parameter_group_used"}.issubset(cond_result1.curves.columns)
+    assert {
+        "requested_group",
+        "parameter_group_used",
+        "paco2_bin",
+        "paco2_bin_upper",
+    }.issubset(cond_result1.curves.columns)
     assert "Parameter routing:" in cond_result1.markdown
+    assert "[paco2_bin, paco2_bin_upper)" in cond_result1.markdown
     pdt.assert_frame_equal(cond_result1.curves, cond_result2.curves, check_exact=False, atol=1e-12)
 
 

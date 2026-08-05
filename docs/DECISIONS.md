@@ -105,5 +105,14 @@
   selects only the pooled `main` group; it never combines unrelated group rows. Ungrouped tables are
   treated as an explicitly supplied single model. Downstream results record the requested and used
   parameter groups.
+- 2026-08-05: Analytic survival probabilities now use the normal `sf` directly; modeled
+  likelihood ratios aggregate `logsf`/`logcdf` probabilities with `logsumexp`, and two-stage
+  middle-zone probabilities use a stable interval calculation. This prevents representable
+  extreme tails from becoming zero or infinity through `1-cdf` subtraction alone.
+- 2026-08-05: Conditional curves assign truth and calculate test-positive probability from original
+  unbinned PaCO2 values before aggregation. Production defaults use half-open bins
+  `[paco2_bin, paco2_bin_upper)`; legacy round/floor grouping may alter display bins but never
+  truth. These corrections apply to future private downstream rebuilds only; frozen tracked
+  PaCO2-dependent artifacts were not regenerated or promoted.
 - `format_inference_demo` only supports a single threshold and raises a ValueError otherwise in `src/tcco2_accuracy/workflows/infer.py`.
 - Legacy Conway study exports read bias/S2 and subgroup membership from the RData objects (`main`, `ICU`, `ARF`, `LFT`) and merge counts from `data.dta` (or `data_counts.csv` fallback); the Bolliger ICU row uses a 49/49/1 count fallback with bias/S2 pulled from `ICU` when absent from `main` to preserve the published/legacy source export (`scripts/export_conway_rdata.py:29`, `scripts/export_conway_rdata.py:107`).

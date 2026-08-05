@@ -14,7 +14,13 @@ from ._params import ParameterFallback, select_group_params
 from .bland_altman import loa_bounds, total_sd
 from .constants import PACO2_SUBGROUP_ORDER
 from .paco2 import prepare_paco2_distribution
-from .utils import quantile_key, safe_ratio, safe_ratio_inf, validate_params_df
+from .utils import (
+    _likelihood_ratio_from_log_probabilities,
+    quantile_key,
+    safe_ratio,
+    safe_ratio_inf,
+    validate_params_df,
+)
 
 DEFAULT_CLASSIFICATION_THRESHOLDS: tuple[float, ...] = (45.0,)
 DEFAULT_D_QUANTILES: tuple[float, ...] = (0.025, 0.975)
@@ -141,7 +147,10 @@ def expected_classification_metrics(
     threshold_value = float(threshold_value)
     mean_tcco2 = paco2_values - delta
     z_scores = (threshold_value - mean_tcco2) / sd_total
-    prob_positive = 1 - stats.norm.cdf(z_scores)
+    # Compute both tails directly. Subtracting a CDF from one loses all
+    # positive-tail precision by about z=12.
+    prob_positive = stats.norm.sf(z_scores)
+    prob_negative = stats.norm.cdf(z_scores)
     positive_mask = paco2_values >= threshold_value
     negative_mask = ~positive_mask
     total_count = paco2_values.size
@@ -150,9 +159,9 @@ def expected_classification_metrics(
         raise ValueError("Population size must be positive for expected counts.")
     # Expected fractions across the subgroup distribution integrate measurement error analytically.
     true_positive = prob_positive[positive_mask].sum() / total_count
-    false_negative = (1 - prob_positive[positive_mask]).sum() / total_count
+    false_negative = prob_negative[positive_mask].sum() / total_count
     false_positive = prob_positive[negative_mask].sum() / total_count
-    true_negative = (1 - prob_positive[negative_mask]).sum() / total_count
+    true_negative = prob_negative[negative_mask].sum() / total_count
     prevalence = positive_mask.mean()
     sensitivity = safe_ratio(true_positive, true_positive + false_negative)
     specificity = safe_ratio(true_negative, true_negative + false_positive)
@@ -164,8 +173,17 @@ def expected_classification_metrics(
     tn_rate = true_negative
     fn_rate = false_negative
     misclass_rate = fp_rate + fn_rate
-    lr_pos = safe_ratio_inf(sensitivity, 1 - specificity)
-    lr_neg = safe_ratio_inf(1 - sensitivity, specificity)
+    # LRs are ratios of conditional mean probabilities. Retaining the normal
+    # tails on the log scale prevents representable ratios from becoming 0/inf
+    # merely because their component probabilities underflowed first.
+    lr_pos = _likelihood_ratio_from_log_probabilities(
+        stats.norm.logsf(z_scores[positive_mask]),
+        stats.norm.logsf(z_scores[negative_mask]),
+    )
+    lr_neg = _likelihood_ratio_from_log_probabilities(
+        stats.norm.logcdf(z_scores[positive_mask]),
+        stats.norm.logcdf(z_scores[negative_mask]),
+    )
     tp_count = tp_rate * population_n
     fp_count = fp_rate * population_n
     tn_count = tn_rate * population_n
@@ -324,8 +342,10 @@ def _sample_classification_metrics(
     tn_rate = safe_ratio(true_negative, total_count)
     fn_rate = safe_ratio(false_negative, total_count)
     misclass_rate = fp_rate + fn_rate
-    lr_pos = safe_ratio_inf(sensitivity, 1 - specificity)
-    lr_neg = safe_ratio_inf(1 - sensitivity, specificity)
+    false_positive_rate = safe_ratio(false_positive, negative_total)
+    false_negative_rate = safe_ratio(false_negative, prevalence)
+    lr_pos = safe_ratio_inf(sensitivity, false_positive_rate)
+    lr_neg = safe_ratio_inf(false_negative_rate, specificity)
     return {
         "prevalence": float(prevalence / total_count),
         "sensitivity": float(sensitivity),

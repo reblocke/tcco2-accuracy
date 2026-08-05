@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
+from scipy import stats
 
+from tcco2_accuracy.core.two_stage import _two_stage_log_probabilities
 from tcco2_accuracy.two_stage import TwoStagePolicy, two_stage_metrics, two_stage_zone_probabilities
 
 
@@ -27,3 +30,94 @@ def test_two_stage_post_test_probabilities_in_bounds() -> None:
         value = metrics[key]
         if np.isfinite(value):
             assert 0 <= value <= 1
+
+
+def test_two_stage_probabilities_preserve_extreme_upper_tail_and_interval() -> None:
+    policy = TwoStagePolicy(lower=28.0, upper=32.0, true_threshold=25.0)
+
+    zone1, zone2, zone3 = two_stage_zone_probabilities(
+        np.array([20.0]),
+        delta=0.0,
+        sd_total=1.0,
+        policy=policy,
+    )
+
+    assert zone1[0] == pytest.approx(stats.norm.cdf(8.0), rel=1e-14)
+    assert zone2[0] == pytest.approx(stats.norm.sf(8.0) - stats.norm.sf(12.0), rel=1e-14, abs=0.0)
+    assert zone3[0] == pytest.approx(1.776482112077654e-33, rel=1e-14, abs=0.0)
+    assert zone1[0] + zone2[0] + zone3[0] == pytest.approx(1.0, abs=1e-15)
+
+
+def test_two_stage_narrow_ordered_zone_retains_positive_probability() -> None:
+    policy = TwoStagePolicy(lower=0.0, upper=1e-16, true_threshold=1.0)
+
+    _, zone2, _ = two_stage_zone_probabilities(
+        np.array([0.0]),
+        delta=0.0,
+        sd_total=1.0,
+        policy=policy,
+    )
+
+    assert zone2[0] > 0.0
+    assert zone2[0] == pytest.approx(stats.norm.pdf(0.0) * 1e-16, rel=1e-14, abs=0.0)
+
+
+@pytest.mark.parametrize("lower_z", [1.0, -12.0])
+def test_two_stage_adjacent_float_zone_uses_direct_interval_mass(lower_z: float) -> None:
+    upper_z = np.nextafter(lower_z, np.inf)
+    policy = TwoStagePolicy(lower=lower_z, upper=upper_z, true_threshold=1.0)
+
+    _, zone2, _ = two_stage_zone_probabilities(
+        np.array([10.0]),
+        delta=10.0,
+        sd_total=1.0,
+        policy=policy,
+    )
+
+    expected = stats.norm.pdf(lower_z) * (upper_z - lower_z)
+    assert zone2[0] > 0.0
+    assert zone2[0] == pytest.approx(expected, rel=5e-14, abs=0.0)
+
+
+def test_two_stage_far_tail_with_substantial_log_difference_avoids_quadrature() -> None:
+    lower_z = np.array([100_000.0])
+    upper_z = lower_z + 0.0006705523
+    log_larger = stats.norm.logsf(lower_z)
+    log_smaller = stats.norm.logsf(upper_z)
+    expected = log_larger + np.log(-np.expm1(log_smaller - log_larger))
+
+    _, actual, _ = _two_stage_log_probabilities(lower_z, upper_z)
+
+    assert log_larger[0] - log_smaller[0] > 1.0
+    assert actual[0] == pytest.approx(expected[0], abs=1e-8)
+
+
+def test_two_stage_extreme_tail_lr_is_not_subtraction_infinity() -> None:
+    policy = TwoStagePolicy(lower=40.0, upper=45.0, true_threshold=45.0)
+
+    metrics = two_stage_metrics(
+        np.array([33.0, 57.0]),
+        delta=0.0,
+        sd_total=1.0,
+        policy=policy,
+    )
+
+    expected_zone3_lr = stats.norm.sf(-12.0) / stats.norm.sf(12.0)
+    assert np.isfinite(metrics["zone3_lr"])
+    assert metrics["zone3_lr"] == pytest.approx(expected_zone3_lr, rel=1e-13)
+
+
+def test_two_stage_lr_uses_log_tails_beyond_probability_underflow() -> None:
+    policy = TwoStagePolicy(lower=42.0, upper=45.0, true_threshold=45.0)
+
+    metrics = two_stage_metrics(
+        np.array([44.0, 45.0]),
+        delta=40.0,
+        sd_total=1.0,
+        policy=policy,
+    )
+
+    expected_log_lr = stats.norm.logsf(40.0) - stats.norm.logsf(41.0)
+    assert metrics["zone3_prob"] == 0.0
+    assert np.isfinite(metrics["zone3_lr"])
+    assert metrics["zone3_lr"] == pytest.approx(np.exp(expected_log_lr), rel=1e-13)
