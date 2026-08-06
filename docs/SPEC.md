@@ -115,13 +115,15 @@
 
 ## Data-release boundary
 
-- `docs/data_release_contract.json` defines current-tree and Pages allowlists, prohibited paths and
-  schemas, canonical agreement-artifact hashes, and retained frozen aggregate outputs.
+- `docs/data_release_contract.json` defines current-tree, Pages, and public-history allowlists,
+  prohibited paths and schemas, canonical agreement-artifact hashes, and retained frozen aggregate
+  outputs.
 - `docs/restricted_data_provenance.template.json` is required before restricted-data use or release
   review. Unknown authority, provenance, permission, and retention fields remain
   `HUMAN REVIEW REQUIRED`.
 - Retained PaCO2-dependent aggregates remain frozen historical comparators and are not
   release-approved. No downstream regeneration, promotion, or unfreezing occurs without the locked
   analysis specification and independent review.
-- Current-tree remediation does not rewrite history; prior commits, tags, clones, caches, and
-  historical deployments may still contain removed material.
+- Public branch and tag history is rewritten and continuously checked against
+  `docs/data_release_contract.json`. Independently retained clones, caches, and historical
+  deployments outside repository-controlled refs may still contain removed material.

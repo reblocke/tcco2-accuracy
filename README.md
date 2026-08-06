@@ -171,10 +171,11 @@ local-only or source-linked materials and are not part of the public branch tip.
   and [data_dictionary.csv](data_dictionary.csv).
 
 If future analyses require restricted data, do not commit raw files. Provide
-synthetic examples and access instructions instead. This remediation does not rewrite Git history:
-prior commits, tags, clones, caches, and historical deployments remain possible disclosure surfaces
-pending institutional review. Retained rounded/aggregate downstream artifacts are listed in
-`artifacts/STATUS.md`; they remain frozen and are not release-approved.
+synthetic examples and access instructions instead. Public branch and tag history is continuously
+checked against the release contract. Independently retained clones, caches, and historical
+deployments outside repository-controlled refs are not asserted removed. Retained
+rounded/aggregate downstream artifacts are listed in `artifacts/STATUS.md`; they remain frozen and
+are not release-approved.
 
 ## Quality Checks
 

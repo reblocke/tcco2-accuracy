@@ -7,6 +7,6 @@
 - Large or patient-level outputs do not belong here.
 - Do not track exact-count or reconstructable restricted-derived PaCO2 outputs. Restricted rebuilds
   belong under `.pytest_tmp/`, `.tmp/`, or an explicitly approved external private workspace.
-- `artifacts/STATUS.md` and `docs/data_release_contract.json` define the only current-tree
-  allowlists. Retained rounded/aggregate downstream files are frozen historical comparators, not
+- `artifacts/STATUS.md` and `docs/data_release_contract.json` define the public-release allowlists.
+  Retained rounded/aggregate downstream files are frozen historical comparators, not
   release-approved outputs.

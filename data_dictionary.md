@@ -143,6 +143,6 @@ permission, and retention items remain `HUMAN REVIEW REQUIRED`.
   decision-making.
 - Corrected browser outputs remain provisional pending independent biostatistical
   review; frozen downstream artifacts must not be described as corrected.
-- This is current-tree remediation only. Prior commits, tags, clones, caches, and historical Pages
-  deployments may retain earlier disclosures; history rewriting requires a separate institutional
-  decision.
+- Public branch and tag history is rewritten and checked against the release contract. Independently
+  retained clones, caches, and historical Pages deployments outside repository-controlled refs may
+  retain earlier material.

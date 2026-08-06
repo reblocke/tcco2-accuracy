@@ -43,7 +43,7 @@ Current tracked public/reference data:
 - Data/conway_studies.csv is the operational canonical promotion and browser-staging source; Data/conway_studies.xlsx is its human-editable review mirror. They must remain semantically equal.
 - Output resolving to artifacts/ accepts only the locked source and settings in artifacts/STATUS.md. Custom study tables or bootstrap settings must use scratch output such as .pytest_tmp/public-agreement-candidate.
 - The corrected-provisional public agreement artifacts and frozen legacy downstream artifacts are enumerated in artifacts/STATUS.md.
-- docs/data_release_contract.json is the machine-readable current-tree and Pages release contract.
+- docs/data_release_contract.json is the machine-readable current-tree, Pages, and public-history release contract.
 - See data_dictionary.md, data_dictionary.csv, docs/DATA_GOVERNANCE.md, and Data/PROVENANCE.md.
 
 Restricted or local-only data:
@@ -54,7 +54,7 @@ Restricted or local-only data:
 - Internal drafts, editable poster decks, third-party article PDFs, RData source archives, local Stata .dta files, generated web assets, caches, and visual QA screenshots should not be committed.
 
 Governance scope:
-- This is current-tree remediation only. Git history was not rewritten; prior commits, tags, clones, caches, and historical deployments remain possible disclosure surfaces pending institutional review.
+- Public branch and tag history is rewritten and checked against the release contract. Independently retained clones, caches, and historical deployments outside repository-controlled refs may remain.
 - Retained rounded/aggregate downstream files are frozen historical comparators, not corrected, release-approved, or submission-ready outputs.
 - Do not regenerate, promote, or unfreeze PaCO2-dependent outputs until the analysis specification, restricted-data authority, and independent review gates are complete.
 

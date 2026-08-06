@@ -29,6 +29,7 @@ Include:
 - Treat exact-count and reconstructable restricted-derived distributions as sensitive even when
   direct identifiers and count columns are absent.
 - If you discover sensitive data has been committed, report it immediately via the private paths above.
-- The current public-tree contract is `docs/data_release_contract.json`. It does not erase copies in
-  prior commits, tags, clones, caches, or historical deployments; report any concern about those
-  surfaces privately rather than opening a public issue.
+- The public release contract is `docs/data_release_contract.json`. It checks the current tree,
+  Pages assets, and repository-controlled public branch/tag history. Independently retained clones,
+  caches, and historical deployments remain outside repository control; report any concern about
+  those surfaces privately rather than opening a public issue.

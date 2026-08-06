@@ -19,6 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -30,6 +32,12 @@ jobs:
 
       - name: Install dependencies
         run: uv sync --locked
+
+      - name: Fetch public branch and tag refs
+        run: git fetch --force --prune --tags origin '+refs/heads/*:refs/remotes/origin/*'
+
+      - name: Verify public history
+        run: uv run python scripts/check_public_history.py
 
       - name: Stage web assets
         run: make stage-web

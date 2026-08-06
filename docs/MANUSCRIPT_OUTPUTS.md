@@ -48,9 +48,9 @@ Also retained and frozen are `artifacts/simulation_summary.md` and
 - PaCO2 distribution, conditional-classification, misclassification-figure, and inference-demo
   outputs.
 
-These files may be generated only in approved private output locations. Their removal is current-tree
-remediation; prior commits, tags, clones, caches, and historical deployments remain possible
-disclosure surfaces. See `docs/data_release_contract.json`.
+These files may be generated only in approved private output locations. Public branch and tag
+history is checked against `docs/data_release_contract.json`; independently retained clones,
+caches, and historical deployments outside repository-controlled refs may remain.
 
 ## Interval definitions
 - Parameter summaries (δ/σ²/τ²/LoA): 95% uncertainty interval (bootstrap percentile).

@@ -1,10 +1,31 @@
 {
-  "contract_version": "1.0.0",
+  "contract_version": "1.1.0",
   "scope": {
-    "applies_to": "current tracked tree and deployed Pages assets",
-    "history_rewritten": false,
-    "history_note": "Prior commits, tags, clones, caches, and historical deployments remain a disclosure surface pending institutional review.",
+    "applies_to": "current tracked tree, deployed Pages assets, and public branch/tag history",
+    "history_rewritten": true,
+    "history_note": "Public branch and tag refs are rewritten and checked against this contract. Independently retained clones, caches, and historical deployments outside repository-controlled refs are not asserted removed.",
     "allowlist_precedence": "Only exact paths with matching hashes in the canonical or retained-frozen maps may override a broad prohibited path glob."
+  },
+  "history": {
+    "public_ref_prefixes": [
+      "refs/heads/",
+      "refs/remotes/origin/",
+      "refs/tags/"
+    ],
+    "prohibited_path_globs": [
+      "Data/paco2_public_prior.*",
+      "Data/paco2_prior_bins.*",
+      "web/assets/data/paco2_prior_bins.*",
+      "*/paco2_distribution_summary.*",
+      "*/conditional_classification_t*.*",
+      "*/figure_misclassification_vs_paco2.*",
+      "*/figure_paco2_distribution_bins.*",
+      "*/inference_demo.*",
+      "*/manuscript_table1.*",
+      "*/manuscript_confusion_matrix.*",
+      "*/manuscript_table2_two_stage.*",
+      "*/two_stage_summary.*"
+    ]
   },
   "private_output_roots": [
     ".pytest_tmp/",

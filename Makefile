@@ -2,10 +2,13 @@ UV ?= uv
 PYTHON ?= $(UV) run python
 RUFF_TARGETS := src tests scripts
 
-.PHONY: uv-sync stage-web fmt fmt-check lint test e2e visual-qa serve verify
+.PHONY: uv-sync history-contract stage-web fmt fmt-check lint test e2e visual-qa serve verify
 
 uv-sync:
 	$(UV) sync --locked
+
+history-contract:
+	$(PYTHON) scripts/check_public_history.py
 
 stage-web:
 	$(PYTHON) scripts/stage_web_python.py
@@ -31,4 +34,4 @@ visual-qa:
 serve: stage-web
 	cd web && python3 -m http.server 8000
 
-verify: stage-web fmt-check lint test e2e
+verify: history-contract stage-web fmt-check lint test e2e

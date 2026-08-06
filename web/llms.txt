@@ -53,9 +53,9 @@ Default behavior:
 - Uploaded prior data stay in the browser; the app has no backend, telemetry, persistence, or patient-value URLs.
 
 Governance:
-- docs/data_release_contract.json in the repository defines the current-tree and Pages asset contract.
+- docs/data_release_contract.json in the repository defines the current-tree, Pages, and public-history asset contract.
 - PaCO2-dependent manuscript and downstream files remain frozen and are not release-approved.
-- Current-tree remediation did not rewrite prior commits or tags; historical repositories, clones, caches, and deployments may remain disclosure surfaces.
+- Public branch and tag history is rewritten and checked against the release contract; independently retained clones, caches, and historical deployments outside repository-controlled refs may remain.
 
 Citations:
 - CHEST 2025 abstract DOI: https://doi.org/10.1016/j.chest.2025.07.3877

@@ -32,5 +32,6 @@ Throughout these priorities, keep the browser contract aligned with the Python n
 truth, keep user inputs client-side, and update validation artifacts only for intentional scientific
 changes.
 
-Current-tree exact-count remediation does not rewrite prior commits, tags, clones, caches, or
-historical deployments. Institutional disposition of those surfaces remains a separate gate.
+Public branch and tag history is continuously checked against the release contract. Independently
+retained clones, caches, and historical deployments outside repository-controlled refs remain
+outside this repository verification boundary.

@@ -3,9 +3,11 @@ from __future__ import annotations
 import csv
 import fnmatch
 import hashlib
+import importlib.util
 import json
 import re
 import subprocess
+import sys
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -16,9 +18,21 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 CONTRACT_PATH = ROOT / "docs" / "data_release_contract.json"
 PROVENANCE_TEMPLATE_PATH = ROOT / "docs" / "restricted_data_provenance.template.json"
+HISTORY_CHECK_PATH = ROOT / "scripts" / "check_public_history.py"
 CONWAY_CSV = ROOT / "Data" / "conway_studies.csv"
 CONWAY_XLSX = ROOT / "Data" / "conway_studies.xlsx"
 HUMAN_REVIEW_REQUIRED = "HUMAN REVIEW REQUIRED"
+
+
+_HISTORY_CHECK_SPEC = importlib.util.spec_from_file_location(
+    "check_public_history",
+    HISTORY_CHECK_PATH,
+)
+assert _HISTORY_CHECK_SPEC is not None
+assert _HISTORY_CHECK_SPEC.loader is not None
+_HISTORY_CHECK_MODULE = importlib.util.module_from_spec(_HISTORY_CHECK_SPEC)
+sys.modules[_HISTORY_CHECK_SPEC.name] = _HISTORY_CHECK_MODULE
+_HISTORY_CHECK_SPEC.loader.exec_module(_HISTORY_CHECK_MODULE)
 
 
 def _contract() -> dict[str, Any]:
@@ -31,12 +45,18 @@ def _tracked_existing_files() -> list[str]:
     ]
 
 
-def test_release_contract_is_current_tree_only_and_explicit_about_history() -> None:
+def test_release_contract_covers_public_history_and_external_limitations() -> None:
     contract = _contract()
 
-    assert contract["contract_version"] == "1.0.0"
-    assert contract["scope"]["history_rewritten"] is False
-    assert "Prior commits" in contract["scope"]["history_note"]
+    assert contract["contract_version"] == "1.1.0"
+    assert contract["scope"]["history_rewritten"] is True
+    assert "Public branch and tag refs" in contract["scope"]["history_note"]
+    assert contract["history"]["public_ref_prefixes"] == [
+        "refs/heads/",
+        "refs/remotes/origin/",
+        "refs/tags/",
+    ]
+    assert "Data/paco2_public_prior.*" in contract["history"]["prohibited_path_globs"]
     assert contract["private_output_roots"] == [
         ".pytest_tmp/",
         ".tmp/",
@@ -206,6 +226,76 @@ def test_prohibited_exact_count_text_schemas_are_absent() -> None:
     assert violations == []
 
 
+def test_public_branch_and_tag_history_satisfies_release_contract() -> None:
+    result = subprocess.run(
+        [sys.executable, str(HISTORY_CHECK_PATH), "--repo", str(ROOT)],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+
+
+def test_public_history_scans_deleted_ancestor_and_tag_only_blobs(tmp_path: Path) -> None:
+    repo = tmp_path / "history-repo"
+    repo.mkdir()
+    _git_in_repo(repo, "init", "-q", "--initial-branch", "main")
+    _git_in_repo(repo, "config", "user.email", "test@example.invalid")
+    _git_in_repo(repo, "config", "user.name", "Release Contract Test")
+
+    safe = repo / "README.md"
+    safe.write_text("safe\n")
+    _git_in_repo(repo, "add", "README.md")
+    _git_in_repo(repo, "commit", "-qm", "Initial safe commit")
+
+    restricted = repo / "Data" / "paco2_public_prior.csv"
+    restricted.parent.mkdir()
+    restricted.write_text("paco2_bin,weight\n40,1\n")
+    _git_in_repo(repo, "add", "Data/paco2_public_prior.csv")
+    _git_in_repo(repo, "commit", "-qm", "Add historical restricted fixture")
+    _git_in_repo(repo, "tag", "ancestor-with-restricted-blob")
+    restricted.unlink()
+    _git_in_repo(repo, "add", "-u")
+    _git_in_repo(repo, "commit", "-qm", "Delete historical restricted fixture")
+
+    _git_in_repo(repo, "switch", "-qc", "tag-only")
+    tag_only = repo / "artifacts" / "inference_demo.md"
+    tag_only.parent.mkdir()
+    tag_only.write_text("Subgroup priors: all (n=12)\n")
+    _git_in_repo(repo, "add", "artifacts/inference_demo.md")
+    _git_in_repo(repo, "commit", "-qm", "Add tag-only restricted output")
+    _git_in_repo(repo, "tag", "tag-only-restricted-output")
+    _git_in_repo(repo, "switch", "-q", "main")
+    _git_in_repo(repo, "branch", "-D", "tag-only")
+
+    violations = _HISTORY_CHECK_MODULE.public_history_violations(repo, _contract())
+
+    paths = {violation.relative_path for violation in violations}
+    assert "Data/paco2_public_prior.csv" in paths
+    assert "artifacts/inference_demo.md" in paths
+
+
+def test_history_hash_allowlist_is_exact_path_and_content() -> None:
+    contract = _contract()
+    safe_path = "artifacts/manuscript_confusion_matrix.md"
+    safe_content = (ROOT / safe_path).read_bytes()
+
+    assert not any(
+        rule.startswith("historical_path:")
+        for rule in _HISTORY_CHECK_MODULE._blob_rule_ids(safe_path, safe_content, contract)
+    )
+    assert any(
+        rule.startswith("historical_path:")
+        for rule in _HISTORY_CHECK_MODULE._blob_rule_ids(
+            safe_path,
+            safe_content + b"\n",
+            contract,
+        )
+    )
+
+
 def test_canonical_agreement_artifacts_are_unchanged() -> None:
     for relative, expected_sha256 in _contract()["canonical_agreement_artifacts"].items():
         path = ROOT / relative
@@ -336,4 +426,14 @@ def _git(*args: str) -> subprocess.CompletedProcess[str]:
         text=True,
         capture_output=True,
         check=False,
+    )
+
+
+def _git_in_repo(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", *args],
+        cwd=repo,
+        text=True,
+        capture_output=True,
+        check=True,
     )

@@ -27,5 +27,6 @@ Open http://127.0.0.1:8000 and verify the default likelihood-only calculation co
 - Pages stages only `conway_studies.csv` and `bootstrap_params.csv` as data assets. It must not
   contain or fetch `paco2_public_prior.csv`, exact prior bins, or another restricted-derived prior.
 - Prior-weighted inference requires an explicit user upload and fails closed without one.
-- `docs/data_release_contract.json` is the machine-readable current-tree and Pages allowlist.
+- `docs/data_release_contract.json` is the machine-readable current-tree, Pages, and public-history
+  release contract. Pages runs the public-history check before staging deployment assets.
 - If Pyodide CDN availability is a deployment concern, vendor Pyodide assets in a follow-up decision and update `docs/DECISIONS.md`.

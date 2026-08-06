@@ -61,7 +61,8 @@ uv run python scripts/build_paco2_prior_bins.py \
   must be an explicitly approved external private workspace.
 - Machine-readable governance authority:
   [`docs/data_release_contract.json`](../docs/data_release_contract.json). It governs the current
-  tracked tree and deployed Pages assets, not prior commits, tags, clones, caches, or historical
-  deployments. This remediation does not rewrite Git history.
+  tracked tree, deployed Pages assets, and public branch/tag history. Independently retained
+  clones, caches, and historical deployments outside repository-controlled refs are not asserted
+  removed.
 - Human-readable governance reference: see
   [`docs/DATA_GOVERNANCE.md`](../docs/DATA_GOVERNANCE.md).

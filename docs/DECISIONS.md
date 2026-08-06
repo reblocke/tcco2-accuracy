@@ -7,9 +7,6 @@
 - The distinction between 73 reported studies and 76 modeled effect rows, together with
   any estimator, clustering, or estimand changes, remains outside the TCCO2-003/004
   correction and requires separate review.
-- Institutional disposition of prior commits, tags, clones, caches, and historical deployments that
-  may retain exact-count or reconstructable restricted-derived outputs remains unresolved. The
-  current-tree remediation does not answer that historical-disclosure question.
 
 ## Workflow and monorepo stabilization
 - The repository remains a monorepo for this wave: Python package, static browser app, source/reference
@@ -33,16 +30,22 @@
   `Data/paco2_public_prior.csv` and prohibited count-bearing/reconstructable outputs. Private
   regeneration is limited to `.pytest_tmp/`, `.tmp/`, or an explicitly approved external private
   workspace.
-- 2026-08-05: `docs/data_release_contract.json` is the machine-readable current-tree and Pages
-  authority. `docs/restricted_data_provenance.template.json` is the unresolved human-review record;
-  unknown fields remain `HUMAN REVIEW REQUIRED`. Known restricted-output stems are blocked across
-  file formats, structured schema checks include BOM-safe CSV/TSV and every XLSX sheet, and retained
+- 2026-08-05: `docs/data_release_contract.json` established the machine-readable current-tree and
+  Pages authority. It was extended to public-history verification on 2026-08-06.
+  `docs/restricted_data_provenance.template.json` is the unresolved human-review record; unknown
+  fields remain `HUMAN REVIEW REQUIRED`. Known restricted-output stems are blocked across file
+  formats, structured schema checks include BOM-safe CSV/TSV and every XLSX sheet, and retained
   frozen aggregates plus the synthetic prior fixture are hash-locked against accidental
   regeneration. Legacy binary `.xls` is unsupported and prohibited from tracking.
 - 2026-08-05: Restricted PaCO2 package and workflow loaders no longer auto-discover repository-local
   extracts. Callers must supply in-memory `paco2_data` or an explicit private source path.
-- 2026-08-05: This wave does not rewrite Git history. Prior commits, tags, clones, caches, and
-  historical deployments remain possible disclosure surfaces pending institutional review.
+- 2026-08-05: This wave did not rewrite Git history. This decision is superseded by the 2026-08-06
+  public-reference remediation below.
+- 2026-08-06: Public branch and tag history was rewritten to remove prohibited restricted-derived
+  blobs. `scripts/check_public_history.py` continuously scans public refs in CI and Pages, with
+  exact path-and-hash exceptions only for approved artifacts. The baseline and archive marker names
+  are retained as sanitized tags. Independently retained clones, caches, and historical deployments
+  outside repository-controlled refs are not asserted removed.
 - Pyodide 0.29.0, Plotly.js 2.35.2, and SheetJS 0.18.5 are pinned CDN browser dependencies.
 - User-entered values and uploads remain client-side; the app has no backend, telemetry,
   persistence, or patient-value URL state.

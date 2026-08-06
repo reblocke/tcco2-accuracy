@@ -166,8 +166,8 @@
 - Retained rounded/aggregate downstream files remain frozen historical comparators, not
   release-approved outputs. No PaCO2-dependent result was regenerated, promoted, or unfrozen in
   this governance wave.
-- Current-tree remediation does not rewrite Git history. Prior commits, tags, clones, caches, and
-  historical deployments remain possible disclosure surfaces pending institutional review.
+- Public branch and tag history is rewritten and checked against the release contract. Independently
+  retained clones, caches, and historical deployments outside repository-controlled refs may remain.
 - Final tag, removal of provisional copy, manuscript unfreeze, submission-readiness claims, and final
   downstream promotion require independent biostatistical review plus resolution of the remaining
   source/reference and exact-count governance tickets.

@@ -22,8 +22,9 @@ the corrected agreement method. PaCO2-dependent manuscript, simulation, inferenc
 classification artifacts remain frozen at the legacy method until the downstream regeneration,
 governance, and independent-review gates are complete.
 
-`docs/data_release_contract.json` is the machine-readable current-tree authority. Normalized
-restricted-derived weights are governed like exact counts because they may reconstruct the source
-distribution. Browser default inference is likelihood-only; prior-weighted inference is upload-only
-and client-side. Removed current-tree files may remain in prior commits, tags, clones, caches, or
-historical deployments because this wave does not rewrite history.
+`docs/data_release_contract.json` is the machine-readable current-tree, Pages, and public-history
+authority. Normalized restricted-derived weights are governed like exact counts because they may
+reconstruct the source distribution. Browser default inference is likelihood-only; prior-weighted
+inference is upload-only and client-side. Public branch and tag history is continuously checked;
+independently retained clones, caches, and historical deployments outside repository-controlled refs
+may remain.

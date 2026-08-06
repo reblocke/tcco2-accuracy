@@ -9,9 +9,9 @@ derived from the restricted local PaCO2 distribution, or normalized restricted-d
 can reconstruct that distribution.
 
 The machine-readable authority is [`data_release_contract.json`](data_release_contract.json). It
-defines current-tree and Pages allowlists, format-independent prohibited tracked paths, structured
-and text schema rules, and SHA-256 locks for both canonical agreement artifacts and retained frozen
-aggregates. The provenance worksheet for any future
+defines current-tree and Pages allowlists, public-history scanning rules, format-independent
+prohibited tracked paths, structured and text schema rules, and SHA-256 locks for both canonical
+agreement artifacts and retained frozen aggregates. The provenance worksheet for any future
 restricted-data use is
 [`restricted_data_provenance.template.json`](restricted_data_provenance.template.json). Unknown
 ownership, IRB/protocol, waiver, DUA/authorization, extract, source-system, repeated-patient,
@@ -76,15 +76,16 @@ uv run python scripts/rebuild_artifacts.py --profile full \
   PaCO2-dependent results until the analysis specification, restricted-data authority, and
   independent biostatistical review gates are complete.
 
-## Current-tree remediation and retained history
+## Public-reference history remediation and retained outputs
 
 The current branch tip removes exact-count and reconstructable restricted-derived public-tree
-outputs. `artifacts/STATUS.md` accurately enumerates removed files and the rounded/aggregate
-downstream files retained as frozen historical comparators. Retention is not release approval: those
-files are not corrected-method results, submission-ready evidence, or suitable for clinical use.
-Their hashes are locked so accidental regeneration fails the machine contract.
+outputs. Public branch and tag history is also scanned against the same contract; non-allowlisted
+historical blobs fail CI and Pages before deployment. `artifacts/STATUS.md` accurately enumerates
+removed files and the rounded/aggregate downstream files retained as frozen historical comparators.
+Retention is not release approval: those files are not corrected-method results, submission-ready
+evidence, or suitable for clinical use. Their hashes are locked so accidental regeneration fails the
+machine contract.
 
-No Git history was rewritten in this wave. Prior commits, tags, clones, caches, package/download
-copies, and historical Pages deployments remain possible disclosure surfaces pending an
-institutional decision. The current-tree contract must not be represented as retroactive deletion
-or proof that every historical copy is safe.
+This verification covers repository-controlled public branch and tag refs. Independently retained
+clones, caches, package/download copies, and historical deployments outside those refs are not
+asserted removed.

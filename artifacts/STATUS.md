@@ -75,9 +75,9 @@ SHA-256 locked in `docs/data_release_contract.json`, so accidental regeneration 
 published/legacy comparator. `ui_overview.md` is
 descriptive documentation, not a numerical validation artifact.
 
-This is current-tree remediation only. No Git history was rewritten; prior commits, tags, clones,
-caches, and historical deployments remain possible disclosure surfaces pending institutional
-review.
+Public branch and tag history has been rewritten and is checked against
+`docs/data_release_contract.json`. Independently retained clones, caches, and historical
+deployments outside repository-controlled refs are not asserted removed.
 
 ## Promotion gates
 
@@ -86,4 +86,4 @@ review.
 - A final tag, removal of the warning, downstream artifact regeneration/promotion,
   manuscript unfreeze, and submission-readiness claims require independent
   biostatistical review, a locked analysis specification, and resolution of restricted-data
-  provenance and historical-disclosure decisions.
+  provenance decisions.
