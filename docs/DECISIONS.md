@@ -46,6 +46,12 @@
   exact path-and-hash exceptions only for approved artifacts. The baseline and archive marker names
   are retained as sanitized tags. Independently retained clones, caches, and historical deployments
   outside repository-controlled refs are not asserted removed.
+- 2026-08-07: `actions/deploy-pages@v5` is the required official Node 24-native Pages action, but
+  its current released bundle emits Node `DEP0040` by importing deprecated `punycode`
+  ([upstream issue 413](https://github.com/actions/deploy-pages/issues/413)). The deployment step
+  sets `NODE_OPTIONS=--disable-warning=DEP0040` only for that action until an official fixed release
+  is available. It intentionally does not suppress other warning codes, all deprecations, or all
+  process warnings.
 - Pyodide 0.29.0, Plotly.js 2.35.2, and SheetJS 0.18.5 are pinned CDN browser dependencies.
 - User-entered values and uploads remain client-side; the app has no backend, telemetry,
   persistence, or patient-value URL state.

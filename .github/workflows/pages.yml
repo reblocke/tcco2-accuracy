@@ -56,4 +56,8 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
+        # deploy-pages@v5 is Node 24-native but its released bundle emits DEP0040.
+        # Remove this narrow suppression after https://github.com/actions/deploy-pages/issues/413 is released.
+        env:
+          NODE_OPTIONS: --disable-warning=DEP0040
         uses: actions/deploy-pages@v5
