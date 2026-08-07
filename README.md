@@ -28,6 +28,7 @@ downstream outputs remain frozen at the legacy method revision; see
 | Static app | https://reblocke.github.io/tcco2-accuracy/ |
 | Repository | https://github.com/reblocke/tcco2-accuracy |
 | Machine-readable index | [llms.txt](llms.txt) |
+| Active validation plan | [docs/PLAN.md](docs/PLAN.md) |
 | ATS 2025 abstract | [10.1164/ajrccm.2025.211.Abstracts.A2683](https://doi.org/10.1164/ajrccm.2025.211.Abstracts.A2683) |
 | CHEST 2025 abstract | [10.1016/j.chest.2025.07.3877](https://doi.org/10.1016/j.chest.2025.07.3877) |
 | Conway evidence synthesis | [10.1136/thoraxjnl-2017-211466](https://doi.org/10.1136/thoraxjnl-2017-211466) |
@@ -187,7 +188,8 @@ are not release-approved.
 | `make visual-qa` | Write local review screenshots under `.pytest_tmp/visual-qa/` |
 | `make verify` | Run staging, format check, lint, unit tests, and E2E tests |
 
-Scientific validation targets are documented in `docs/VALIDATION.md`.
+Scientific validation targets are documented in `docs/VALIDATION.md`; current ticket states and
+their minimum completion evidence are maintained in `docs/PLAN.md`.
 
 ## Citation
 

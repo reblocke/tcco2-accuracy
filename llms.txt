@@ -14,6 +14,7 @@ Statistical status:
 - Agreement method revision `agreement_natural_log_tau2_direct_v1` corrects the inherited mixed-log and analytic tau-squared uncertainty equations.
 - Browser and agreement-parameter outputs are provisional pending independent biostatistical review.
 - PaCO2-dependent manuscript, simulation, inference, classification, and two-stage outputs remain frozen at the legacy method revision. See artifacts/STATUS.md.
+- Current validation-ticket states and minimum completion evidence are maintained in docs/PLAN.md.
 
 Citable records:
 - CHEST 2025 abstract: Simulation suggests transcutaneous CO2 sensors may accurately detect hypercapnia across settings. DOI: https://doi.org/10.1016/j.chest.2025.07.3877

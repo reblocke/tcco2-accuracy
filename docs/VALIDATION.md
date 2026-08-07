@@ -5,10 +5,18 @@
 - Statistical authority: Tipton and Shuster equations 4.4-4.5, 4.13, and 4.16
   (PMCID `PMC5585060`). The linked Conway Figshare source and Table 1 are preserved as
   published/legacy comparators, not correctness targets for the corrected equations.
-- Equation tests use an independent test-only oracle, a one-row hand calculation, coherent
-  natural/base-10 scale equivalence, direct-scale τ² uncertainty, a negative raw DL estimate with
-  a zero-truncated production-summary boundary, a single-study boundary, and unit-rescaling
-  equivariance. Production helpers are not imported into the oracle.
+- TCCO2-002 source recovery and checksum documentation are complete: `Data/PROVENANCE.md` records
+  the author-supplied Tipton-Shuster R supplement and Conway application archive with authoritative
+  links, retrieval dates, file identifiers, SHA-256 values, citations, and license/redistribution
+  dispositions. A durable private archive has not been authorized or recorded; the independent
+  reviewer must accept the linked/checksummed source or require an approved archival location.
+- TCCO2-005 equation tests use a standalone test-only oracle written from the cited equations, a
+  one-row hand calculation, coherent natural/base-10 scale equivalence, direct-scale τ²
+  uncertainty, a negative raw DL estimate with a zero-truncated production-summary boundary, a
+  single-study boundary, and unit-rescaling equivariance. Production numerical functions are not
+  imported into the oracle. Closed-form production/reference comparisons use `rtol=0` and
+  `atol=1e-12`; across the four canonical subgroups, the observed maximum absolute difference is
+  `1.78e-15`. External statistical review of this comparison remains TCCO2-007.
 - Point estimates and LoA are required to remain finite at the τ²=0 boundary. The corresponding
   confidence-interval behavior remains provisional pending independent biostatistical review.
 - The published fixture remains numerically immutable and its schema/LoA identity continue to be
@@ -159,7 +167,12 @@
   fault-injection regression also fails sequential promotion after multiple replacements and checks
   exact restoration of every preexisting artifact plus removal of newly introduced files.
 - `--profile full` requires an explicit restricted source and a scratch/private output directory.
-  It is a comparison workflow only until TCCO2-006 and the governance review are complete.
+  It is a comparison workflow only until the downstream phase of TCCO2-006, the locked analysis
+  specification, restricted-data provenance review, and independent statistical review are
+  complete. Existing guards already enforce explicit restricted input, private output, and no
+  public promotion. Release-grade execution still requires draw-aligned joint agreement/target
+  resampling, approved publication/cohort and repeated-patient clustering, a reproducibility
+  manifest, an enforced minimum of 10,000 draws, and target-scale Monte Carlo stability evidence.
 - Restricted-derived prior or exact-count regeneration is allowed only under `.pytest_tmp/`,
   `.tmp/`, or an explicitly approved external private workspace. The browser defaults to
   likelihood-only and does not stage or fetch such a prior.
@@ -168,6 +181,6 @@
   this governance wave.
 - Public branch and tag history is rewritten and checked against the release contract. Independently
   retained clones, caches, and historical deployments outside repository-controlled refs may remain.
-- Final tag, removal of provisional copy, manuscript unfreeze, submission-readiness claims, and final
-  downstream promotion require independent biostatistical review plus resolution of the remaining
-  source/reference and exact-count governance tickets.
+- Final tag, removal of provisional copy, manuscript unfreeze, submission-readiness claims, and
+  final downstream promotion require TCCO2-007 independent biostatistical review, the locked
+  analysis specification, and completed restricted-data authority and provenance review.

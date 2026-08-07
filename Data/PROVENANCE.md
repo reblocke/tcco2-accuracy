@@ -17,6 +17,20 @@
   approach.* Statistics in Medicine. 2017;36(23):3621-3635. doi:10.1002/sim.7352;
   PMCID: PMC5585060. Equations 4.4-4.5, 4.13, and 4.16 establish the natural-log
   within-study variance transform and the direct-scale between-study variance contribution.
+- Author-supplied Tipton-Shuster R supplement retrieved 2026-08-07 from the
+  [PMC article record](https://pmc.ncbi.nlm.nih.gov/articles/PMC5585060/) as
+  [`NIHMS880429-supplement-Supp_code.R`](https://pmc.ncbi.nlm.nih.gov/articles/instance/5585060/bin/NIHMS880429-supplement-Supp_code.R):
+  2,521 bytes; SHA-256
+  `b4196571366158af1f0f32d9afaf93df10d069ce4d54fbb294ea31d0b853fac9`.
+  Wiley lists the corresponding supporting item as
+  [`sim7352-sup-0001-BA_Final_R_code_SHARING.R`](https://onlinelibrary.wiley.com/action/downloadSupplement?doi=10.1002%2Fsim.7352&file=sim7352-sup-0001-BA_Final_R_code_SHARING.R).
+  No explicit open-source license was identified, so the repository links to but does not
+  redistribute the file. The supplement confirms the natural-log transform and `exp()`
+  back-transform; it is methodological provenance rather than independent validation or production
+  code. Its example has a function-name mismatch and does not apply the repository's production
+  zero-truncation policy for a negative raw DL estimate, so it is not treated as a release oracle.
+  No durable private archive or retention authority for this file is recorded; TCCO2-002 archival
+  disposition therefore remains pending independent-reviewer or institutional direction.
 - Source comparison retrieved 2026-08-03 from Figshare record version 2 (CC BY 4.0):
   - `TcCO2 meta-analysis.Rmd`, Figshare file ID `11643593`, SHA-256
     `238bccbaf92c3cdea715db6960c1d585431423782b48c376ad9281864c29f100`.

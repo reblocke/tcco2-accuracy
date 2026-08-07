@@ -52,6 +52,24 @@
   sets `NODE_OPTIONS=--disable-warning=DEP0040` only for that action until an official fixed release
   is available. It intentionally does not suppress other warning codes, all deprecations, or all
   process warnings.
+- 2026-08-07: Commit `12062da` passed the x86 CI and matching Pages gates. This completes the
+  corrected-provisional engineering wave but does not satisfy independent statistical review.
+  TCCO2-002 source recovery is complete through source-linked, checksummed records for the
+  author-supplied Tipton-Shuster R supplement and the Conway application archive in
+  `Data/PROVENANCE.md`. Its archival disposition remains pending because no licensed durable copy
+  or approved private retention location is recorded. TCCO2-005 has an executable equation-derived
+  reference comparison; TCCO2-007 external review remains pending.
+  TCCO2-006 is intentionally phased: agreement recomputation is complete and hash-locked, while
+  downstream recomputation remains blocked by the analysis specification, private provenance,
+  independent review, and explicit promotion approval. These project states stay in
+  `docs/PLAN.md`; `docs/data_release_contract.json` remains limited to enforceable release and data
+  boundaries rather than duplicating a project-management register.
+- 2026-08-07: A read-only audit of the full private workflow found that explicit restricted-input,
+  private-output, and no-public-promotion guards are already sufficient. Release-grade TCCO2-006
+  work remains limited to the scientifically necessary gaps: draw-aligned joint agreement/target
+  resampling, approved publication/cohort and repeated-patient clustering, a reproducibility
+  manifest, an enforced minimum of 10,000 draws, and target-scale Monte Carlo stability evidence.
+  These are not implemented before the downstream decision gate in `docs/SPEC.md` is approved.
 - Pyodide 0.29.0, Plotly.js 2.35.2, and SheetJS 0.18.5 are pinned CDN browser dependencies.
 - User-entered values and uploads remain client-side; the app has no backend, telemetry,
   persistence, or patient-value URL state.

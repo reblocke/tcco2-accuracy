@@ -8,6 +8,26 @@
 - This document captures intended behavior for the Python package, workflows, and app-facing inference API.
 - Public-facing summaries should describe outputs as research estimates with uncertainty, not clinical validation.
 
+## Downstream analysis decision gate
+
+The corrected agreement method is implemented, but the PaCO2-dependent phase of TCCO2-006 remains
+blocked until the study PI and independent biostatistical reviewer resolve and approve the items
+below. Existing workflow defaults and frozen artifacts are not approval evidence.
+
+| Decision | Current state | Required completion evidence |
+| --- | --- | --- |
+| Target estimand | `HUMAN REVIEW REQUIRED` | State whether the primary target is a new clinical context, a fixed observed context, or another precisely defined population. |
+| PaCO2 observation unit and repeated patients | `HUMAN REVIEW REQUIRED` | Define the sampling unit, repeated-patient handling, and resampling unit consistently with the authorized source extract. |
+| Publication/cohort dependence | `HUMAN REVIEW REQUIRED` | Reconcile 73 reported studies with 76 modeled effect rows and define stable publication/cohort clustering identifiers. |
+| Joint uncertainty model | `HUMAN REVIEW REQUIRED` | Prespecify how agreement parameters and the target PaCO2 distribution are resampled together, including one primary bootstrap mode and one justified sensitivity. |
+| Setting mappings | Implemented provisionally | Ratify or replace the Conway-to-local subgroup mapping and resolve the documented ED/inpatient Stata divergence. |
+| Supported range and proportional bias | `HUMAN REVIEW REQUIRED` | Prespecify the supported PaCO2 range, proportional-bias assessment, and any range-restricted sensitivity without inventing an unsupported validation cutoff. |
+| Final downstream outputs and reporting precision | `HUMAN REVIEW REQUIRED` | Identify the diagnostic, predictive-value, likelihood-ratio, conditional, and two-stage results retained for the manuscript and their reporting precision. |
+
+Approval must be dated and recorded in `docs/DECISIONS.md`. Restricted execution additionally
+requires completion of the private provenance record derived from
+`docs/restricted_data_provenance.template.json`.
+
 ## Input validation contract
 - Conway study tables and requested subgroup analyses must be non-empty. Study identifiers are
   stripped of leading/trailing whitespace and must then be non-empty and unique.

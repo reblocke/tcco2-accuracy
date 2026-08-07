@@ -13,6 +13,7 @@ from tcco2_accuracy.conway_meta import (
 )
 from tcco2_accuracy.core.conway_meta import _loa_variance_components
 from tcco2_accuracy.data import load_conway_group
+from tests.reference.conway_reference import corrected_reference
 
 CORRECTED_TARGETS = {
     "main": (
@@ -46,87 +47,18 @@ CORRECTED_TARGETS = {
 }
 
 
-def _reference_random_effects(
-    effect: np.ndarray,
-    variance: np.ndarray,
-    *,
-    truncate_tau2: bool = False,
-) -> tuple[float, float, float, float]:
-    """Independent test implementation of the random-effects calculations."""
-
-    weights_fixed = 1 / variance
-    sum_weights_fixed = np.sum(weights_fixed)
-    mean_fixed = np.sum(effect * weights_fixed) / sum_weights_fixed
-    q_stat = np.sum(weights_fixed * (effect - mean_fixed) ** 2)
-    dl_denominator = sum_weights_fixed - np.sum(weights_fixed**2) / sum_weights_fixed
-    tau2 = (q_stat - (effect.size - 1)) / dl_denominator
-    if truncate_tau2:
-        tau2 = max(0.0, tau2)
-
-    weights_random = 1 / (variance + tau2)
-    sum_weights_random = np.sum(weights_random)
-    mean_random = np.sum(effect * weights_random) / sum_weights_random
-    var_model = 1 / sum_weights_random
-    var_robust = (
-        (effect.size / (effect.size - 1))
-        * np.sum(weights_random**2 * (effect - mean_random) ** 2)
-        / sum_weights_random**2
-    )
-    return float(mean_random), float(tau2), float(var_model), float(var_robust)
-
-
-def _corrected_reference(data: pd.DataFrame) -> dict[str, float]:
-    """Evaluate Tipton-Shuster Eqs. 4.5, 4.13, and 4.16 without production helpers."""
-
-    n_pairs = data["n"].to_numpy(dtype=float)
-    n_participants = data["n_2"].to_numpy(dtype=float)
-    repeated = data["c"].fillna(data["n"] / data["n_2"]).to_numpy(dtype=float)
-    s2_adjusted = data["s2"].to_numpy(dtype=float) * (1 + (repeated - 1) / (n_pairs - repeated))
-    v_bias = s2_adjusted / n_participants
-    log_sigma2 = np.log(s2_adjusted) + 1 / (n_participants - 1)
-    var_log_sigma2 = 2 / (n_participants - 1)
-
-    bias, tau2, var_bias, var_bias_robust = _reference_random_effects(
-        data["bias"].to_numpy(dtype=float),
-        v_bias,
-    )
-    pooled_log_sigma2, _, var_log_sigma2_pool, var_log_sigma2_robust = _reference_random_effects(
-        log_sigma2, var_log_sigma2
-    )
-    sigma2 = float(np.exp(pooled_log_sigma2))
-    total_variance = sigma2 + tau2
-    var_tau2 = 2 / np.sum((v_bias + tau2) ** -2)
-    b_sigma2 = sigma2**2 / total_variance
-    b_tau2 = 1 / total_variance
-    var_loa_robust = var_bias_robust + b_sigma2 * var_log_sigma2_robust + b_tau2 * var_tau2
-    loa_half_width = 2 * np.sqrt(total_variance)
-    tcrit = stats.t.ppf(0.975, data.shape[0] - 1)
-    ci_half_width = tcrit * np.sqrt(var_loa_robust)
-    return {
-        "bias": bias,
-        "sd": float(np.sqrt(sigma2)),
-        "tau2": tau2,
-        "loa_l": bias - loa_half_width,
-        "loa_u": bias + loa_half_width,
-        "ci_l": bias - loa_half_width - ci_half_width,
-        "ci_u": bias + loa_half_width + ci_half_width,
-        "var_model": var_bias,
-        "var_log_sigma2_model": var_log_sigma2_pool,
-    }
-
-
 @pytest.mark.parametrize("group", CORRECTED_TARGETS)
 def test_corrected_public_groups_match_independent_reference(group: str) -> None:
     data = load_conway_group(group)
     summary = conway_group_summary(data)
-    reference = _corrected_reference(data)
+    reference = corrected_reference(data)
 
     for field in ("bias", "sd", "tau2", "loa_l", "loa_u", "ci_l", "ci_u"):
-        assert getattr(summary, field) == pytest.approx(reference[field], abs=1e-10)
+        assert getattr(summary, field) == pytest.approx(reference[field], rel=0, abs=1e-12)
 
     expected = CORRECTED_TARGETS[group]
     actual = (summary.bias, summary.sd, summary.tau2, summary.ci_l, summary.ci_u)
-    assert actual == pytest.approx(expected, abs=1e-10)
+    assert actual == pytest.approx(expected, rel=0, abs=1e-12)
 
 
 def test_bolliger_row_uses_natural_log_hand_calculation() -> None:
