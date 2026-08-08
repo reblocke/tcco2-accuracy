@@ -8,8 +8,8 @@
 - TCCO2-002 source recovery and checksum documentation are complete: `Data/PROVENANCE.md` records
   the author-supplied Tipton-Shuster R supplement and Conway application archive with authoritative
   links, retrieval dates, file identifiers, SHA-256 values, citations, and license/redistribution
-  dispositions. A durable private archive has not been authorized or recorded; the independent
-  reviewer must accept the linked/checksummed source or require an approved archival location.
+  dispositions. Its deliberate link-and-checksum-only non-retention policy creates no repository,
+  private, or retained local copy.
 - TCCO2-005 equation tests use a standalone test-only oracle written from the cited equations, a
   one-row hand calculation, coherent natural/base-10 scale equivalence, direct-scale τ²
   uncertainty, a negative raw DL estimate with a zero-truncated production-summary boundary, a
@@ -80,6 +80,34 @@
   synthetic prior fixture.
 - Status: the former distribution summary and reconstructable prior were removed from the current
   tree under `docs/data_release_contract.json`. Private future rebuilds remain frozen and gated.
+
+### In-memory draw-aligned downstream workflow
+- Purpose: prepare aggregate-only downstream summaries from caller-supplied in-memory data without
+  reading paths, writing files, changing the browser, or promoting artifacts.
+- Invariants: the primary policy selects one earliest provided PaCO2 value per patient within each
+  setting and one earliest overall record for pooled All. Missing, blank, mixed-type, tied, duplicate,
+  or inconsistent patient/encounter/order fields fail closed. Ordinary patient-cluster bootstrap
+  proposals may be redrawn only when a truth class is absent, with at most 100 attempts and at most a
+  1% rejected-proposal fraction per setting. Zero or overflowing total variance and non-estimable
+  metrics fail closed.
+- Privacy boundary: raw replicate values remain private to the workflow process. The public result
+  has only 2.5/50/97.5 summaries, aggregate stability diagnostics, and a manifest without patient
+  identifiers, encounter identifiers, order values, target values, bins, weights, or counts.
+- Monte Carlo gate: exactly one predetermined independent repeat is retained. Every combined
+  batch-quantile MCSE must be no greater than one tenth of reporting precision; two-MCSE agreement is
+  descriptive. Same-sized seed retries are not permitted.
+- Coverage: `tests/core/test_downstream.py`, `tests/core/test_bootstrap.py`, and
+  `tests/workflows/test_downstream_workflow.py` use synthetic inputs for deterministic and hand-
+  calculated summaries, ordinary prevalence resampling, redraw limits, setting-specific indexing,
+  publication clustering, input validation, exact output schemas, parameter routing, aggregate-only
+  output, manifest serialization, development-contract labeling, and stability pass/failure behavior.
+- Synthetic scale check (2026-08-07): 600 synthetic patients, the canonical public Conway table,
+  10,000 primary draws, and one independent repeat completed in 524.4 seconds with approximately
+  183 MiB maximum resident memory and no degenerate target redraws. This passes the predefined
+  30-minute/2-GB performance threshold, so no optimization was added. Only 172 of 756 result
+  components met the combined-MCSE precision threshold. The diagnostic run set
+  `require_stability=False` only so those aggregate diagnostics could be inspected; the normal hard-
+  gated workflow would raise and require more draws. The MCSE tolerance was not widened.
 
 ### Forward simulation
 - Purpose: propagate bootstrap parameters through TcCO2 accuracy metrics.
@@ -167,12 +195,12 @@
   fault-injection regression also fails sequential promotion after multiple replacements and checks
   exact restoration of every preexisting artifact plus removal of newly introduced files.
 - `--profile full` requires an explicit restricted source and a scratch/private output directory.
-  It is a comparison workflow only until the downstream phase of TCCO2-006, the locked analysis
-  specification, restricted-data provenance review, and independent statistical review are
-  complete. Existing guards already enforce explicit restricted input, private output, and no
-  public promotion. Release-grade execution still requires draw-aligned joint agreement/target
-  resampling, approved publication/cohort and repeated-patient clustering, a reproducibility
-  manifest, an enforced minimum of 10,000 draws, and target-scale Monte Carlo stability evidence.
+  It remains a legacy comparison workflow. The separate in-memory TCCO2-006 workflow implements
+  the specified setting-specific/pool index rules, publication-cluster bootstrap, ordinary patient-
+  cluster resampling, draw-aligned joint uncertainty, aggregate-only run manifest, 10,000-draw
+  minimum, and target-scale Monte Carlo stability checks.
+  It accepts in-memory data only, writes nothing, and does not alter this legacy profile or public
+  artifacts.
 - Restricted-derived prior or exact-count regeneration is allowed only under `.pytest_tmp/`,
   `.tmp/`, or an explicitly approved external private workspace. The browser defaults to
   likelihood-only and does not stage or fetch such a prior.

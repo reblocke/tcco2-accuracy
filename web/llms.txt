@@ -46,6 +46,8 @@ Default assets:
 - Repository canonical promotion guards that bootstrap artifact against noncanonical study inputs,
   seeds, draw counts, or modes; custom rebuilds cannot replace deployed parameters.
 - web/assets/py/ is staged from src/tcco2_accuracy by make stage-web.
+- The in-memory draw-aligned downstream workflow is intentionally absent from the Pages Python
+  staging allowlist and is not callable from this app.
 
 Default behavior:
 - Inference mode is likelihood-only.

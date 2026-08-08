@@ -24,6 +24,7 @@ def test_stage_web_python_copies_package_and_assets(tmp_path: Path) -> None:
     assert "tcco2_accuracy/browser_contract.py" in manifest["files"]
     assert "tcco2_accuracy/ui_api.py" in manifest["files"]
     assert "tcco2_accuracy/core/paco2.py" in manifest["files"]
+    assert "tcco2_accuracy/core/downstream.py" not in manifest["files"]
     assert "assets/data/bootstrap_params.csv" in manifest["data"]
     assert "assets/data/conway_studies.csv" in manifest["data"]
     assert "assets/data/paco2_public_prior.csv" not in manifest["data"]

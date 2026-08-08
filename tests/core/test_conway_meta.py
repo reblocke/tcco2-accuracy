@@ -61,6 +61,34 @@ def test_corrected_public_groups_match_independent_reference(group: str) -> None
     assert actual == pytest.approx(expected, rel=0, abs=1e-12)
 
 
+def test_main_effect_rows_have_stable_publication_clusters() -> None:
+    data = load_conway_group("main")
+
+    assert len(data) == 76
+    assert data["study_base"].nunique() == 73
+
+    multi_row_publications = {
+        study_base: tuple(group["study"])
+        for study_base, group in data.groupby("study_base", sort=True)
+        if len(group) > 1
+    }
+
+    assert multi_row_publications == {
+        "Bolliger 2007": (
+            "Bolliger 2007 (TOSCA - ICU)",
+            "Bolliger 2007 (TOSCA - operating theatre)",
+        ),
+        "Hirabayashi 2009": (
+            "Hirabayashi 2009 (non-ventilated)",
+            "Hirabayashi 2009 (ventilated)",
+        ),
+        "Kim 2014": (
+            "Kim 2014 (hypotensive)",
+            "Kim 2014 (normotensive)",
+        ),
+    }
+
+
 def test_bolliger_row_uses_natural_log_hand_calculation() -> None:
     data = load_conway_group("main")
     bolliger = data.loc[data["study"] == "Bolliger 2007 (TOSCA - ICU)"].copy()

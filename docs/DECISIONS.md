@@ -6,7 +6,8 @@
   submission-readiness claims.
 - The distinction between 73 reported studies and 76 modeled effect rows, together with
   any estimator, clustering, or estimand changes, remains outside the TCCO2-003/004
-  correction and requires separate review.
+  correction. The documented downstream implementation contract records the code design;
+  any separate review is outside this repository implementation.
 
 ## Workflow and monorepo stabilization
 - The repository remains a monorepo for this wave: Python package, static browser app, source/reference
@@ -56,20 +57,38 @@
   corrected-provisional engineering wave but does not satisfy independent statistical review.
   TCCO2-002 source recovery is complete through source-linked, checksummed records for the
   author-supplied Tipton-Shuster R supplement and the Conway application archive in
-  `Data/PROVENANCE.md`. Its archival disposition remains pending because no licensed durable copy
-  or approved private retention location is recorded. TCCO2-005 has an executable equation-derived
-  reference comparison; TCCO2-007 external review remains pending.
-  TCCO2-006 is intentionally phased: agreement recomputation is complete and hash-locked, while
-  downstream recomputation remains blocked by the analysis specification, private provenance,
-  independent review, and explicit promotion approval. These project states stay in
-  `docs/PLAN.md`; `docs/data_release_contract.json` remains limited to enforceable release and data
-  boundaries rather than duplicating a project-management register.
+  `Data/PROVENANCE.md`. Its deliberate link-and-checksum-only non-retention disposition is
+  complete. TCCO2-005 has an executable equation-derived reference comparison; TCCO2-007 external
+  review remains pending. TCCO2-006 is intentionally phased: agreement recomputation is complete
+  and hash-locked, and the new downstream code remains in-memory and aggregate-only. These project
+  states stay in `docs/PLAN.md`; `docs/data_release_contract.json` remains limited to enforceable
+  release and data boundaries rather than duplicating a project-management register.
 - 2026-08-07: A read-only audit of the full private workflow found that explicit restricted-input,
-  private-output, and no-public-promotion guards are already sufficient. Release-grade TCCO2-006
-  work remains limited to the scientifically necessary gaps: draw-aligned joint agreement/target
-  resampling, approved publication/cohort and repeated-patient clustering, a reproducibility
-  manifest, an enforced minimum of 10,000 draws, and target-scale Monte Carlo stability evidence.
-  These are not implemented before the downstream decision gate in `docs/SPEC.md` is approved.
+  private-output, and no-public-promotion guards are already sufficient. The in-memory TCCO2-006
+  code implements draw-aligned agreement/target resampling, deterministic publication clustering,
+  patient clustering, a non-sensitive manifest, an enforced minimum of 10,000 draws, and target-
+  scale Monte Carlo stability checks. The legacy full profile remains unchanged.
+- 2026-08-07: Superseding the earlier pending TCCO2-002 archival note, the repository records a
+  link-and-checksum-only disposition for the author-supplied Tipton-Shuster R supplement. The
+  repository records its authoritative URLs, 2,521-byte size, and SHA-256 but deliberately retains
+  no repository or private copy because no explicit redistribution license was identified. This
+  completes TCCO2-002 without creating an unlicensed mirror.
+- 2026-08-07: The downstream implementation contract in `docs/SPEC.md` defines the in-memory code
+  choices: caller-supplied eligible records; earliest encounter then earliest measurement selection;
+  deterministic 73-publication-cluster agreement resampling; truth-pattern-stratified patient
+  resampling; current setting mapping; all-positive-value support with a central-95% sensitivity;
+  no aggregate-data proportional-bias model; specified 45 mmHg and two-stage outputs; percentile
+  intervals; and at least 10,000 draws with bounded Monte Carlo stability repeats. This records
+  code requirements only; source-data use, publication, result promotion, manuscript status, and
+  any external review are handled outside this repository implementation.
+- 2026-08-07: Superseding only the downstream resampling and stability details in the preceding
+  decision, the source-like new-patient estimand uses ordinary patient-cluster resampling rather than
+  fixed truth-pattern strata. Setting-specific analyses select an index record within setting, pooled
+  All selects one index record overall, and truth-class-degenerate proposals are redrawn subject to a
+  100-attempt and 1%-per-setting limit. Monte Carlo precision uses one predetermined independent
+  repeat and an all-output combined-MCSE gate; two-MCSE repeat agreement is descriptive. The new API
+  requires a non-sensitive target-data revision label, rejects factorial sensitivities, returns
+  explicit bootstrap quantiles/probability names, and labels noncontract development runs.
 - Pyodide 0.29.0, Plotly.js 2.35.2, and SheetJS 0.18.5 are pinned CDN browser dependencies.
 - User-entered values and uploads remain client-side; the app has no backend, telemetry,
   persistence, or patient-value URL state.

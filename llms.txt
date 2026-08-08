@@ -30,12 +30,17 @@ make serve
 uv run python scripts/rebuild_artifacts.py --profile public-agreement --input-study-table Data/conway_studies.csv --out artifacts --seed 202401 --n-boot 1000 --bootstrap-mode cluster_plus_withinstudy
 ```
 
+In-memory downstream implementation:
+- `tcco2_accuracy.workflows.downstream.run_downstream_analysis(patient_data, conway_studies, target_data_revision=..., ...)` is the caller-managed draw-aligned downstream API. It accepts in-memory DataFrames only, requires patient/encounter/order fields plus PaCO2 subgroup data and an opaque non-sensitive target revision, uses ordinary patient-cluster resampling with bounded truth-class-degenerate redraws, and returns explicit bootstrap-quantile summaries, aggregate MCSE diagnostics, and a JSON-safe manifest. It accepts no paths or output destination.
+- It is not an artifact rebuild, promotion, release, or browser API. Raw replicate values and target identifiers/values remain private to the running process; the public result exposes no counts, weights, bins, or patient/encounter/order fields.
+
 App behavior:
 - Python is the numerical source of truth.
 - JavaScript handles UI controls, uploads, worker messaging, and plotting.
 - The app has no backend, telemetry, persistence, or patient-value URLs.
 - User-entered values and uploaded CSV/XLSX files remain in the browser.
 - Generated staged assets under web/assets/py/ and web/assets/data/ come from make stage-web and must not be edited by hand.
+- The in-memory downstream workflow is intentionally absent from the Pages Python staging allowlist and cannot be called by the browser app.
 - Default inference is likelihood-only. Prior-weighted inference requires an explicitly uploaded binned prior; no repository PaCO2 prior is staged or fetched.
 - Canonical browser parameters must contain exactly one current agreement-method revision and provisional status; stale or mixed assets fail closed.
 - Grouped parameters fail closed when a requested mapped group is missing; browser output metadata records requested_group and parameter_group_used.

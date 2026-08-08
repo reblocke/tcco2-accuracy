@@ -8,25 +8,107 @@
 - This document captures intended behavior for the Python package, workflows, and app-facing inference API.
 - Public-facing summaries should describe outputs as research estimates with uncertainty, not clinical validation.
 
-## Downstream analysis decision gate
+## In-memory downstream implementation contract
 
-The corrected agreement method is implemented, but the PaCO2-dependent phase of TCCO2-006 remains
-blocked until the study PI and independent biostatistical reviewer resolve and approve the items
-below. Existing workflow defaults and frozen artifacts are not approval evidence.
+The choices below define the in-memory PaCO2-dependent TCCO2-006 workflow. They are a code
+contract, not a claim of source-data approval, publication authorization, promotion, manuscript
+status, or external review. Those decisions are outside this repository implementation.
 
-| Decision | Current state | Required completion evidence |
+### Target population and patient-level sampling
+
+- The workflow models performance for a new patient in a source-like clinical setting.
+- The primary setting-specific target-distribution unit is one index PaCO2 measurement per patient
+  within each setting: the earliest caller-supplied eligible PaCO2 value in that patient's earliest
+  caller-supplied eligible encounter for PFT, ED/inpatient, and ICU separately. Pooled `All` selects
+  one earliest eligible record per patient across all settings. Eligibility and the observation
+  window are supplied by the caller; this code does not adjudicate either.
+- A downstream target input must contain patient identifier, encounter identifier, encounter-order,
+  and measurement-order fields. Missing or unusable fields fail closed; no encounter-row fallback
+  is permitted. Identifiers are stripped before grouping, duplicate patient/encounter/measurement-
+  order keys after numeric or UTC normalization are rejected, and tied earliest encounters or
+  measurements fail closed rather than selecting an arbitrary row.
+- The primary target bootstrap resamples patient clusters with replacement without fixing observed
+  truth-class counts. A proposal lacking either truth class is redrawn, with at most 100 attempts per
+  accepted replicate. The rejected-proposal fraction must remain at or below 1% within every setting;
+  otherwise the cohort fails as too sparse or imbalanced for the requested class-conditional metrics.
+  A one-at-a-time measurement-policy sensitivity retains all eligible values while clustering them
+  by patient.
+- Every selected setting must contain values both below and at/above the true hypercapnia threshold
+  before the bootstrap begins. A replicate with an undefined required metric fails closed.
+
+### Agreement resampling and joint uncertainty
+
+- The primary agreement resampling unit is the deterministic `study_base` derived from Conway
+  `study_id` by stripping a trailing parenthetical qualifier. The canonical public table has 76
+  effect rows and 73 publication clusters. A sampled publication contributes all of its effect rows.
+- The only multi-row publication clusters are `Bolliger 2007` (TOSCA ICU and operating theatre),
+  `Hirabayashi 2009` (non-ventilated and ventilated), and `Kim 2014` (hypotensive and normotensive).
+  This rule is a reproducibility contract, not an additional data column.
+- The one-at-a-time clustering sensitivity resamples the 76 effect rows by `study` instead.
+- Each replicate independently resamples the publication-cluster agreement data and the patient
+  target distribution, then pairs those two draws for every reported downstream quantity. This is
+  the primary draw-aligned joint bootstrap.
+
+### Settings, support, and model scope
+
+- The primary mapping is PFT to LFT, ED/inpatient to ARF, ICU to ICU, and All to `main`; ED remains
+  part of ED/inpatient. Repeating the analysis with pooled `main` parameters for every setting is a
+  one-at-a-time sensitivity.
+- Primary analyses retain every finite positive observed PaCO2 value. A one-at-a-time sensitivity
+  restricts each requested setting, including pooled All, to that setting's own empirical 2.5th
+  through 97.5th percentile range. No hard upper PaCO2 cutoff is introduced.
+- Proportional bias is not estimable from the aggregate Conway inputs. No slope or scenario model
+  will be fitted without separate evidence.
+
+### Outputs, intervals, and precision
+
+- The core 45 mmHg hypercapnia analysis reports prevalence, sensitivity, specificity, PPV, NPV,
+  LR+, LR-, and TP/FP/TN/FN and total-misclassification probability contributions. Prediction
+  output is reported at TcCO2 values 35, 40, 45, 50, and 55 mmHg; the primary prediction is
+  prior-weighted, with likelihood-only output as a comparator.
+- Secondary two-stage output uses TcCO2 zones `<40`, `40–50`, and `>50` mmHg and reports zone
+  probabilities, zone likelihood ratios, posterior hypercapnia probabilities, reflex fraction, and
+  residual misclassification probability. This API does not emit conditional curves.
+- This workflow never returns exact counts or per-1,000 projections. Report mmHg and
+  percentages to 0.1, probabilities to 0.001, and likelihood ratios to two decimals or two
+  significant digits when large.
+- Returned summary columns are `bootstrap_q025`, `bootstrap_q500`, and `bootstrap_q975`. Core
+  confusion-cell outputs are joint probabilities named `tp_probability`, `fp_probability`,
+  `tn_probability`, and `fn_probability`, not conditional rates. Prediction-limit metrics are in
+  mmHg, probabilities are on the 0-1 scale, and likelihood ratios are unitless. Bootstrap quantiles
+  around `paco2_pi_lower` or `paco2_pi_upper` quantify uncertainty in that prediction-limit endpoint;
+  they are not themselves a single marginal prediction interval.
+- Use 2.5th and 97.5th percentile bootstrap intervals. The default configuration enforces at least
+  10,000 primary draws with seed 202401 and exactly one independent repeat with seed 202402. Every
+  combined batch-quantile MCSE must be at most one tenth of reporting precision. Whether primary and
+  repeat estimates differ by no more than two combined MCSE is returned as a descriptive diagnostic,
+  not a hard gate. A failed MCSE gate requires more draws, never a search across additional seeds.
+- Reduced-draw, disabled-stability, altered threshold, two-stage boundaries, prediction grid, or
+  prescribed seed, and noncanonical-bootstrap runs remain available for controlled development and
+  synthetic tests but are marked `contract_compliant: false` with reasons in the manifest.
+- The only planned one-at-a-time sensitivities are effect-row versus publication clustering, pooled
+  versus setting-specific parameters, all-measurements-versus-index-measurement policy, and central
+  95% support restriction. The workflow rejects configurations containing more than one sensitivity
+  deviation; a factorial sensitivity design is out of scope.
+
+### Returned tables and manifest
+
+| Result | Identifying fields | Values |
 | --- | --- | --- |
-| Target estimand | `HUMAN REVIEW REQUIRED` | State whether the primary target is a new clinical context, a fixed observed context, or another precisely defined population. |
-| PaCO2 observation unit and repeated patients | `HUMAN REVIEW REQUIRED` | Define the sampling unit, repeated-patient handling, and resampling unit consistently with the authorized source extract. |
-| Publication/cohort dependence | `HUMAN REVIEW REQUIRED` | Reconcile 73 reported studies with 76 modeled effect rows and define stable publication/cohort clustering identifiers. |
-| Joint uncertainty model | `HUMAN REVIEW REQUIRED` | Prespecify how agreement parameters and the target PaCO2 distribution are resampled together, including one primary bootstrap mode and one justified sensitivity. |
-| Setting mappings | Implemented provisionally | Ratify or replace the Conway-to-local subgroup mapping and resolve the documented ED/inpatient Stata divergence. |
-| Supported range and proportional bias | `HUMAN REVIEW REQUIRED` | Prespecify the supported PaCO2 range, proportional-bias assessment, and any range-restricted sensitivity without inventing an unsupported validation cutoff. |
-| Final downstream outputs and reporting precision | `HUMAN REVIEW REQUIRED` | Identify the diagnostic, predictive-value, likelihood-ratio, conditional, and two-stage results retained for the manuscript and their reporting precision. |
+| `core` | requested group, parameter group, true threshold, metric | bootstrap 2.5th/50th/97.5th percentiles |
+| `prediction` | requested group, parameter group, true threshold, TcCO2, mode, metric | bootstrap 2.5th/50th/97.5th percentiles |
+| `two_stage` | requested group, parameter group, true threshold, lower/upper zone bounds, metric | bootstrap 2.5th/50th/97.5th percentiles |
+| `stability` | analysis component, requested/parameter groups, repeat seed, optional TcCO2/mode | primary/repeat values, MCSEs, combined MCSE, difference, precision, and pass/description flags |
 
-Approval must be dated and recorded in `docs/DECISIONS.md`. Restricted execution additionally
-requires completion of the private provenance record derived from
-`docs/restricted_data_provenance.template.json`.
+Every call requires a caller-supplied non-sensitive `target_data_revision` label. The JSON-safe
+manifest records that label, the Conway-table digest, complete configuration, actual subgroup-input
+mode, seeds, sensitivity, redraw fractions, and contract-compliance status. It contains no patient
+identifier, source path, target value, exact count, or patient-data hash and must remain paired with
+the repository commit and caller-managed private source provenance.
+
+The in-memory workflow implements this specification with synthetic validation evidence and does not
+load data from a path, write results, or alter frozen artifacts. Source-data handling, output
+retention, publication, and external review decisions are outside this code contract.
 
 ## Input validation contract
 - Conway study tables and requested subgroup analyses must be non-empty. Study identifiers are

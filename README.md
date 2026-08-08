@@ -114,6 +114,62 @@ Normalized restricted-derived weights are not automatically public-safe: they ma
 exact source distribution even without a `count` column. The static app therefore stages no PaCO2
 prior and defaults to likelihood-only inference.
 
+## In-Memory Downstream Implementation
+
+`tcco2_accuracy.workflows.downstream.run_downstream_analysis(...)` is a caller-managed Python API
+for the new draw-aligned downstream implementation. It accepts in-memory patient and Conway
+`DataFrame` inputs only, requires nonblank patient/encounter identifiers plus encounter and
+measurement ordering fields, and returns aggregate percentile summaries, aggregate Monte Carlo
+diagnostics, and a non-sensitive manifest. It accepts no paths, writes no files, is not a rebuild or
+promotion command, and is not staged to or callable from the Pages app. See
+[`docs/SPEC.md`](docs/SPEC.md) for the exact code contract.
+
+This synthetic development example exercises the public API without restricted data:
+
+```python
+import pandas as pd
+
+from tcco2_accuracy.data import load_conway_studies
+from tcco2_accuracy.workflows.downstream import (
+    DownstreamWorkflowConfig,
+    run_downstream_analysis,
+)
+
+patient_data = pd.DataFrame(
+    [
+        {
+            "patient_id": f"synthetic-{group}-{number}",
+            "encounter_id": f"synthetic-encounter-{group}-{number}",
+            "encounter_order": 1,
+            "measurement_order": 1,
+            "paco2": 40.0 if number < 14 else 50.0,
+            "subgroup": group,
+        }
+        for group in ("pft", "ed_inp", "icu")
+        for number in range(20)
+    ]
+)
+result = run_downstream_analysis(
+    patient_data,
+    load_conway_studies(),
+    target_data_revision="synthetic-readme-v1",
+    config=DownstreamWorkflowConfig(
+        n_boot=25,
+        enforce_minimum_draws=False,
+        assess_stability=False,
+        require_stability=False,
+    ),
+)
+print(result.core.head())
+print(result.manifest["contract_compliance"])
+```
+
+The example is intentionally marked noncompliant because it uses 25 draws and disables the
+independent-repeat gate. A contract run begins with the default 10,000 draws and stability settings;
+if the MCSE gate fails, increase `n_boot` rather than trying additional seeds or widening the
+tolerance. Probabilities are returned on the 0-1 scale; prediction endpoints are in mmHg; likelihood
+ratios are unitless.
+
 ## Repository Layout
 
 ```text
