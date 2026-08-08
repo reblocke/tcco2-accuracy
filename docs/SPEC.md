@@ -24,15 +24,19 @@ status, or external review. Those decisions are outside this repository implemen
   window are supplied by the caller; this code does not adjudicate either.
 - A downstream target input must contain patient identifier, encounter identifier, encounter-order,
   and measurement-order fields. Missing or unusable fields fail closed; no encounter-row fallback
-  is permitted. Identifiers are stripped before grouping, duplicate patient/encounter/measurement-
-  order keys after numeric or UTC normalization are rejected, and tied earliest encounters or
-  measurements fail closed rather than selecting an arbitrary row.
+  is permitted. Custom column-role names must be nonblank, distinct, and separate from fixed PaCO2,
+  subgroup, and raw-flag fields. Identifiers are stripped before grouping, duplicate
+  patient/encounter/measurement-order keys after precision-preserving numeric or UTC normalization
+  are rejected, and tied earliest encounters or measurements fail closed rather than selecting an
+  arbitrary row.
 - The primary target bootstrap resamples patient clusters with replacement without fixing observed
   truth-class counts. A proposal lacking either truth class is redrawn, with at most 100 attempts per
   accepted replicate. The rejected-proposal fraction must remain at or below 1% within every setting;
   otherwise the cohort fails as too sparse or imbalanced for the requested class-conditional metrics.
   A one-at-a-time measurement-policy sensitivity retains all eligible values while clustering them
-  by patient.
+  by patient. Before seeded resampling, patient clusters are ordered by normalized patient ID and
+  values within each cluster are ordered numerically; caller row order therefore cannot change a
+  seeded result, and repeated valid measurements remain repeated.
 - Every selected setting must contain values both below and at/above the true hypercapnia threshold
   before the bootstrap begins. A replicate with an undefined required metric fails closed.
 
@@ -45,6 +49,9 @@ status, or external review. Those decisions are outside this repository implemen
   `Hirabayashi 2009` (non-ventilated and ventilated), and `Kim 2014` (hypotensive and normotensive).
   This rule is a reproducibility contract, not an additional data column.
 - The one-at-a-time clustering sensitivity resamples the 76 effect rows by `study` instead.
+- Before either seeded agreement bootstrap, each prepared subgroup is ordered deterministically by
+  the selected cluster identifier and unique effect-row `study` identifier. Caller Conway-row order
+  therefore cannot change a seeded result; multi-row publications retain all effect rows.
 - Each replicate independently resamples the publication-cluster agreement data and the patient
   target distribution, then pairs those two draws for every reported downstream quantity. This is
   the primary draw-aligned joint bootstrap.
@@ -86,6 +93,7 @@ status, or external review. Those decisions are outside this repository implemen
 - Reduced-draw, disabled-stability, altered threshold, two-stage boundaries, prediction grid, or
   prescribed seed, and noncanonical-bootstrap runs remain available for controlled development and
   synthetic tests but are marked `contract_compliant: false` with reasons in the manifest.
+  Workflow control flags are strict booleans; truthy integers or strings fail closed.
 - The only planned one-at-a-time sensitivities are effect-row versus publication clustering, pooled
   versus setting-specific parameters, all-measurements-versus-index-measurement policy, and central
   95% support restriction. The workflow rejects configurations containing more than one sensitivity
@@ -100,11 +108,15 @@ status, or external review. Those decisions are outside this repository implemen
 | `two_stage` | requested group, parameter group, true threshold, lower/upper zone bounds, metric | bootstrap 2.5th/50th/97.5th percentiles |
 | `stability` | analysis component, requested/parameter groups, repeat seed, optional TcCO2/mode | primary/repeat values, MCSEs, combined MCSE, difference, precision, and pass/description flags |
 
-Every call requires a caller-supplied non-sensitive `target_data_revision` label. The JSON-safe
-manifest records that label, the Conway-table digest, complete configuration, actual subgroup-input
-mode, seeds, sensitivity, redraw fractions, and contract-compliance status. It contains no patient
-identifier, source path, target value, exact count, or patient-data hash and must remain paired with
-the repository commit and caller-managed private source provenance.
+Every call requires a caller-supplied non-sensitive `target_data_revision` opaque token. It must be
+1-64 ASCII characters, start with a letter or digit, and otherwise contain only letters, digits,
+`.`, `_`, or `-`; paths, whitespace-delimited free text, and control characters fail closed. This
+syntax reduces accidental disclosure but cannot prove that a token contains no identifier, which
+remains the caller's responsibility. The JSON-safe manifest records that token, the Conway-table
+digest, complete configuration, actual subgroup-input mode, seeds, sensitivity, redraw fractions,
+and contract-compliance status. It contains no patient identifier, source path, target value, exact
+count, or patient-data hash and must remain paired with the repository commit and caller-managed
+private source provenance.
 
 The in-memory workflow implements this specification with synthetic validation evidence and does not
 load data from a path, write results, or alter frozen artifacts. Source-data handling, output

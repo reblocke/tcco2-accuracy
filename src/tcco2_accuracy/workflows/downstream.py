@@ -8,6 +8,7 @@ authorization gate; callers supply in-memory patient and Conway study data.
 from __future__ import annotations
 
 import hashlib
+import re
 from dataclasses import dataclass
 from typing import Literal
 
@@ -32,6 +33,7 @@ from ..core.downstream import (
 from ..data import prepare_conway_meta_inputs
 
 MINIMUM_DOWNSTREAM_DRAWS = 10_000
+TARGET_DATA_REVISION_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}")
 
 
 @dataclass(frozen=True)
@@ -49,6 +51,13 @@ class DownstreamWorkflowConfig:
     require_stability: bool = True
 
     def __post_init__(self) -> None:
+        for name, value in (
+            ("enforce_minimum_draws", self.enforce_minimum_draws),
+            ("assess_stability", self.assess_stability),
+            ("require_stability", self.require_stability),
+        ):
+            if type(value) is not bool:
+                raise ValueError(f"{name} must be a boolean.")
         if isinstance(self.n_boot, bool) or not isinstance(self.n_boot, int) or self.n_boot <= 0:
             raise ValueError("n_boot must be a positive integer.")
         if self.enforce_minimum_draws and self.n_boot < MINIMUM_DOWNSTREAM_DRAWS:
@@ -116,10 +125,10 @@ def run_downstream_analysis(
     The caller must supply patient-level data with the columns described by
     ``PatientInputColumns`` plus ``paco2`` and either ``subgroup`` or the raw
     subgroup flags. ``target_data_revision`` is a caller-supplied non-sensitive
-    extract/version label. No paths are
-    accepted, no output is written, and returned tables contain aggregate
-    estimates only. The default configuration uses 10,000 publication-cluster
-    agreement draws and an independent Monte Carlo stability repeat.
+    opaque revision token. No paths are accepted, no output is written, and
+    returned tables contain aggregate estimates only. The default configuration
+    uses 10,000 publication-cluster agreement draws and an independent Monte
+    Carlo stability repeat.
     """
 
     target_data_revision = _validate_target_data_revision(target_data_revision)
@@ -196,12 +205,23 @@ def _run_independent_joint_draws(
 ) -> _JointDraws:
     agreement_seed, target_seed = _child_seeds(seed)
     cluster_column = "study_base" if config.agreement_clustering == "publication" else "study"
-    if cluster_column not in group_data[0][1].columns:
-        raise ValueError(
-            f"Conway inputs are missing requested clustering column '{cluster_column}'."
+    sort_columns = list(dict.fromkeys((cluster_column, "study")))
+    ordered_group_data: list[tuple[str, pd.DataFrame]] = []
+    for group_name, frame in group_data:
+        missing = [column for column in sort_columns if column not in frame.columns]
+        if missing:
+            raise ValueError(
+                f"Conway group '{group_name}' is missing deterministic bootstrap columns: "
+                f"{missing}."
+            )
+        ordered_group_data.append(
+            (
+                group_name,
+                frame.sort_values(sort_columns, kind="stable").reset_index(drop=True),
+            )
         )
     params = bootstrap_group_draws(
-        group_data,
+        ordered_group_data,
         n_boot=config.n_boot,
         seed=agreement_seed,
         study_id=cluster_column,
@@ -316,9 +336,14 @@ def _build_manifest(
 
 
 def _validate_target_data_revision(value: str) -> str:
-    if not isinstance(value, str) or not value.strip():
-        raise ValueError("target_data_revision must be a nonblank non-sensitive label.")
-    return value.strip()
+    revision = value.strip() if isinstance(value, str) else ""
+    if not TARGET_DATA_REVISION_PATTERN.fullmatch(revision):
+        raise ValueError(
+            "target_data_revision must be a 1-64 character opaque token that starts with "
+            "an ASCII letter or digit and otherwise uses only letters, digits, '.', '_', or '-'; "
+            "do not include paths or identifiers."
+        )
+    return revision
 
 
 def _resampling_fractions(draws: _JointDraws) -> dict[str, float]:
@@ -381,7 +406,11 @@ def _contract_compliance(config: DownstreamWorkflowConfig) -> dict[str, object]:
 
 def _conway_digest(data: pd.DataFrame) -> str:
     canonical = data.copy().reindex(sorted(data.columns), axis=1)
-    if "study_id" in canonical.columns:
-        canonical = canonical.sort_values("study_id", kind="stable")
+    identifier = next(
+        (column for column in ("study_id", "study") if column in canonical.columns),
+        None,
+    )
+    if identifier is not None:
+        canonical = canonical.sort_values(identifier, kind="stable")
     payload = canonical.to_csv(index=False, lineterminator="\n").encode("utf-8")
     return hashlib.sha256(payload).hexdigest()

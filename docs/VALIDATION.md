@@ -86,21 +86,27 @@
   reading paths, writing files, changing the browser, or promoting artifacts.
 - Invariants: the primary policy selects one earliest provided PaCO2 value per patient within each
   setting and one earliest overall record for pooled All. Missing, blank, mixed-type, tied, duplicate,
-  or inconsistent patient/encounter/order fields fail closed. Ordinary patient-cluster bootstrap
-  proposals may be redrawn only when a truth class is absent, with at most 100 attempts and at most a
-  1% rejected-proposal fraction per setting. Zero or overflowing total variance and non-estimable
-  metrics fail closed.
+  aliased-role, reserved-role, or inconsistent patient/encounter/order fields fail closed; adjacent
+  large integer order values retain exact precision. Patient clusters, within-cluster values, and
+  Conway effect rows are canonicalized before seeded resampling, with exact regression coverage for
+  input-row permutation invariance. Ordinary patient-cluster bootstrap proposals may be redrawn only
+  when a truth class is absent, with at most 100 attempts and at most a 1% rejected-proposal fraction
+  per setting. Zero or overflowing total variance and non-estimable metrics fail closed.
 - Privacy boundary: raw replicate values remain private to the workflow process. The public result
   has only 2.5/50/97.5 summaries, aggregate stability diagnostics, and a manifest without patient
-  identifiers, encounter identifiers, order values, target values, bins, weights, or counts.
+  identifiers, encounter identifiers, order values, target values, bins, weights, or counts. The
+  target revision must be a bounded opaque token; path-like, free-text, control-character, and
+  overlength inputs fail before manifest construction, while excluding identifiers remains the
+  caller's responsibility.
 - Monte Carlo gate: exactly one predetermined independent repeat is retained. Every combined
   batch-quantile MCSE must be no greater than one tenth of reporting precision; two-MCSE agreement is
   descriptive. Same-sized seed retries are not permitted.
 - Coverage: `tests/core/test_downstream.py`, `tests/core/test_bootstrap.py`, and
   `tests/workflows/test_downstream_workflow.py` use synthetic inputs for deterministic and hand-
   calculated summaries, ordinary prevalence resampling, redraw limits, setting-specific indexing,
-  publication clustering, input validation, exact output schemas, parameter routing, aggregate-only
-  output, manifest serialization, development-contract labeling, and stability pass/failure behavior.
+  publication clustering, row-permutation invariance, strict workflow controls, input validation,
+  exact output schemas, parameter routing, aggregate-only output, manifest serialization,
+  development-contract labeling, and stability pass/failure behavior.
 - Synthetic scale check (2026-08-07): 600 synthetic patients, the canonical public Conway table,
   10,000 primary draws, and one independent repeat completed in 524.4 seconds with approximately
   183 MiB maximum resident memory and no degenerate target redraws. This passes the predefined

@@ -4,6 +4,7 @@ import inspect
 import json
 
 import pandas as pd
+import pandas.testing as pdt
 import pytest
 
 from tcco2_accuracy.core.downstream import DownstreamAnalysisConfig, PatientInputColumns
@@ -113,6 +114,39 @@ def test_downstream_workflow_exposes_effect_row_sensitivity_only_when_requested(
     assert result.manifest["agreement"]["cluster_column"] == "study"
 
 
+@pytest.mark.parametrize("legacy_schema", [False, True])
+def test_seeded_agreement_resampling_is_conway_row_order_invariant(
+    legacy_schema: bool,
+) -> None:
+    conway = _synthetic_conway_studies()
+    if legacy_schema:
+        conway = conway.rename(
+            columns={
+                "study_id": "study",
+                "n_pairs": "n",
+                "n_participants": "n_2",
+            }
+        )
+    config = _development_config()
+
+    original = run_downstream_analysis(
+        _synthetic_patient_data(),
+        conway,
+        target_data_revision="synthetic-order-v1",
+        config=config,
+    )
+    reversed_rows = run_downstream_analysis(
+        _synthetic_patient_data(),
+        conway.iloc[::-1].reset_index(drop=True),
+        target_data_revision="synthetic-order-v1",
+        config=config,
+    )
+
+    for name in ("core", "prediction", "two_stage", "stability"):
+        pdt.assert_frame_equal(getattr(original, name), getattr(reversed_rows, name))
+    assert original.manifest == reversed_rows.manifest
+
+
 def test_downstream_workflow_enforces_minimum_draws_by_default() -> None:
     with pytest.raises(ValueError, match=str(MINIMUM_DOWNSTREAM_DRAWS)):
         DownstreamWorkflowConfig(n_boot=MINIMUM_DOWNSTREAM_DRAWS - 1)
@@ -179,6 +213,19 @@ def test_downstream_workflow_requires_integer_seeds(field: str, value: object) -
     kwargs = {field: value}
     with pytest.raises(ValueError, match=f"{field} must be an integer"):
         DownstreamWorkflowConfig(**kwargs)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("enforce_minimum_draws", 1),
+        ("assess_stability", "false"),
+        ("require_stability", 0),
+    ],
+)
+def test_downstream_workflow_requires_boolean_control_flags(field: str, value: object) -> None:
+    with pytest.raises(ValueError, match=f"{field} must be a boolean"):
+        DownstreamWorkflowConfig(**{field: value})  # type: ignore[arg-type]
 
 
 def test_downstream_workflow_requires_distinct_stability_seeds() -> None:
@@ -248,17 +295,39 @@ def test_contract_compliance_accepts_prespecified_configurations(
     assert _contract_compliance(config) == {"compliant": True, "reasons": []}
 
 
-@pytest.mark.parametrize("target_data_revision", ["", "   "])
+@pytest.mark.parametrize(
+    "target_data_revision",
+    [
+        "",
+        "   ",
+        "/restricted/MRN-12345.csv",
+        r"C:\restricted\source.csv",
+        "source extract version 1",
+        "synthetic-v1\npatient-id",
+        "x" * 65,
+    ],
+)
 def test_downstream_workflow_requires_target_data_revision(
     target_data_revision: str,
 ) -> None:
-    with pytest.raises(ValueError, match="target_data_revision must be a nonblank"):
+    with pytest.raises(ValueError, match="target_data_revision must be a 1-64 character opaque"):
         run_downstream_analysis(
             _synthetic_patient_data(),
             _synthetic_conway_studies(),
             target_data_revision=target_data_revision,
             config=_development_config(),
         )
+
+
+def test_downstream_workflow_strips_valid_opaque_revision_token() -> None:
+    result = run_downstream_analysis(
+        _synthetic_patient_data(),
+        _synthetic_conway_studies(),
+        target_data_revision="  synthetic-v1.2_3  ",
+        config=_development_config(),
+    )
+
+    assert result.manifest["target_data_revision"] == "synthetic-v1.2_3"
 
 
 def test_downstream_workflow_accepts_custom_columns_and_datetime_ordering() -> None:
