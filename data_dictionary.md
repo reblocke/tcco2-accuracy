@@ -67,16 +67,19 @@ PaCO2 range has been established.
 ## In-Memory Downstream Caller Fields
 
 These fields are accepted only by the caller-managed
-`tcco2_accuracy.workflows.downstream.run_downstream_analysis(...)` API. No values are written,
-returned, staged, logged, or tracked by the repository; returned result tables are aggregate-only.
+`tcco2_accuracy.workflows.downstream.run_downstream_analysis(...)` API. The API writes, stages, logs,
+and tracks nothing; patient, encounter, order, and PaCO2 cell values are not returned. Aggregate
+result tables and a manifest containing the caller-vetted revision token and configured column-role
+names are returned in memory. The four caller-configurable identifier/order column roles must be
+nonblank, mutually distinct, and must not reuse fixed `paco2`, subgroup, or raw subgroup-flag columns.
 
 | Field | Definition | Validation |
 | --- | --- | --- |
 | `patient_id` | Caller-local patient identifier used only to form resampling clusters | Nonblank after string trimming on retained rows |
 | `encounter_id` | Caller-local encounter identifier used to choose an index encounter | Nonblank after string trimming on retained rows |
-| `encounter_order` | Caller-local ordering value for the earliest eligible encounter | Entire retained field is finite numeric or valid datetime; one consistent value per patient/encounter; ties for earliest encounter fail closed |
-| `measurement_order` | Caller-local ordering value for the earliest eligible PaCO2 measurement | Entire retained field is finite numeric or valid datetime; duplicate patient/encounter/measurement-order keys after numeric or UTC normalization and ties at the selected earliest measurement fail closed |
-| `target_data_revision` | Caller-supplied opaque source-extract/version label recorded in the run manifest | Nonblank string; must not contain patient values or direct identifiers |
+| `encounter_order` | Caller-local ordering value for the earliest eligible encounter | Entire retained field is finite numeric or valid datetime; exact integer precision is retained; one consistent value per patient/encounter; ties for earliest encounter fail closed |
+| `measurement_order` | Caller-local ordering value for the earliest eligible PaCO2 measurement | Entire retained field is finite numeric or valid datetime; exact integer precision is retained; duplicate patient/encounter/measurement-order keys after numeric or UTC normalization and ties at the selected earliest measurement fail closed |
+| `target_data_revision` | Caller-supplied opaque source-extract/version token recorded in the run manifest | 1-64 ASCII characters; starts alphanumeric; remaining characters limited to letters, digits, `.`, `_`, or `-`; caller must not encode patient values or direct identifiers |
 
 The same input also requires `paco2` and either an already prepared `subgroup` or the raw subgroup
 flags documented above. The caller is responsible for supplying only records eligible for the

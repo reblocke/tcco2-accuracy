@@ -12,6 +12,7 @@ from tcco2_accuracy.core.downstream import (
     DownstreamAnalysisConfig,
     PatientInputColumns,
     _monte_carlo_stability,
+    _order_values,
     _prepare_target_groups,
     _resample_patient_clusters,
     _run_draw_aligned_downstream,
@@ -24,6 +25,21 @@ def test_downstream_public_surface_exposes_no_raw_draw_runner() -> None:
     assert downstream.__all__ == ["DownstreamAnalysisConfig", "PatientInputColumns"]
     assert not hasattr(downstream, "run_draw_aligned_downstream")
     assert not hasattr(downstream, "JointDrawResult")
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"patient_id": ""},
+        {"patient_id": "id", "encounter_id": "id"},
+        {"measurement_order": "paco2"},
+    ],
+)
+def test_patient_input_column_roles_are_nonblank_distinct_and_unreserved(
+    kwargs: dict[str, str],
+) -> None:
+    with pytest.raises(ValueError, match="column roles"):
+        PatientInputColumns(**kwargs)
 
 
 def test_joint_downstream_summaries_are_deterministic_and_aggregate_only() -> None:
@@ -67,6 +83,29 @@ def test_index_policy_ignores_later_measurements_but_all_measurements_uses_them(
     all_original = _summaries(patient_data, params, config=all_config, seed=321)
     all_changed = _summaries(changed_later, params, config=all_config, seed=321)
     assert not all_original[0].equals(all_changed[0])
+
+
+@pytest.mark.parametrize("measurement_policy", ["index", "all_measurements"])
+def test_seeded_patient_resampling_is_row_order_invariant(measurement_policy: str) -> None:
+    patient_data = _synthetic_patient_data()
+    params = _synthetic_params(n_boot=25)
+    config = DownstreamAnalysisConfig(measurement_policy=measurement_policy)
+
+    original = _run(patient_data, params, config=config, seed=321)
+    reversed_rows = _run(
+        patient_data.iloc[::-1].reset_index(drop=True),
+        params,
+        config=config,
+        seed=321,
+    )
+
+    for name in ("core", "prediction", "two_stage"):
+        original_values = getattr(original, name)
+        reversed_values = getattr(reversed_rows, name)
+        assert original_values.keys() == reversed_values.keys()
+        for key in original_values:
+            np.testing.assert_array_equal(original_values[key], reversed_values[key])
+    assert original.target_resampling == reversed_rows.target_resampling
 
 
 @pytest.mark.parametrize(
@@ -137,6 +176,15 @@ def test_all_measurements_rejects_equivalent_normalized_measurement_orders(
             config=DownstreamAnalysisConfig(measurement_policy="all_measurements"),
             seed=1,
         )
+
+
+def test_order_normalization_preserves_adjacent_large_integers() -> None:
+    orders = pd.Series([2**53, 2**53 + 1], dtype="int64")
+
+    normalized = _order_values(orders, "measurement_order")
+
+    assert normalized.tolist() == [2**53, 2**53 + 1]
+    assert normalized.nunique() == 2
 
 
 def test_joint_downstream_rejects_ambiguous_earliest_encounter_order() -> None:

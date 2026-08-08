@@ -76,6 +76,14 @@ _OUTPUT_METRIC_NAMES = {
     "zone3_post_prob": "zone3_posterior_probability",
     "residual_misclass": "residual_misclassification_probability",
 }
+_RESERVED_PATIENT_INPUT_COLUMNS = {
+    "paco2",
+    "subgroup",
+    "is_amb",
+    "is_emer",
+    "is_inp",
+    "cc_time",
+}
 
 
 @dataclass(frozen=True)
@@ -86,6 +94,23 @@ class PatientInputColumns:
     encounter_id: str = "encounter_id"
     encounter_order: str = "encounter_order"
     measurement_order: str = "measurement_order"
+
+    def __post_init__(self) -> None:
+        roles = (
+            self.patient_id,
+            self.encounter_id,
+            self.encounter_order,
+            self.measurement_order,
+        )
+        if any(not isinstance(column, str) or not column.strip() for column in roles):
+            raise ValueError("Patient input column roles must be nonblank strings.")
+        if len(set(roles)) != len(roles):
+            raise ValueError("Patient input column roles must use four distinct columns.")
+        reserved = sorted(set(roles) & _RESERVED_PATIENT_INPUT_COLUMNS)
+        if reserved:
+            raise ValueError(
+                f"Patient input column roles must not reuse fixed analysis columns: {reserved}."
+            )
 
 
 @dataclass(frozen=True)
@@ -635,7 +660,7 @@ def _order_values(values: pd.Series, column: str) -> pd.Series:
             raise ValueError(
                 f"Ordering column '{column}' must be finite numeric or valid datetime."
             )
-        return numeric.astype(float)
+        return numeric
     if numeric.notna().any():
         raise ValueError(
             f"Ordering column '{column}' must use only finite numeric values or only valid datetimes."
@@ -702,8 +727,8 @@ def _target_population(
     patient_column: str,
 ) -> _TargetPopulation:
     clusters: list[np.ndarray] = []
-    for _, frame in records.groupby(patient_column, sort=False):
-        values = frame["paco2"].to_numpy(dtype=float)
+    for _, frame in records.groupby(patient_column, sort=True):
+        values = np.sort(frame["paco2"].to_numpy(dtype=float))
         clusters.append(values)
     if not clusters:
         raise ValueError("Patient-cluster target population must be non-empty.")

@@ -31,7 +31,7 @@ uv run python scripts/rebuild_artifacts.py --profile public-agreement --input-st
 ```
 
 In-memory downstream implementation:
-- `tcco2_accuracy.workflows.downstream.run_downstream_analysis(patient_data, conway_studies, target_data_revision=..., ...)` is the caller-managed draw-aligned downstream API. It accepts in-memory DataFrames only, requires patient/encounter/order fields plus PaCO2 subgroup data and an opaque non-sensitive target revision, uses ordinary patient-cluster resampling with bounded truth-class-degenerate redraws, and returns explicit bootstrap-quantile summaries, aggregate MCSE diagnostics, and a JSON-safe manifest. It accepts no paths or output destination.
+- `tcco2_accuracy.workflows.downstream.run_downstream_analysis(patient_data, conway_studies, target_data_revision=..., ...)` is the caller-managed draw-aligned downstream API. It accepts in-memory DataFrames only, requires distinct patient/encounter/order roles plus PaCO2 subgroup data and a caller-vetted non-sensitive target revision token (1-64 ASCII characters; alphanumeric start; then letters, digits, `.`, `_`, or `-`), canonicalizes patient clusters and Conway effects for row-order-invariant seeded runs, uses ordinary patient-cluster resampling with bounded truth-class-degenerate redraws, and returns explicit bootstrap-quantile summaries, aggregate MCSE diagnostics, and a JSON-safe manifest. It accepts no paths or output destination.
 - It is not an artifact rebuild, promotion, release, or browser API. Raw replicate values and target identifiers/values remain private to the running process; the public result exposes no counts, weights, bins, or patient/encounter/order fields.
 
 App behavior:

@@ -89,6 +89,16 @@
   repeat and an all-output combined-MCSE gate; two-MCSE repeat agreement is descriptive. The new API
   requires a non-sensitive target-data revision label, rejects factorial sensitivities, returns
   explicit bootstrap quantiles/probability names, and labels noncontract development runs.
+- 2026-08-07: Downstream manifests accept `target_data_revision` only as a bounded opaque ASCII
+  token, rejecting paths, free text, and control characters before manifest construction. Token
+  syntax reduces accidental disclosure but does not replace the caller's responsibility to exclude
+  patient or other sensitive identifiers.
+- 2026-08-07: Seeded downstream runs canonicalize patient clusters, values within patient clusters,
+  and prepared Conway effects before resampling, making results invariant to caller row order while
+  preserving repeated measurements and multi-effect publications. Numeric order normalization
+  retains exact integer precision; custom patient column roles and workflow controls fail closed if
+  semantically aliased or incorrectly typed. The generic agreement bootstrap and protected artifacts
+  are unchanged.
 - Pyodide 0.29.0, Plotly.js 2.35.2, and SheetJS 0.18.5 are pinned CDN browser dependencies.
 - User-entered values and uploads remain client-side; the app has no backend, telemetry,
   persistence, or patient-value URL state.

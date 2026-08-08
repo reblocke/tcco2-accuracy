@@ -124,6 +124,15 @@ diagnostics, and a non-sensitive manifest. It accepts no paths, writes no files,
 promotion command, and is not staged to or callable from the Pages app. See
 [`docs/SPEC.md`](docs/SPEC.md) for the exact code contract.
 
+Seeded runs canonicalize patient clusters and Conway effect rows, so permuting either input table
+does not change results or reproducibility metadata. Custom patient identifier/order column roles
+must be nonblank, distinct, and separate from fixed PaCO2/subgroup fields.
+
+`target_data_revision` must be a caller-managed, non-sensitive opaque token: 1-64 ASCII characters,
+starting with a letter or digit and otherwise limited to letters, digits, `.`, `_`, and `-`. The
+syntax rejects paths and free text but cannot establish that a token is free of identifiers; that
+remains the caller's responsibility.
+
 This synthetic development example exercises the public API without restricted data:
 
 ```python
