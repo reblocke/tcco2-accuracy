@@ -64,6 +64,31 @@ Genuinely missing PaCO2 source-distribution rows are dropped before retained val
 Malformed, infinite, zero, or negative retained values fail closed. No evidence-supported hard upper
 PaCO2 range has been established.
 
+## In-Memory Downstream Caller Fields
+
+These fields are accepted only by the caller-managed
+`tcco2_accuracy.workflows.downstream.run_downstream_analysis(...)` API. No values are written,
+returned, staged, logged, or tracked by the repository; returned result tables are aggregate-only.
+
+| Field | Definition | Validation |
+| --- | --- | --- |
+| `patient_id` | Caller-local patient identifier used only to form resampling clusters | Nonblank after string trimming on retained rows |
+| `encounter_id` | Caller-local encounter identifier used to choose an index encounter | Nonblank after string trimming on retained rows |
+| `encounter_order` | Caller-local ordering value for the earliest eligible encounter | Entire retained field is finite numeric or valid datetime; one consistent value per patient/encounter; ties for earliest encounter fail closed |
+| `measurement_order` | Caller-local ordering value for the earliest eligible PaCO2 measurement | Entire retained field is finite numeric or valid datetime; duplicate patient/encounter/measurement-order keys after numeric or UTC normalization and ties at the selected earliest measurement fail closed |
+| `target_data_revision` | Caller-supplied opaque source-extract/version label recorded in the run manifest | Nonblank string; must not contain patient values or direct identifiers |
+
+The same input also requires `paco2` and either an already prepared `subgroup` or the raw subgroup
+flags documented above. The caller is responsible for supplying only records eligible for the
+intended observation window; this API does not adjudicate eligibility.
+
+Returned `core`, `prediction`, and `two_stage` tables contain identifying analysis fields plus
+`bootstrap_q025`, `bootstrap_q500`, and `bootstrap_q975`. Probability metrics use the 0-1 scale,
+prediction-limit metrics use mmHg, and likelihood ratios are unitless. The returned stability table
+contains aggregate MCSE diagnostics only. The JSON-safe manifest records configuration, the opaque
+target revision, subgroup-input mode, redraw fractions, and contract-compliance status; it is not a
+replacement for caller-managed private source provenance.
+
 ## Conditional Curve Fields
 
 | Field | Definition | Validation |
