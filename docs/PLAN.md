@@ -5,7 +5,7 @@
 2. Keep scientific and workflow tests in `tests/`.
 3. Serve the public app as static GitHub Pages from `web/`.
 4. Stage Python and canonical CSV assets with `scripts/stage_web_python.py`.
-5. Verify changes through `make verify`.
+5. Use affected checks for local changes; documentation-only edits need reference checks and `git diff --check`. Use `make verify` for broad integration and release verification.
 
 ## Completed Engineering Gate
 

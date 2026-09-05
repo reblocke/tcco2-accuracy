@@ -5,7 +5,7 @@ description: Use when behavior, setup, validation, public wording, data provenan
 
 # Docs Sync
 
-- Check `README.md`, `docs/DECISIONS.md`, relevant docs under `docs/`, and any ADRs.
+- Read the canonical page for the affected behavior, command, assumption, or evidence; consult `README.md`, relevant `docs/` pages, or ADRs as needed.
 - Update docs in the same change as code when public behavior, commands, assumptions, or validation evidence changes.
 - Record durable decisions in `docs/DECISIONS.md` or a new ADR; do not bury decisions only in chat.
 - Keep docs concise and operational: what changed, why, how to run it, and what remains out of scope.

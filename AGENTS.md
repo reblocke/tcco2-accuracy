@@ -41,10 +41,10 @@
 3. Stata code in `Code/` as reference only; `Code/Legacy/` may contain bugs.
 4. Existing Python code, tests, browser contract tests, and artifacts.
 
-When Stata conflicts with the paper or docs, implement the paper/docs and record the divergence in `docs/DECISIONS.md` or an ADR.
+Use the paper/docs to identify discrepancies in the Stata reference. If a discrepancy affects the statistical model, accepted outputs, or scientific interpretation, resolve it through an explicit scientific decision before changing behavior. Record authorized divergences in `docs/DECISIONS.md` or an ADR.
 
 ## Working Rules
-- Before non-trivial edits, state assumptions, ambiguities, tradeoffs, a brief plan, risks, and verification commands.
+- An implementation request covers local edits, applicable safe verification, and fixing regressions caused by the change. Resolve material scientific, scope, data-access, cost, or publication decisions before dependent work.
 - Keep changes small and directly tied to the request; do not make drive-by refactors.
 - Do not modify `Code/Legacy/` unless the user explicitly asks for legacy Stata reference changes.
 - Do not add `Drafts/`, editable poster decks, Word lock files, third-party article PDFs, or publisher-formatted full text to the public branch.
@@ -69,15 +69,16 @@ When Stata conflicts with the paper or docs, implement the paper/docs and record
 - Keep human documentation aligned with `docs/data_release_contract.json`; use
   `docs/restricted_data_provenance.template.json` before any restricted-data rebuild or release review.
 
-## Skill Triggers
-- Planning a non-trivial change: `.agents/skills/implementation-strategy/SKILL.md`.
-- Verifying a code change: `.agents/skills/code-change-verification/SKILL.md`.
+## Task-specific workflows
+Use only the route needed for the current task.
+- For substantial code/contract verification, use `.agents/skills/code-change-verification/SKILL.md` when its workflow is needed.
 - Updating docs after behavior/workflow changes: `.agents/skills/docs-sync/SKILL.md`.
 - Static Pages/Pyodide/browser contract work: `.agents/skills/static-browser-pyodide-verification/SKILL.md`.
 - Reviewing numerical/statistical behavior: `.agents/skills/scientific-validation/SKILL.md`.
 - Reviewing clinical, privacy, public-copy, provenance, or app surfaces: use the matching focused skill in `.agents/skills/`.
 
 ## Done Criteria
+- Documentation-only changes need affected-reference checks and `git diff --check`; code, browser, numerical, and release checks below apply when their behavior or claims are affected.
 - Relevant tests pass locally.
 - `make stage-web` succeeds after browser-contract or package changes.
 - Browser contract outputs match Python reference behavior for canonical cases.
