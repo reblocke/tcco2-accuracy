@@ -38,17 +38,11 @@ uv sync --locked
 
 ## Testing
 
-Run the local verification gate before opening a PR:
-
-```bash
-make verify
-```
-
-For a narrower Python-only check:
-
-```bash
-make test
-```
+Choose verification for the affected behavior. Documentation-only changes need
+affected-reference checks and `git diff --check`; Python changes need affected
+tests and Ruff checks. Use `make test` for the full Python suite and `make verify`
+for broad integration or release verification. Record the checks run and any
+limitations in the PR.
 
 For workflow or artifact changes, also describe any generated outputs and the exact rebuild command
 used. Do not regenerate or promote frozen PaCO2-dependent outputs without explicit scientific and
