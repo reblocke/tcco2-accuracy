@@ -61,74 +61,70 @@ route. Maintainer: Brian W. Locke (`@reblocke`, ORCID
 
 ## Quick Start
 
-Requirements: Python 3.11 and `uv`.
+Requirements: Git, Make, Python 3.11, `uv`, a free local port 8000, and
+network access for the locked dependencies and browser CDNs. Run the following
+from the repository root. It creates a fresh temporary clone and keeps its
+virtual environment, dependency cache, and staged public web assets there;
+the source checkout is not staged. The server remains active until `Ctrl-C`.
+Successful setup opens <http://127.0.0.1:8000> and, with the default
+likelihood-only form values, displays `Calculation complete.` plus estimates
+and a chart. Dependency, port, or browser download failures stop that route;
+check their messages before retrying with another fresh temporary directory.
 
 ```bash
+(
+set -eu
+browser_work=$(mktemp -d "${TMPDIR:-/tmp}/tcco2-browser.XXXXXXXX")
+git clone --quiet --local . "$browser_work/repo"
+cd "$browser_work/repo"
+export UV_CACHE_DIR="$browser_work/uv-cache"
+export UV_PROJECT_ENVIRONMENT="$browser_work/repo/.venv"
+export UV_PROJECT="$browser_work/repo"
 uv sync --locked
 make serve
+)
 ```
 
-Run these from the repository root. `make serve` first runs `make stage-web`,
-copying the Python allowlist and public Conway/bootstrap data into
-`web/assets/py/` and `web/assets/data/`, then starts a persistent HTTP server.
-Open <http://127.0.0.1:8000> in a browser with Web Worker support. First load
-needs network access to the Pyodide and plotting/XLSX CDNs; the worker downloads
-Pyodide plus NumPy, pandas and SciPy. With the default likelihood-only form
-values, the status becomes `Calculation complete.` and the estimates/chart
-render. This shows that the local browser route works; it does not establish
-independent statistical review or clinical validity. Stop the server with
-`Ctrl-C` when finished.
+The `serve` target first stages the Python allowlist and public
+Conway/bootstrap data into the clone's `web/assets/py/` and
+`web/assets/data/`, then starts an HTTP server. Open the local URL in a
+browser with Web Worker support. The worker downloads Pyodide plus NumPy,
+pandas and SciPy; the page also loads plotting/XLSX libraries. A working
+browser route does not establish independent statistical review or clinical
+validity. The temporary clone remains after stopping the server so its
+generated files can be inspected and removed deliberately.
 
-Staged files are generated copies, not canonical sources. `make verify` is a
+Staged files are generated copies, not canonical sources. The `verify` target is a
 separate terminating integration gate that checks public history, stages assets,
 checks formatting/lint, runs tests and browser E2E; it is not needed just to
 start the app. See [Quality Checks](#quality-checks).
 
 ## Rebuild Outputs
 
-The following commands regenerate or create artifacts; they are not part of
-the browser quick start. Review [artifact status](artifacts/STATUS.md) before
-any canonical destination write. Staging browser copies with `make serve`
-does not rebuild or promote these outputs.
-
-Regenerate only the current public Conway-derived agreement artifacts:
-
-```bash
-uv run python scripts/rebuild_artifacts.py --profile public-agreement --input-study-table Data/conway_studies.csv --out artifacts --seed 202401 --n-boot 1000 --bootstrap-mode cluster_plus_withinstudy
-```
-
-The `public-agreement` profile rejects restricted PaCO2 inputs and promotes only the
-five outputs listed as corrected-provisional in `artifacts/STATUS.md`. The repository
-`artifacts/` destination also rejects any different study table, seed, draw count, or
-bootstrap mode. Run custom inputs and sensitivity settings to scratch instead:
-
-```bash
-uv run python scripts/rebuild_artifacts.py --profile public-agreement --input-study-table PATH --out .pytest_tmp/public-agreement-candidate --seed 202402 --n-boot 1000 --bootstrap-mode cluster_plus_withinstudy
-```
+Rebuilding artifacts is separate from local browser staging. The authoritative
+promotion contract, accepted arguments, five corrected-provisional outputs,
+and current review state are in [artifact status](artifacts/STATUS.md). The
+public-agreement profile accepts only the public Conway table for canonical
+promotion and rejects restricted PaCO2 inputs. Promotion to the repository's
+`artifacts/` destination requires the canonical study table, seed 202401,
+1,000 bootstrap draws, and `cluster_plus_withinstudy` mode. Custom inputs or
+sensitivity settings belong in a fresh scratch destination after checking the
+script's output contract. This README does not launch or authorize a rebuild.
 
 The XLSX study table is the human-editable review mirror; the semantically equivalent
 CSV is the operational source for canonical promotion and browser staging. PaCO2-dependent
-outputs remain frozen. A future private comparison requires an explicit restricted source and an
-approved scratch/private output directory; it is not a promotion command:
-
-```bash
-uv run python scripts/rebuild_artifacts.py --profile full \
-  --paco2-path /approved/restricted/source/in_silico_tcco2_db.dta \
-  --out /approved/private/workspace/tcco2-corrected-full \
-  --seed 202401 --n-boot 1000 --thresholds 45
-```
+outputs remain frozen. A future full-profile private comparison requires an
+explicit approved restricted source and a fresh approved scratch/private output
+directory; it is not a promotion route. See [data governance](docs/DATA_GOVERNANCE.md)
+and [artifact status](artifacts/STATUS.md) for its access and review gates.
 
 Within the repository, the full profile accepts output only under `.pytest_tmp/` or
 `.tmp/`; otherwise it requires an explicitly approved external private destination. Do not run
 this workflow to regenerate, promote, or unfreeze downstream results in the current wave.
 
-To build a private prior, supply both paths explicitly:
-
-```bash
-uv run python scripts/build_paco2_prior_bins.py \
-  --input /approved/restricted/source/in_silico_tcco2_db.dta \
-  --output /approved/private/workspace/paco2_prior_bins.csv --include-counts
-```
+Private prior generation likewise requires explicitly approved input and
+output locations; see [data governance](docs/DATA_GOVERNANCE.md). It is not a
+browser setup step.
 
 Normalized restricted-derived weights are not automatically public-safe: they may reconstruct the
 exact source distribution even without a `count` column. The static app therefore stages no PaCO2
@@ -156,7 +152,11 @@ remains the caller's responsibility.
 **Noncompliant synthetic development example:** this exercises the public API
 without restricted data. It deliberately uses only 25 draws and disables the
 independent-repeat stability gate; it is not a contract-grade run or validation
-of research results.
+of research results. From a locked Python environment in a disposable clone,
+use the public Conway table and synthetic in-memory rows only. It writes no
+files or network results. Success prints aggregate rows and a noncompliant
+contract status; missing dependencies or input-contract failures raise an
+exception. Do not treat the output as a research result.
 
 ```python
 import pandas as pd
@@ -270,13 +270,13 @@ are not release-approved.
 
 ## Quality Checks
 
-| Command | Purpose |
+| Make target | Purpose and local effects |
 | --- | --- |
-| `make stage-web` | Stage Python and data assets for the static app |
-| `make test` | Run Python unit, workflow, staging, and browser-contract tests |
-| `make e2e` | Run Playwright browser smoke tests against the staged app |
-| `make visual-qa` | Write local review screenshots under `.pytest_tmp/visual-qa/` |
-| `make verify` | Run staging, format check, lint, unit tests, and E2E tests |
+| `stage-web` | Replace staged Python and public data copies under `web/assets/` and write the staging manifest |
+| `test` | Run Python unit, workflow, staging, and browser-contract tests |
+| `e2e` | Run Playwright browser smoke tests against the staged app |
+| `visual-qa` | Write local review screenshots under `.pytest_tmp/visual-qa/` |
+| `verify` | Check public history, stage assets, check format/lint, and run unit and E2E tests |
 
 Scientific validation targets are documented in `docs/VALIDATION.md`; current ticket states and
 their minimum completion evidence are maintained in `docs/PLAN.md`.
