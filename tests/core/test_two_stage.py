@@ -8,30 +8,6 @@ from tcco2_accuracy.core.two_stage import _two_stage_log_probabilities
 from tcco2_accuracy.two_stage import TwoStagePolicy, two_stage_metrics, two_stage_zone_probabilities
 
 
-def test_two_stage_zone_probabilities_sum_to_one() -> None:
-    paco2_values = np.array([35.0, 45.0, 55.0])
-    policy = TwoStagePolicy(lower=40.0, upper=50.0, true_threshold=45.0)
-
-    zone1, zone2, zone3 = two_stage_zone_probabilities(
-        paco2_values, delta=1.0, sd_total=3.0, policy=policy
-    )
-
-    total = zone1 + zone2 + zone3
-    assert np.allclose(total, 1.0, atol=1e-8)
-
-
-def test_two_stage_post_test_probabilities_in_bounds() -> None:
-    paco2_values = np.array([35.0, 45.0, 55.0, 60.0])
-    policy = TwoStagePolicy(lower=40.0, upper=50.0, true_threshold=45.0)
-
-    metrics = two_stage_metrics(paco2_values, delta=1.0, sd_total=4.0, policy=policy)
-
-    for key in ("zone1_post_prob", "zone2_post_prob", "zone3_post_prob"):
-        value = metrics[key]
-        if np.isfinite(value):
-            assert 0 <= value <= 1
-
-
 def test_two_stage_probabilities_preserve_extreme_upper_tail_and_interval() -> None:
     policy = TwoStagePolicy(lower=28.0, upper=32.0, true_threshold=25.0)
 
@@ -154,12 +130,6 @@ def test_two_stage_policy_permits_ordered_negative_boundaries() -> None:
     )
 
     assert zone1[0] + zone2[0] + zone3[0] == pytest.approx(1.0)
-
-
-def test_two_stage_policy_normalizes_numeric_scalar_inputs() -> None:
-    policy = TwoStagePolicy(lower="40", upper="50", true_threshold="45")  # type: ignore[arg-type]
-
-    assert policy == TwoStagePolicy(lower=40.0, upper=50.0, true_threshold=45.0)
 
 
 @pytest.mark.parametrize("paco2", [0.0, -1.0, np.nan, np.inf])

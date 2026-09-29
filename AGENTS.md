@@ -77,6 +77,13 @@ Use only the route needed for the current task.
 - Reviewing numerical/statistical behavior: `.agents/skills/scientific-validation/SKILL.md`.
 - Reviewing clinical, privacy, public-copy, provenance, or app surfaces: use the matching focused skill in `.agents/skills/`.
 
+## Testing rules
+- Never write unit tests after you write code.
+- Highly prefer E2E tests as the sole testing mechanism. Use them to verify complex features work. At the end of E2E tests, produce a verifiable and repeatable artifact.
+- If you must test a system in isolation, first write down all the ways it could fail, then write the code.
+- Retain an isolated test only when it catches a concrete, meaningful failure that E2E assertions miss. Exercising a code path without checking its result is not coverage of that result. Remove redundant smoke checks, implementation mirrors, and checks already subsumed by stronger tests.
+- `make e2e` writes its result report and replayable browser traces under `.pytest_tmp/e2e/`; record that artifact location and the repeatable command in the verification report.
+
 ## Done Criteria
 - Documentation-only changes need affected-reference checks and `git diff --check`; code, browser, numerical, and release checks below apply when their behavior or claims are affected.
 - Relevant tests pass locally.

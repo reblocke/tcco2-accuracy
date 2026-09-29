@@ -1,5 +1,18 @@
 # TcCO2 Accuracy — Validation Targets
 
+## Test selection and repeatable evidence
+- Prefer E2E tests for complex features. Keep an isolated check only when its assertions detect a
+  meaningful failure that the E2E assertions miss, and remove redundant smoke, shape, signature,
+  fixture-only, and implementation-mirroring checks. For new isolated tests, enumerate the failure
+  modes and write the test before implementing the code, as required by `AGENTS.md`.
+- Browser E2E currently covers UI flows and rendering, but does not independently verify numerical
+  values, extreme-tail or bin-edge behavior, offline manuscript/rebuild workflows, atomic artifact
+  rollback, or repository data-release boundaries. Retained scientific, contract, and workflow
+  regressions cover those gaps with independent equations, expected outputs, or failure cases.
+- Repeat with `make e2e`. Each run writes `.pytest_tmp/e2e/results.xml` and per-test
+  `.pytest_tmp/e2e/browser/<test-directory>/trace.zip` archives, including successful runs. Replay
+  them with `uv run python -m playwright show-trace PATH_TO_TRACE`; rerunning replaces the artifacts.
+
 ## Corrected agreement method
 - Method revision: `agreement_natural_log_tau2_direct_v1`; result status: `provisional`.
 - Statistical authority: Tipton and Shuster equations 4.4-4.5, 4.13, and 4.16
@@ -19,8 +32,8 @@
   `1.78e-15`. External statistical review of this comparison remains TCCO2-007.
 - Point estimates and LoA are required to remain finite at the τ²=0 boundary. The corresponding
   confidence-interval behavior remains provisional pending independent biostatistical review.
-- The published fixture remains numerically immutable and its schema/LoA identity continue to be
-  checked separately from corrected-method values.
+- The published fixture remains numerically immutable; the retained LoA comparison and workflow
+  comparator checks use it separately from corrected-method values.
 - Independent biostatistical sign-off is pending. It blocks final release and downstream manuscript
   promotion, but not a visibly provisional Pages deployment.
 
@@ -163,14 +176,16 @@
 - Purpose: verify that the Pages app calls the Python source of truth through a JSON-safe contract.
 - Invariants: `tests/contracts/test_browser_contract.py` compares contract outputs to
   `predict_paco2_from_tcco2`, verifies likelihood-only default behavior, requires an explicit
-  synthetic prior for prior-weighted mode, and exercises subgroups and uploaded study-table
-  recomputation.
-- Staging: `tests/contracts/test_stage_web_python.py` verifies package/data staging into
-  `web/assets/` and confirms no PaCO2 prior is staged.
+  synthetic prior for prior-weighted mode, and rejects malformed study/prior uploads and stale
+  parameter provenance. Direct Python API tests retain default-mode and missing-prior checks
+  because the browser supplies or validates those arguments before calling the API.
+- Staging: `tests/contracts/test_stage_web_python.py` enforces the public-data allowlist, removes
+  stale private priors, and checks deployed parameter bytes against the canonical artifact.
 - E2E: `tests/e2e/test_web_app.py` verifies Pyodide loads, the default likelihood-only calculation
-  completes, an uploaded synthetic prior enables prior-weighted mode, a missing prior fails closed,
-  threshold changes update the browser result, and failed recalculation clears prior metrics, chart
-  output, and result-provenance attributes before displaying the error.
+  completes, uploaded synthetic studies recompute with current method provenance, an uploaded
+  synthetic prior enables prior-weighted mode, a missing prior fails closed, threshold changes
+  update the browser result, and failed recalculation clears prior metrics, chart output, and
+  result-provenance attributes before displaying the error.
 - Scientific claim: browser-facing outputs are a serialization of the authoritative Python model, not
   a separate JavaScript implementation.
 - Version gate: canonical parameter assets must contain exactly one current method revision and

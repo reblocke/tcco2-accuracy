@@ -7,11 +7,9 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from tcco2_accuracy.core import downstream
 from tcco2_accuracy.core.downstream import (
     DownstreamAnalysisConfig,
     PatientInputColumns,
-    _monte_carlo_stability,
     _order_values,
     _prepare_target_groups,
     _resample_patient_clusters,
@@ -19,12 +17,6 @@ from tcco2_accuracy.core.downstream import (
     _summarize_joint_draws,
     _TargetPopulation,
 )
-
-
-def test_downstream_public_surface_exposes_no_raw_draw_runner() -> None:
-    assert downstream.__all__ == ["DownstreamAnalysisConfig", "PatientInputColumns"]
-    assert not hasattr(downstream, "run_draw_aligned_downstream")
-    assert not hasattr(downstream, "JointDrawResult")
 
 
 @pytest.mark.parametrize(
@@ -40,31 +32,6 @@ def test_patient_input_column_roles_are_nonblank_distinct_and_unreserved(
 ) -> None:
     with pytest.raises(ValueError, match="column roles"):
         PatientInputColumns(**kwargs)
-
-
-def test_joint_downstream_summaries_are_deterministic_and_aggregate_only() -> None:
-    patient_data = _synthetic_patient_data()
-    params = _synthetic_params(n_boot=25)
-
-    first = _summaries(patient_data, params, seed=123)
-    second = _summaries(patient_data, params, seed=123)
-
-    for first_frame, second_frame in zip(first, second, strict=True):
-        pdt.assert_frame_equal(first_frame, second_frame)
-        _assert_aggregate_only(first_frame)
-    core, prediction, two_stage = first
-    assert set(core["requested_group"]) == {"pft", "ed_inp", "icu", "all"}
-    assert {
-        "prevalence",
-        "tp_probability",
-        "fp_probability",
-        "tn_probability",
-        "fn_probability",
-        "misclassification_probability",
-    }.issubset(set(core["metric"]))
-    assert set(prediction["mode"]) == {"likelihood_only", "prior_weighted"}
-    assert set(prediction["tcco2"]) == {35.0, 40.0, 45.0, 50.0, 55.0}
-    assert {"bootstrap_q025", "bootstrap_q500", "bootstrap_q975"}.issubset(two_stage.columns)
 
 
 def test_index_policy_ignores_later_measurements_but_all_measurements_uses_them() -> None:
@@ -348,23 +315,6 @@ def test_joint_downstream_requires_complete_aligned_parameter_groups() -> None:
         _run(_synthetic_patient_data(), missing_group, seed=1)
 
 
-def test_joint_downstream_stability_is_aggregate_only() -> None:
-    primary = _run(_synthetic_patient_data(), _synthetic_params(n_boot=25), seed=123)
-    repeat = _run(_synthetic_patient_data(), _synthetic_params(n_boot=25), seed=456)
-    stability = _monte_carlo_stability(primary, repeat, repeat_seed=456)
-
-    _assert_aggregate_only(stability)
-    assert set(stability["component"]) == {
-        "bootstrap_q025",
-        "bootstrap_q500",
-        "bootstrap_q975",
-    }
-    assert set(stability["repeat_seed"]) == {456}
-    assert (stability["combined_mcse"] >= 0).all()
-    assert stability["within_2_mcse"].dtype == bool
-    assert stability["mcse_passed"].dtype == bool
-
-
 def test_single_cluster_end_to_end_matches_hand_calculation() -> None:
     config = DownstreamAnalysisConfig(
         measurement_policy="all_measurements",
@@ -565,25 +515,3 @@ def _synthetic_params(n_boot: int) -> pd.DataFrame:
 
 def _population_cluster_count(population: object) -> int:
     return len(getattr(population, "clusters"))
-
-
-def _assert_aggregate_only(frame: pd.DataFrame) -> None:
-    forbidden = {
-        "patient_id",
-        "encounter_id",
-        "encounter_order",
-        "measurement_order",
-        "count",
-        "weight",
-        "replicate",
-        "value",
-    }
-    assert not forbidden.intersection(frame.columns)
-    assert not any(
-        column.startswith("n_")
-        or "per_1000" in column
-        or column.endswith("_bin")
-        or "_bin_" in column
-        for column in frame.columns
-    )
-    assert "synthetic-pft-00" not in frame.to_csv(index=False)

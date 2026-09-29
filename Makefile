@@ -26,7 +26,7 @@ test:
 	$(UV) run pytest -q --ignore=tests/e2e
 
 e2e: stage-web
-	$(UV) run pytest -q tests/e2e
+	$(UV) run pytest -q tests/e2e --junitxml=.pytest_tmp/e2e/results.xml --tracing=on --output=.pytest_tmp/e2e/browser
 
 visual-qa:
 	$(PYTHON) scripts/visual_qa.py

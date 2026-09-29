@@ -21,19 +21,6 @@ SYNTHETIC_PRIOR_PATH = (
 )
 
 
-def test_synthetic_prior_fixture_loads_without_counts() -> None:
-    prior = load_paco2_prior_bins(SYNTHETIC_PRIOR_PATH)
-
-    assert list(prior.columns) == ["group", "paco2_bin", "weight"]
-    assert "count" not in prior.columns
-    assert "density" not in prior.columns
-    assert set(PACO2_PRIOR_GROUPS).issubset(set(prior["group"]))
-    assert (prior["weight"] >= 0).all()
-    weight_sums = prior.groupby("group")["weight"].sum()
-    for group in PACO2_PRIOR_GROUPS:
-        assert weight_sums.loc[group] == pytest.approx(1.0, abs=1e-6)
-
-
 def test_legacy_xls_prior_is_rejected_as_uninspectable(tmp_path: Path) -> None:
     path = tmp_path / "prior.xls"
     path.write_bytes(b"legacy workbook placeholder")

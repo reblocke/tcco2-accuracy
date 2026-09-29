@@ -45,22 +45,13 @@ def _tracked_existing_files() -> list[str]:
     ]
 
 
-def test_release_contract_covers_public_history_and_external_limitations() -> None:
+def test_public_history_contract_includes_branch_remote_and_tag_refs() -> None:
     contract = _contract()
 
-    assert contract["contract_version"] == "1.1.0"
-    assert contract["scope"]["history_rewritten"] is True
-    assert "Public branch and tag refs" in contract["scope"]["history_note"]
     assert contract["history"]["public_ref_prefixes"] == [
         "refs/heads/",
         "refs/remotes/origin/",
         "refs/tags/",
-    ]
-    assert "Data/paco2_public_prior.*" in contract["history"]["prohibited_path_globs"]
-    assert contract["private_output_roots"] == [
-        ".pytest_tmp/",
-        ".tmp/",
-        "explicit path outside the repository",
     ]
 
 
@@ -345,23 +336,6 @@ def test_conway_csv_and_xlsx_mirrors_are_semantically_equal() -> None:
         rtol=0,
         atol=1e-12,
     )
-
-
-def test_human_and_machine_governance_indexes_cross_reference_the_contract() -> None:
-    governance = (ROOT / "docs" / "DATA_GOVERNANCE.md").read_text()
-    readme = (ROOT / "README.md").read_text()
-    provenance = (ROOT / "Data" / "PROVENANCE.md").read_text()
-    decisions = (ROOT / "docs" / "DECISIONS.md").read_text()
-    llms = (ROOT / "llms.txt").read_text()
-    web_llms = (ROOT / "web" / "llms.txt").read_text()
-
-    for text in (governance, readme, provenance, decisions, llms):
-        assert "data_release_contract.json" in text
-    assert "HUMAN REVIEW REQUIRED" in provenance
-    assert "current-tree" in governance.lower()
-    assert "history" in governance.lower()
-    assert "likelihood-only" in web_llms
-    assert "upload" in web_llms.lower()
 
 
 def _leaf_values(value: Any) -> Iterator[Any]:

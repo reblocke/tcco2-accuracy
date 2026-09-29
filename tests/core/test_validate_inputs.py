@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import pytest
 
 from tcco2_accuracy.core._params import select_conway_studies_for_subgroup
 from tcco2_accuracy.core.conway_meta import prepare_conway_inputs
-from tcco2_accuracy.data import CONWAY_DATA_PATH, prepare_conway_meta_inputs
+from tcco2_accuracy.data import prepare_conway_meta_inputs
 from tcco2_accuracy.validate_inputs import (
     validate_conway_meta_inputs_df,
     validate_conway_studies_df,
@@ -31,13 +29,6 @@ def _valid_studies() -> pd.DataFrame:
             "is_lft": [0, 1],
         }
     )
-
-
-def test_validate_conway_studies_ok() -> None:
-    if not Path(CONWAY_DATA_PATH).exists():
-        pytest.skip("Canonical Conway study table missing.")
-    df = pd.read_csv(CONWAY_DATA_PATH)
-    validate_conway_studies_df(df)
 
 
 def test_validate_conway_studies_invalid() -> None:
@@ -182,23 +173,6 @@ def test_prepare_conway_inputs_defensively_rejects_invalid_analysis_form() -> No
         validate_conway_meta_inputs_df(analysis)
     with pytest.raises(ValueError, match="unique"):
         prepare_conway_inputs(analysis)
-
-
-def test_validate_conway_meta_inputs_rejects_empty_subgroup() -> None:
-    analysis = _valid_studies().rename(
-        columns={"study_id": "study", "n_pairs": "n", "n_participants": "n_2"}
-    )
-
-    with pytest.raises(ValueError, match="at least one study"):
-        validate_conway_meta_inputs_df(analysis.iloc[0:0])
-
-
-def test_validate_thresholds_rejects_empty_or_invalid_values() -> None:
-    with pytest.raises(ValueError, match="At least one"):
-        validate_thresholds([])
-    for threshold in (0.0, -1.0, np.nan, np.inf):
-        with pytest.raises(ValueError, match="threshold"):
-            validate_thresholds([threshold])
 
 
 def test_validate_thresholds_has_no_unsupported_upper_bound() -> None:

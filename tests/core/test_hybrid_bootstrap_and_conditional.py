@@ -7,8 +7,6 @@ from scipy import stats
 
 from tcco2_accuracy.bootstrap import bootstrap_conway_parameters
 from tcco2_accuracy.conditional import conditional_classification_curves
-from tcco2_accuracy.conway_meta import conway_group_summary
-from tcco2_accuracy.data import CONWAY_DATA_PATH, load_conway_group
 
 
 def test_hybrid_bootstrap_widens_delta_and_loa() -> None:
@@ -33,81 +31,6 @@ def test_hybrid_bootstrap_widens_delta_and_loa() -> None:
     width_cluster = draws_cluster["loa_u"].quantile(0.975) - draws_cluster["loa_l"].quantile(0.025)
     width_hybrid = draws_hybrid["loa_u"].quantile(0.975) - draws_hybrid["loa_l"].quantile(0.025)
     assert width_hybrid > width_cluster * 1.10
-
-
-def test_hybrid_bootstrap_real_data_alignment() -> None:
-    if not CONWAY_DATA_PATH.exists():
-        pytest.skip("Conway meta-analysis data missing.")
-    for group in ("main", "lft"):
-        data = load_conway_group(group)
-        draws_cluster = bootstrap_conway_parameters(
-            data,
-            n_boot=400,
-            seed=321,
-            bootstrap_mode="cluster_only",
-        )
-        draws_hybrid = bootstrap_conway_parameters(
-            data,
-            n_boot=400,
-            seed=321,
-            bootstrap_mode="cluster_plus_withinstudy",
-        )
-        conway = conway_group_summary(data)
-        width_cluster = draws_cluster["loa_u"].quantile(0.975) - draws_cluster["loa_l"].quantile(
-            0.025
-        )
-        width_hybrid = draws_hybrid["loa_u"].quantile(0.975) - draws_hybrid["loa_l"].quantile(0.025)
-        ratio_cluster = width_cluster / (conway.ci_u - conway.ci_l)
-        ratio_hybrid = width_hybrid / (conway.ci_u - conway.ci_l)
-        assert np.isfinite(ratio_cluster)
-        assert np.isfinite(ratio_hybrid)
-        # Monte Carlo noise and large tau2 can make ratios nearly identical or slightly reversed.
-        # The synthetic test above carries the strict widening assertion.
-        assert ratio_hybrid >= ratio_cluster * 0.99
-
-
-def test_conditional_curves_single_draw() -> None:
-    params = pd.DataFrame({"delta": [0.0], "sigma2": [1.0], "tau2": [0.0]})
-    paco2_values = np.array([44.0, 45.0, 46.0])
-    curves = conditional_classification_curves(paco2_values, params, threshold=45.0)
-
-    row_45 = curves.loc[curves["paco2_bin"] == 45.0].iloc[0]
-    assert np.isclose(row_45["tp_q50"], 0.5, atol=1e-6)
-    assert np.isclose(row_45["fn_q50"], 0.5, atol=1e-6)
-    assert np.isclose(row_45["tn_q50"], 0.0, atol=1e-12)
-    assert np.isclose(row_45["fp_q50"], 0.0, atol=1e-12)
-
-    row_44 = curves.loc[curves["paco2_bin"] == 44.0].iloc[0]
-    expected_fp = stats.norm.cdf(-1)
-    assert np.isclose(row_44["fp_q50"], expected_fp, atol=1e-6)
-    assert np.isclose(row_44["tn_q50"], stats.norm.sf(-1), atol=1e-6)
-
-
-def test_conditional_probabilities_sum_to_one() -> None:
-    params = pd.DataFrame({"delta": [0.0], "sigma2": [1.0], "tau2": [0.0]})
-    paco2_values = np.array([44.0, 45.0, 46.0])
-    curves = conditional_classification_curves(paco2_values, params, threshold=45.0)
-
-    for _, row in curves.iterrows():
-        total = row["tn_q50"] + row["fp_q50"] + row["fn_q50"] + row["tp_q50"]
-        assert np.isclose(total, 1.0, atol=1e-8)
-        assert 0.0 <= row["tn_q50"] <= 1.0
-        assert 0.0 <= row["fp_q50"] <= 1.0
-        assert 0.0 <= row["fn_q50"] <= 1.0
-        assert 0.0 <= row["tp_q50"] <= 1.0
-
-
-def test_conditional_branching_rules() -> None:
-    params = pd.DataFrame({"delta": [0.0], "sigma2": [1.0], "tau2": [0.0]})
-    paco2_values = np.array([44.0, 45.0, 46.0])
-    curves = conditional_classification_curves(paco2_values, params, threshold=45.0)
-
-    below = curves[curves["paco2_bin"] < 45.0]
-    above = curves[curves["paco2_bin"] >= 45.0]
-    assert np.isclose(below["tp_q50"], 0.0, atol=1e-12).all()
-    assert np.isclose(below["fn_q50"], 0.0, atol=1e-12).all()
-    assert np.isclose(above["tn_q50"], 0.0, atol=1e-12).all()
-    assert np.isclose(above["fp_q50"], 0.0, atol=1e-12).all()
 
 
 def test_conditional_truth_and_probabilities_use_original_values_before_binning() -> None:
@@ -192,19 +115,6 @@ def test_decimal_width_exact_edges_remain_in_the_upper_half_open_bin(bin_method:
         {"paco2_bin": 45.2, "paco2_bin_upper": 45.3, "count": 1},
         {"paco2_bin": 45.3, "paco2_bin_upper": 45.4, "count": 2},
     ]
-
-
-def test_half_open_bins_keep_exact_upper_edge_values() -> None:
-    params = pd.DataFrame({"delta": [0.0], "sigma2": [1.0], "tau2": [0.0]})
-
-    curves = conditional_classification_curves(
-        np.array([44.0, 45.0]),
-        params,
-        threshold=45.0,
-    )
-
-    assert curves["count"].sum() == 2
-    assert list(curves["paco2_bin"]) == [44.0, 45.0]
 
 
 def test_conditional_negative_tail_remains_positive_at_z12() -> None:

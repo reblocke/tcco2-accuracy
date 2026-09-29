@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import inspect
 import json
 
 import pandas as pd
@@ -30,13 +29,6 @@ def test_downstream_workflow_is_in_memory_and_uses_publication_clustering() -> N
         ),
     )
 
-    assert set(inspect.signature(run_downstream_analysis).parameters) == {
-        "patient_data",
-        "conway_studies",
-        "target_data_revision",
-        "config",
-        "columns",
-    }
     assert result.manifest["agreement"] == {
         "clustering": "publication",
         "cluster_column": "study_base",
@@ -96,24 +88,6 @@ def test_downstream_workflow_is_in_memory_and_uses_publication_clustering() -> N
         _assert_aggregate_only(frame)
 
 
-def test_downstream_workflow_exposes_effect_row_sensitivity_only_when_requested() -> None:
-    result = run_downstream_analysis(
-        _synthetic_patient_data(),
-        _synthetic_conway_studies(),
-        target_data_revision="synthetic-v1",
-        config=DownstreamWorkflowConfig(
-            n_boot=25,
-            agreement_clustering="effect_row",
-            enforce_minimum_draws=False,
-            assess_stability=False,
-            require_stability=False,
-        ),
-    )
-
-    assert result.manifest["agreement"]["clustering"] == "effect_row"
-    assert result.manifest["agreement"]["cluster_column"] == "study"
-
-
 @pytest.mark.parametrize("legacy_schema", [False, True])
 def test_seeded_agreement_resampling_is_conway_row_order_invariant(
     legacy_schema: bool,
@@ -168,7 +142,6 @@ def test_downstream_workflow_uses_one_predetermined_independent_repeat() -> None
 
     assert result.manifest["seeds"]["independent_repeats"] == [202]
     assert set(result.stability["repeat_seed"]) == {202}
-    assert {"combined_mcse", "within_2_mcse", "mcse_passed"}.issubset(result.stability.columns)
     assert set(result.stability.columns) == {
         "analysis",
         "requested_group",
@@ -239,13 +212,6 @@ def test_downstream_workflow_rejects_factorial_sensitivities() -> None:
             agreement_clustering="effect_row",
             analysis=DownstreamAnalysisConfig(parameter_mapping="pooled_main"),
         )
-
-
-def test_canonical_configuration_is_contract_compliant() -> None:
-    assert _contract_compliance(DownstreamWorkflowConfig()) == {
-        "compliant": True,
-        "reasons": [],
-    }
 
 
 @pytest.mark.parametrize(

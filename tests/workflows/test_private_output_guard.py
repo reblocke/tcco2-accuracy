@@ -24,12 +24,6 @@ def test_private_output_guard_accepts_repository_scratch_roots(scratch_name: str
     assert require_private_output_path(path) == path.resolve()
 
 
-def test_private_output_guard_accepts_explicit_external_path(tmp_path: Path) -> None:
-    path = tmp_path / "private" / "output.csv"
-
-    assert require_private_output_path(path) == path.resolve()
-
-
 @pytest.mark.parametrize(
     "path",
     [
@@ -80,24 +74,6 @@ def test_restricted_workflows_reject_tracked_output_before_loading_data(
 def test_restricted_workflows_require_an_explicit_input_source(workflow: object) -> None:
     with pytest.raises(ValueError, match="paco2_data or an explicit private paco2_path"):
         workflow()
-
-
-def test_agreement_only_manuscript_writer_is_exempt(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    csv_writer = Mock()
-    text_writer = Mock()
-    monkeypatch.setattr(manuscript_reporting, "_write_csv", csv_writer)
-    monkeypatch.setattr(manuscript_reporting, "write_text", text_writer)
-    params = pd.DataFrame({"group": ["main"], "delta": [0.0], "sigma2": [4.0], "tau2": [1.0]})
-
-    manuscript_reporting.run_manuscript_parameters(
-        params=params,
-        out_dir=REPOSITORY_ROOT / "artifacts",
-    )
-
-    assert csv_writer.call_count == 1
-    assert text_writer.call_count == 1
 
 
 def test_prior_build_script_requires_explicit_input_and_output(

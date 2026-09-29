@@ -69,7 +69,7 @@ Repository map:
 - src/tcco2_accuracy/: I/O, contracts, wrappers, reporting, and workflow modules.
 - web/: static GitHub Pages app.
 - scripts/: staging, artifact, and data-prep commands.
-- tests/: unit, workflow, contract, and browser tests.
+- tests/: scientific regression, workflow, contract, and browser E2E tests.
 - docs/: architecture, data governance, validation, deployment, and decisions.
 - artifacts/: small aggregate review/manuscript outputs.
 - Data/: canonical public reference inputs and provenance; no staged PaCO2 prior.
@@ -82,3 +82,4 @@ Agent cautions:
 - Do not infer that normalized restricted-derived weights are public-safe because exact count columns are absent.
 - Validate CITATION.cff after citation edits.
 - Run make stage-web and browser/app tests after app or browser metadata changes.
+- Prefer E2E feature verification and retain isolated tests only for meaningful gaps in its assertions; follow the test-first rules in AGENTS.md. make e2e saves a result report and replayable traces under .pytest_tmp/e2e/.

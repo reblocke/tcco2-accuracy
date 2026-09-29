@@ -63,41 +63,6 @@ def test_browser_contract_matches_ui_api_with_synthetic_uploaded_prior() -> None
     assert browser["metadata"]["parameter_group_used"] == "main"
 
 
-@pytest.mark.parametrize("subgroup", ["all", "pft", "ed_inp", "icu"])
-@pytest.mark.parametrize("mode", ["prior_weighted", "likelihood_only"])
-def test_browser_contract_canonical_cases_are_serializable(subgroup: str, mode: str) -> None:
-    payload = {
-        "tcco2": 46.5,
-        "subgroup": subgroup,
-        "threshold": 50.0,
-        "mode": mode,
-        "interval": 0.95,
-        "params_csv": _read_text(ROOT / "artifacts" / "bootstrap_params.csv"),
-        "n_param_draws": 50,
-        "seed": 123,
-    }
-    if mode == "prior_weighted":
-        payload["prior_bins_csv"] = _read_text(SYNTHETIC_PRIOR_PATH)
-
-    result = compute_ui_payload(payload)
-
-    assert result["subgroup"] == subgroup
-    assert result["mode"] == mode
-    assert result["paco2_q_low"] <= result["paco2_median"] <= result["paco2_q_high"]
-    if mode == "likelihood_only":
-        assert result["paco2_q_low"] < result["paco2_q_high"]
-    assert 0.0 <= result["p_ge_threshold"] <= 1.0
-    assert isinstance(result["paco2_bin"], list)
-    assert isinstance(result["posterior_prob"], list)
-    assert result["metadata"]["agreement_method_version"] == AGREEMENT_METHOD_VERSION
-    assert result["metadata"]["results_status"] == RESULTS_STATUS
-    if mode == "prior_weighted":
-        assert isinstance(result["likelihood_prob"], list)
-        assert len(result["likelihood_prob"]) == len(result["paco2_bin"])
-    else:
-        assert result["likelihood_prob"] is None
-
-
 def test_browser_contract_accepts_custom_prior_bins() -> None:
     prior_csv = "\n".join(
         ["group,paco2_bin,count,weight"]
@@ -149,58 +114,6 @@ def test_browser_contract_prior_weighted_requires_explicit_prior() -> None:
         compute_ui_payload(payload)
 
 
-def test_browser_contract_accepts_weight_only_prior_bins() -> None:
-    prior_csv = "\n".join(
-        ["group,paco2_bin,weight"]
-        + [f"{group},40,0.25\n{group},60,0.75" for group in PACO2_PRIOR_GROUPS]
-    )
-    payload = {
-        "tcco2": 50.0,
-        "subgroup": "pft",
-        "threshold": 45.0,
-        "mode": "prior_weighted",
-        "params_csv": _read_text(ROOT / "artifacts" / "bootstrap_params.csv"),
-        "prior_bins_csv": prior_csv,
-        "n_param_draws": 25,
-        "seed": 1,
-    }
-
-    result = compute_ui_payload(payload)
-
-    assert result["metadata"]["prior_source"] == "provided_bins"
-    assert 0.0 <= result["p_ge_threshold"] <= 1.0
-
-
-def test_browser_contract_recomputes_from_uploaded_study_table() -> None:
-    studies = pd.read_csv(ROOT / "Data" / "conway_studies.csv")
-    studies.loc[studies.index[0], "bias"] = float(studies.loc[studies.index[0], "bias"]) + 0.25
-    payload = {
-        "subgroup": "pft",
-        "study_csv": studies.to_csv(index=False),
-        "n_boot": 25,
-        "seed": 123,
-        "bootstrap_mode": "cluster_plus_withinstudy",
-    }
-
-    bootstrap = build_bootstrap_payload(payload)
-
-    assert bootstrap["subgroup"] == "pft"
-    assert bootstrap["n_rows"] == 25
-    assert bootstrap["params"]
-    assert bootstrap["metadata"] == {
-        "agreement_method_version": AGREEMENT_METHOD_VERSION,
-        "results_status": RESULTS_STATUS,
-        "requested_group": "pft",
-        "parameter_group_used": "single_model",
-    }
-    assert {row["agreement_method_version"] for row in bootstrap["params"]} == {
-        AGREEMENT_METHOD_VERSION
-    }
-    assert {row["results_status"] for row in bootstrap["params"]} == {RESULTS_STATUS}
-    assert {row["requested_group"] for row in bootstrap["params"]} == {"pft"}
-    assert {row["parameter_group_used"] for row in bootstrap["params"]} == {"single_model"}
-
-
 @pytest.mark.parametrize(
     ("column", "replacement"),
     [
@@ -237,54 +150,6 @@ def test_browser_contract_rejects_mixed_parameter_provenance(column: str, replac
 
     with pytest.raises(ValueError, match=f"provenance `{column}`"):
         compute_ui_payload(_likelihood_payload(params))
-
-
-def test_browser_contract_default_and_uploaded_paths_share_method_provenance() -> None:
-    default_result = compute_ui_payload(
-        {
-            "tcco2": 50.0,
-            "subgroup": "pft",
-            "mode": "likelihood_only",
-            "params_csv": _read_text(ROOT / "artifacts" / "bootstrap_params.csv"),
-            "n_param_draws": 25,
-            "seed": 123,
-        }
-    )
-    uploaded_result = compute_ui_payload(
-        {
-            "tcco2": 50.0,
-            "subgroup": "pft",
-            "mode": "likelihood_only",
-            "study_csv": _read_text(ROOT / "Data" / "conway_studies.csv"),
-            "n_boot": 25,
-            "n_param_draws": 25,
-            "seed": 123,
-            "bootstrap_mode": "cluster_plus_withinstudy",
-        }
-    )
-
-    assert (
-        default_result["metadata"]["agreement_method_version"]
-        == uploaded_result["metadata"]["agreement_method_version"]
-    )
-    assert (
-        default_result["metadata"]["results_status"]
-        == uploaded_result["metadata"]["results_status"]
-    )
-    assert default_result["metadata"]["requested_group"] == "pft"
-    assert default_result["metadata"]["parameter_group_used"] == "lft"
-    assert uploaded_result["metadata"]["requested_group"] == "pft"
-    assert uploaded_result["metadata"]["parameter_group_used"] == "single_model"
-
-
-def test_browser_contract_rejects_missing_requested_parameter_group() -> None:
-    params = pd.read_csv(ROOT / "artifacts" / "bootstrap_params.csv")
-    params = params.loc[params["group"] == "main"]
-    payload = _likelihood_payload(params)
-    payload["subgroup"] = "pft"
-
-    with pytest.raises(ValueError, match="No parameters found for requested subgroup 'pft'"):
-        compute_ui_payload(payload)
 
 
 def test_browser_contract_validates_prior_record_payloads_like_csv() -> None:

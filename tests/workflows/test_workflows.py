@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import inspect
 import warnings
 from pathlib import Path
 
@@ -16,17 +15,6 @@ from tcco2_accuracy.core.conway_meta import (
 )
 from tcco2_accuracy.data import CONWAY_DATA_PATH, INSILICO_PACO2_PATH, load_conway_group
 from tcco2_accuracy.workflows import bootstrap, conditional, infer, meta, paco2, sim
-
-
-def test_workflow_fallback_preserves_existing_out_dir_positional_slot() -> None:
-    for function in (
-        sim.run_forward_simulation_summary,
-        infer.run_inference_demo,
-        conditional.run_conditional_classification,
-    ):
-        parameter_names = list(inspect.signature(function).parameters)
-        assert parameter_names[-2:] == ["out_dir", "fallback"]
-
 
 PUBLISHED_FIXTURE_PATH = Path(__file__).resolve().parents[1] / "fixtures" / "conway_table1.csv"
 

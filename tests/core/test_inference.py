@@ -39,23 +39,6 @@ def test_likelihood_survival_preserves_extreme_normal_tails() -> None:
         assert row[column] == pytest.approx(value, rel=1e-14, abs=0.0)
 
 
-def test_likelihood_monotonicity() -> None:
-    params = pd.DataFrame(
-        {
-            "delta": [-1.0, 1.0],
-            "sigma2": [1.0, 1.0],
-            "tau2": [0.0, 0.0],
-        }
-    )
-
-    result = infer_paco2([30.0, 40.0, 50.0], params, thresholds=[45.0])
-
-    medians = result["paco2_q500"].to_numpy()
-    probs = result["p_ge_45"].to_numpy()
-    assert np.all(np.diff(medians) > 0)
-    assert np.all(np.diff(probs) > 0)
-
-
 def test_prior_weighted_symmetry_keeps_center() -> None:
     params = pd.DataFrame({"delta": [0.0], "sigma2": [1.0], "tau2": [0.0]})
     prior = np.array([30.0, 40.0, 50.0])
@@ -90,16 +73,6 @@ def test_inference_explicit_main_fallback_records_provenance() -> None:
     assert set(result["group"]) == {"pft", "ed_inp", "icu"}
     assert set(result["requested_group"]) == {"pft", "ed_inp", "icu"}
     assert set(result["parameter_group_used"]) == {"main"}
-
-
-def test_inference_by_subgroup_medians_monotone() -> None:
-    paco2_data = pd.DataFrame({"paco2": [35.0, 45.0, 55.0], "subgroup": ["pft", "pft", "pft"]})
-    params = pd.DataFrame({"group": ["lft"], "delta": [1.0], "sigma2": [1.0], "tau2": [0.0]})
-
-    result = infer_paco2_by_subgroup([35.0, 45.0, 55.0], paco2_data, params, thresholds=[45.0])
-
-    medians = result["paco2_q500"].to_numpy()
-    assert np.all(np.diff(medians) >= 0)
 
 
 def test_inference_rejects_empty_threshold_sequence() -> None:

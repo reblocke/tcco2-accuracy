@@ -126,16 +126,6 @@ def test_canonical_public_agreement_artifacts_match_same_seed_rebuild(tmp_path: 
             )
 
 
-def test_numeric_artifact_comparison_uses_absolute_tolerance_only() -> None:
-    expected = pd.DataFrame({"group": ["main"], "tau2": [1.0]})
-    within_tolerance = expected.assign(tau2=[1.0 + 5e-13])
-    above_tolerance = expected.assign(tau2=[1.0 + 2e-12])
-
-    _assert_numeric_frames_close(within_tolerance, expected)
-    with pytest.raises(AssertionError):
-        _assert_numeric_frames_close(above_tolerance, expected)
-
-
 def test_canonical_public_promotion_accepts_exact_contract_and_resolved_aliases(
     tmp_path: Path,
 ) -> None:

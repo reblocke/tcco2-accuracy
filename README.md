@@ -272,14 +272,30 @@ are not release-approved.
 
 | Make target | Purpose and local effects |
 | --- | --- |
+<<<<<<< Updated upstream
 | `stage-web` | Replace staged Python and public data copies under `web/assets/` and write the staging manifest |
 | `test` | Run Python unit, workflow, staging, and browser-contract tests |
 | `e2e` | Run Playwright browser smoke tests against the staged app |
 | `visual-qa` | Write local review screenshots under `.pytest_tmp/visual-qa/` |
 | `verify` | Check public history, stage assets, check format/lint, and run unit and E2E tests |
+=======
+| `make stage-web` | Stage Python and data assets for the static app |
+| `make test` | Run scientific regression, workflow, staging, and browser-contract checks beyond browser E2E coverage |
+| `make e2e` | Run Playwright browser tests and save a result report plus replayable traces under `.pytest_tmp/e2e/` |
+| `make visual-qa` | Write local review screenshots under `.pytest_tmp/visual-qa/` |
+| `make verify` | Run public-history checks, staging, format check, lint, Python regression tests, and E2E tests |
+>>>>>>> Stashed changes
 
 Scientific validation targets are documented in `docs/VALIDATION.md`; current ticket states and
 their minimum completion evidence are maintained in `docs/PLAN.md`.
+
+Prefer E2E tests for feature verification; retain isolated checks only for meaningful failures
+those E2E assertions miss. Before adding an isolated test, enumerate the failure modes and write
+the test before implementing the code. See `AGENTS.md` for the testing rules.
+
+After `make e2e`, inspect `.pytest_tmp/e2e/results.xml` and replay a test with
+`uv run python -m playwright show-trace .pytest_tmp/e2e/browser/<test-directory>/trace.zip`.
+Rerunning `make e2e` replaces these local artifacts.
 
 ## Citation
 
