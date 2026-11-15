@@ -82,7 +82,9 @@ def finalize_run(out, manifest):
     manifest["run_status"] = "complete"
 
 
-def run(mode, run_id, resume=False, sample_only=False):
+def run(mode, run_id, resume=False, sample_only=False, *, stratum=None):
+    if stratum is not None and (mode != "public" or stratum not in GROUPS):
+        raise ValueError("A selected stratum must be a prespecified public source stratum")
     if not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9_-]{0,79}", run_id):
         raise ValueError("Invalid run identifier")
     base = (ROOT / ".pytest_tmp/future-setting").resolve()
@@ -97,6 +99,9 @@ def run(mode, run_id, resume=False, sample_only=False):
     manifest_path = out / "manifest.json"
     if resume:
         manifest = json.loads(manifest_path.read_text())
+        if stratum is not None and stratum != manifest.get("requested_stratum"):
+            raise ValueError("Cannot change the selected stratum on resume")
+        stratum = manifest.get("requested_stratum")
         if (
             manifest["mode"] != mode
             or manifest["input_sha256"] != revision["input_sha256"]
@@ -108,6 +113,7 @@ def run(mode, run_id, resume=False, sample_only=False):
         manifest = {
             **revision,
             "mode": mode,
+            "requested_stratum": stratum,
             "run_id": run_id,
             "backend": backend,
             "method_version": SPEC["method_version"],
@@ -127,6 +133,8 @@ def run(mode, run_id, resume=False, sample_only=False):
 
         write(out / "scientific_checks.json", check_binary(model))
     groups = GROUPS if mode == "public" else ("synthetic",)
+    if stratum is not None:
+        groups = (stratum,)
     summaries = {}
     for g in groups:
         info = manifest["strata"].setdefault(g, {})
@@ -216,6 +224,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=["public", "recovery"])
     parser.add_argument("--run-id")
+    parser.add_argument("--stratum", choices=GROUPS, help="Fit a single public source stratum")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument(
         "--sample-only",
@@ -225,8 +234,16 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.resume and not args.run_id:
         parser.error("--resume requires --run-id")
+    if args.stratum and args.mode != "public":
+        parser.error("--stratum requires public mode")
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
-    result = run(args.mode, args.run_id or f"{args.mode}-{stamp}", args.resume, args.sample_only)
+    result = run(
+        args.mode,
+        args.run_id or f"{args.mode}-{stamp}",
+        args.resume,
+        args.sample_only,
+        stratum=args.stratum,
+    )
     failed = any(
         s["status"] in {"held_precision", "held_sampler", "failed_recovery"}
         for s in result["strata"].values()

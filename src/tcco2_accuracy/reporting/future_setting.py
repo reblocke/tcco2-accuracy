@@ -297,6 +297,8 @@ def _bridge(manifest, summaries):
     rows = []
     for rec in corrected.itertuples():
         g = rec.group
+        if g not in manifest["strata"]:
+            continue
         original = published.loc[rec.population]
         for method, version, rev, values, membership in (
             (
