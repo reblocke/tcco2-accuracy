@@ -31,11 +31,12 @@ def load_ledger():
         or set(ledger.study_id) != set(source.index)
     ):
         raise ValueError("Ledger must account for each public source row once")
-    if not np.allclose(
-        ledger[["archive_bias", "archive_s2"]],
-        source.loc[ledger.study_id, ["bias", "s2"]],
-        rtol=1e-10,
-    ):
+    # The repository's added ICU row rounds Figshare S2 to six decimal places.
+    aligned = source.loc[ledger.study_id, ["bias", "s2"]].to_numpy().copy()
+    bolliger = ledger.study_id.eq("Bolliger 2007 (TOSCA - ICU)")
+    archived = ledger[["archive_bias", "archive_s2"]].to_numpy().copy()
+    archived[bolliger, 1] = np.round(archived[bolliger, 1], 6)
+    if not np.allclose(archived, aligned, rtol=1e-12, atol=1e-12):
         raise ValueError("Ledger and public source revisions disagree")
     if not set(ledger.status) <= {"cleared", "held"} or not set(ledger.difference_orientation) == {
         "arterial_minus_transcutaneous"
