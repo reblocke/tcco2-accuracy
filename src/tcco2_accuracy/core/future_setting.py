@@ -68,6 +68,14 @@ class PredictiveKernel:
     def quantile(self, probability):
         if not 0 < probability < 1:
             raise ValueError("Predictive quantiles require interior probabilities")
+        # A single normal setting distribution has analytic predictive quantiles.
+        if (self.theta[..., 3] == 0).all():
+            means = self.theta[..., 0]
+            variances = np.exp(self.theta[..., 1]) + self.theta[..., 2] ** 2
+            if np.ptp(means) == 0 and np.ptp(variances) == 0:
+                return float(
+                    means.flat[0] + special.ndtri(probability) * np.sqrt(variances.flat[0])
+                )
         center = self.theta[..., 0].mean()
         # Chebyshev bounds bracket the quantile of this finite draw mixture.
         radius = np.sqrt(

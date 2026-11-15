@@ -233,3 +233,11 @@
 - Final tag, removal of provisional copy, manuscript unfreeze, submission-readiness claims, and
   final downstream promotion require TCCO2-007 independent biostatistical review, the locked
   analysis specification, and completed restricted-data authority and provenance review.
+
+### TCCO2-008
+
+Run `make future-setting-recovery` for the independent Gaussian likelihood checks, transformed-unit posterior contrasts, fixed-seed generative study, forward/inverse comparison with independently integrated truth, and fixed index selection. The run directory includes scientific_checks.json and recovery.json. Run `make future-setting-fit` for the per-stratum diagnostics, predictive checks, Monte Carlo and quadrature records, and candidate tables. The [acceptance protocol](../models/future_setting/acceptance.md) sets the thresholds.
+
+The November 15 candidate run `public-adjudicated-v2` passed for ICU (16 units), acute respiratory failure (14), and lung function (4). The main fit is held for the signed steady-state limits, counts and repeat-measurement method from Simon 2003. The three accepted fits had four chains, zero post-warmup divergences and zero maximum-treedepth hits. CmdStan reported five rejected proposals during warmup across these three accepted fits. The largest continuous endpoint Monte Carlo SE, including pointwise endpoint interval bounds, was 0.0243 mmHg. The largest threshold-probability Monte Carlo SE was 0.000225. Quadrature orders 32 and 64 agreed on every discrete quantile.
+
+In `recovery-adjudicated-v2`, the largest absolute predictive endpoint error against the generating model was 0.418 mmHg. The fitted interval contained 95.26% of the independently integrated generating distribution. All 15 conditional quantiles matched their true support points. The largest absolute threshold-probability error was 0.0269. These are results of one prespecified simulation. Private application, independent biostatistical review and release remain pending.

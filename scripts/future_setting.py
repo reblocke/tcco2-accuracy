@@ -5,7 +5,10 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 from datetime import datetime, timezone
+from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 import numpy as np
 import pandas as pd
@@ -29,7 +32,54 @@ from tcco2_accuracy.workflows.future_setting_fit import (
 
 
 def write(path, obj):
-    path.write_text(json.dumps(obj, indent=2, allow_nan=False) + "\n")
+    with NamedTemporaryFile(mode="w", dir=path.parent, delete=False) as tmp:
+        json.dump(obj, tmp, indent=2, allow_nan=False)
+        tmp.write("\n")
+    Path(tmp.name).replace(path)
+
+
+def finalize_run(out, manifest):
+    """Bind the accepted posteriors and completed candidate tables to this run."""
+    from importlib.metadata import version
+
+    for group, info in manifest["strata"].items():
+        if info["status"] != "candidate":
+            continue
+        attempt = out / group / info["attempt"]
+        sampler = json.loads((attempt / "sampler.json").read_text())
+        precision = json.loads((attempt / "precision.json").read_text())
+        if not (sampler["sampler_pass"] and precision["passed"]):
+            raise ValueError("Candidate failed its recorded diagnostics")
+        info["posterior_sha256"] = digest(attempt / "posterior.npz")
+        if info["posterior_sha256"] != sampler["posterior_sha256"]:
+            raise ValueError("Posterior does not match sampler receipt")
+        info["precision_sha256"] = digest(attempt / "precision.json")
+    manifest["output_sha256"] = {
+        path.name: digest(path)
+        for path in sorted(out.iterdir())
+        if path.is_file() and path.name != "manifest.json"
+    }
+    report_files = (
+        "scripts/future_setting.py",
+        "scripts/future_setting_validation.py",
+        "src/tcco2_accuracy/core/future_setting.py",
+        "src/tcco2_accuracy/reporting/future_setting.py",
+        "src/tcco2_accuracy/workflows/future_setting_fit.py",
+        "src/tcco2_accuracy/workflows/future_setting_inverse.py",
+    )
+    manifest["reporting_git_commit"] = subprocess.check_output(
+        ["git", "-C", str(ROOT), "rev-parse", "HEAD"], text=True
+    ).strip()
+    if manifest["mode"] == "public":
+        manifest["population_applicability"] = {
+            "all": "Mixed-age overall source, including pediatric and neonatal studies.",
+            "icu": "Apply to ICU index measurements if the literature ICU settings are comparable.",
+            "ed_inp": "ED/inpatient index measurements use the acute respiratory failure source class; clinical case mix can differ.",
+            "pft": "PFT index measurements use the LFT source class, which includes respiratory inpatients.",
+        }
+    manifest["workflow_sha256"] = {name: digest(ROOT / name) for name in report_files}
+    manifest["reporting_software"] = {k: version(k) for k in ("numpy", "scipy", "pandas")}
+    manifest["run_status"] = "complete"
 
 
 def run(mode, run_id, resume=False, sample_only=False):
@@ -70,7 +120,12 @@ def run(mode, run_id, resume=False, sample_only=False):
             "release": "candidate only",
             "strata": {},
         }
-        write(manifest_path, manifest)
+    manifest["run_status"] = "running"
+    write(manifest_path, manifest)
+    if mode == "recovery":
+        from future_setting_validation import check_binary
+
+        write(out / "scientific_checks.json", check_binary(model))
     groups = GROUPS if mode == "public" else ("synthetic",)
     summaries = {}
     for g in groups:
@@ -92,8 +147,13 @@ def run(mode, run_id, resume=False, sample_only=False):
             info["generator_seed"] = 88031
         groupdir = out / g
         groupdir.mkdir(exist_ok=True)
+        last_accepted = (
+            info.get("attempt") if resume and info.get("status") == "candidate" else None
+        )
         for retained in (4000, 8000, 16000, 32000, 64000, 128000, 256000, 512000):
             attempt = groupdir / f"draws-{retained}"
+            if last_accepted and retained < int(last_accepted.removeprefix("draws-")):
+                continue
             if attempt.is_symlink() or groupdir.is_symlink():
                 raise ValueError("Invalid sample destination")
             if resume and (attempt / "sampler.json").is_file():
@@ -112,6 +172,12 @@ def run(mode, run_id, resume=False, sample_only=False):
                 if theta.shape != (4, retained, 5):
                     raise ValueError("Incomplete posterior")
             else:
+                if resume and attempt.exists():
+                    incomplete = (
+                        groupdir
+                        / f"{attempt.name}-incomplete-{datetime.now(timezone.utc):%Y%m%dT%H%M%S%fZ}"
+                    )
+                    attempt.rename(incomplete)
                 theta, receipt = sample_attempt(model, data, attempt, retained)
             info.update(
                 status="sampled", attempt=attempt.name, sampler_pass=receipt["sampler_pass"]
@@ -138,7 +204,10 @@ def run(mode, run_id, resume=False, sample_only=False):
         from tcco2_accuracy.reporting.future_setting import finish_run
 
         finish_run(out, manifest, summaries)
-        write(manifest_path, manifest)
+        finalize_run(out, manifest)
+    else:
+        manifest["run_status"] = "sampled"
+    write(manifest_path, manifest)
     print(out, flush=True)
     return manifest
 

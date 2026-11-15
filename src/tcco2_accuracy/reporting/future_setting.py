@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 from scipy import optimize, special, stats
 
-from ..core._posterior import weighted_quantile
 from ..core.future_setting import (
     LEVELS,
     METHOD,
@@ -49,12 +48,7 @@ def _inverse_checks(kernel, support, weights, tcco2):
         se = batch_mcse((num - p * den) / den.mean())
         return float(p), se
 
-    averaged = joint.mean(axis=(1, 2))
-    masses = averaged / averaged.sum()
-    result = {
-        "quantiles": weighted_quantile(a, masses, LEVELS),
-        "probability_ge": float(np.clip(masses[a >= 45].sum(), 0, 1)),
-    }
+    result = inverse_summary(kernel, a, w, tcco2)
     p, se = ratio(a >= 45)
     if not np.isclose(p, result["probability_ge"], rtol=1e-12, atol=1e-14):
         raise ValueError("Inconsistent posterior marginalization")
@@ -158,7 +152,7 @@ def assess(theta, data, prior, group, mode):
         "discrete_quantile_checks": {str(t): j[2] for t, j in zip(GRID, inv, strict=True)},
     }
     acc["passed"] = bool(
-        max(endpoint_se) <= 0.025
+        max(*endpoint_se, width_mcse) <= 0.025
         and qerr <= 0.01
         and perr <= 0.0001
         and same
@@ -198,6 +192,8 @@ def assess(theta, data, prior, group, mode):
             prior_revision="synthetic_fixture_v1",
             prior_uncertainty="fixed_empirical",
             support_representation="synthetic discrete bin centers",
+            reference_standard="arterial PaCO2",
+            sampling_unit="invented aggregate prior masses",
         )
         for t, (q, _, _) in zip(GRID, inv, strict=True)
     ]
@@ -284,6 +280,7 @@ def _recovery_truth(result):
         )
     return dict(
         true_predictive_quantiles=true_q,
+        generating_mass_inside_fitted_interval=float(cdf(pred["upper"]) - cdf(pred["lower"])),
         max_predictive_error=qerr,
         inverse=errors,
         passed=qerr <= 1.5
@@ -397,7 +394,15 @@ def finish_run(out, manifest, summaries):
                 if manifest["mode"] == "public"
                 else "synthetic_generator_88031"
             )
+            if name == "interval_bridge":
+                for method, source in (
+                    ("published", "tests/fixtures/conway_table1.csv"),
+                    ("corrected_legacy", "Data/conway_studies.csv"),
+                ):
+                    df.loc[df.method == method, "input_revision"] = manifest["input_sha256"][source]
             df.to_csv(out / (name + ".csv"), index=False)
+        else:
+            (out / (name + ".csv")).unlink(missing_ok=True)
     states = ", ".join(f"{g} ({i['status']})" for g, i in manifest["strata"].items())
     (out / "manuscript_framing.md").write_text(
         "# Candidate methods and interpretation\n\n"

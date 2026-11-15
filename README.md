@@ -21,6 +21,8 @@ provisional pending independent biostatistical review. PaCO2-dependent manuscrip
 downstream outputs remain frozen at the legacy method revision; see
 [`artifacts/STATUS.md`](artifacts/STATUS.md).
 
+The [offline future-setting analysis](docs/FUTURE_SETTING.md) fits a joint Bayesian model to adjudicated public study summaries and produces candidate predictions and a synthetic-prior demonstration.
+
 ## Choose a Route
 
 | Goal | Source/access class | Current evidence and start |

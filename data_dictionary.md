@@ -174,3 +174,5 @@ permission, and retention items remain `HUMAN REVIEW REQUIRED`.
 - Public branch and tag history is rewritten and checked against the release contract. Independently
   retained clones, caches, and historical Pages deployments outside repository-controlled refs may
   retain earlier material.
+
+The public [TCCO2-008 source ledger](models/future_setting/source_ledger.csv) records original and fitted summary statistics, source membership and adjudication. Bias and limits use mmHg, variances use mmHg², and log variance uses the natural logarithm relative to 1 mmHg². The run manifest and quantity labels are described in the [offline workflow](docs/FUTURE_SETTING.md).

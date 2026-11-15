@@ -83,3 +83,5 @@ Agent cautions:
 - Validate CITATION.cff after citation edits.
 - Run make stage-web and browser/app tests after app or browser metadata changes.
 - Prefer E2E feature verification and retain isolated tests only for meaningful gaps in its assertions; follow the test-first rules in AGENTS.md. make e2e saves a result report and replayable traces under .pytest_tmp/e2e/.
+
+- [Offline future-setting model and commands](docs/FUTURE_SETTING.md): posterior predictive disagreement and fixed empirical-prior inverse inference.

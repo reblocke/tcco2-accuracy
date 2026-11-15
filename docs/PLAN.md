@@ -52,3 +52,7 @@ changes.
 Public branch and tag history is continuously checked against the release contract. Independently
 retained clones, caches, and historical deployments outside repository-controlled refs remain
 outside this repository verification boundary.
+
+## TCCO2-008
+
+The [offline future-setting workflow](FUTURE_SETTING.md) has distinct records for source adjudication, actual fitting, predictive integration, synthetic recovery, public candidates, private application and human review. Inspect the run manifest for each stratum's evidence status. The pre-fit ledger documents the Simon steady-state source conflict affecting the overall class.

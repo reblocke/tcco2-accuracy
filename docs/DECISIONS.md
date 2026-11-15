@@ -199,3 +199,7 @@
   configured as permissive.
 - `format_inference_demo` only supports a single threshold and raises a ValueError otherwise in `src/tcco2_accuracy/workflows/infer.py`.
 - Legacy Conway study exports read bias/S2 and subgroup membership from the RData objects (`main`, `ICU`, `ARF`, `LFT`) and merge counts from `data.dta` (or `data_counts.csv` fallback); the Bolliger ICU row uses a 49/49/1 count fallback with bias/S2 pulled from `ICU` when absent from `main` to preserve the published/legacy source export (`scripts/export_conway_rdata.py:29`, `scripts/export_conway_rdata.py:107`).
+
+## 2026-11-15 — TCCO2-008
+
+The scientific decision selects one additive agreement model per prespecified source class, a joint Gaussian bias/log-variance hierarchy with regularizing hyperpriors, and inverse inference conditional on the fixed empirical index PaCO₂ prior. The independent-unit sampling approximation and the numerical hyperpriors are versioned with the [model](../models/future_setting/README.md). Unresolved source conflicts hold all affected fits with their intended membership intact. The approved source overlay preserves the historical comparator inputs. The real TriNetX application, independent biostatistical review, manuscript promotion and release each have their own disposition.
