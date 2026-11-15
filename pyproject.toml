@@ -22,6 +22,9 @@ dev = [
     "pytest-playwright>=0.5",
     "ruff>=0.8",
 ]
+fitting = [
+    "cmdstanpy==1.3.2",
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
