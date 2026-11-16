@@ -208,7 +208,7 @@ retention, publication, and external review decisions are outside this code cont
 - Restricted workflows require in-memory `paco2_data` or an explicitly supplied private `.dta`
   path. Package and workflow loaders do not auto-discover repository-local extracts. Historical
   local filenames may still be passed explicitly for compatibility.
-- The static browser app defaults to likelihood-only inference and stages no PaCO2 prior. It can run
+- The static browser app defaults to signed future-setting disagreement and stages no PaCO2 prior. It can run
   without the restricted `.dta`; prior-weighted inference requires an explicit user-supplied binned
   prior that remains client-side.
 - Exact counts and normalized weights derived from the restricted source are both private-only

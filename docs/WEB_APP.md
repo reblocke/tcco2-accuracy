@@ -1,65 +1,15 @@
-# TcCO2 to PaCO2 Static Web App
+# Future-setting CO₂ calculator
 
-## What The App Does
-- Computes a PaCO2 median with a prediction interval conditional on an observed TcCO2.
-- Reports `P(PaCO2 >= threshold)` and the observed TcCO2 threshold classification.
-- Visualizes the PaCO2 distribution, threshold region, and PI/median markers; an uploaded-prior
-  analysis also shows direct-labeled prior and scaled-likelihood curves.
-- Supports custom study table and binned prior uploads in CSV; XLSX is parsed client-side when the browser SheetJS dependency is available.
-- Runs the Python package in a Pyodide worker. JavaScript does not implement the statistical model.
+The initial HTML compares five 95% intervals for each source stratum. The default view shows the median and central interval of arterial minus transcutaneous CO₂ in one new paired observation. The conditional view takes a positive observed TcCO₂, a positive threshold, and a local fixed empirical prior in CSV/XLSX format. Supply group, paco2_bin and weight for all four groups. The existing count column takes precedence when present. All positive-weight support points enter the calculation, including values outside the chart's visible resolution.
 
-## Default Values
-- TcCO2 = 50 mmHg
-- Hypercapnia threshold = 45 mmHg
-- Prediction interval = 95% PI
-- Inference mode = likelihood-only
-- Setting = All
-- Bootstrap draws = 1000
-- Bootstrap mode = `cluster_plus_withinstudy`
-- Seed = 202401
+The estimator uses the accepted overall run after Simon adjudication and the three accepted subgroup fits from the previous public run. Staging uses the reviewed summary and the four per-stratum kernels in `models/pages/`. Each kernel contains log densities under quadrature orders 64 and 32, a CDF, and fine-order log densities averaged within contiguous chain batches. The exporter retains all draws in the marginal densities. It checks cubic interpolation at the intermediate quarter-mmHg grid points before storing the half-mmHg knots. The browser verifies the selected binary's checksum before computing. The 95% agreement summaries come directly from the accepted fit.
 
-## Data Assets
-- `web/assets/data/conway_studies.csv` - generated staged canonical study table.
-- `web/assets/data/bootstrap_params.csv` - generated staged canonical bootstrap parameters.
-- `web/assets/py/tcco2_accuracy/` - generated staged Python package copied from the browser allowlist.
-- `web/llms.txt` and the metadata tags in `web/index.html` describe the deployed
-  static app for machine indexing.
+If any positive-mass offset falls outside −48 to +48 mmHg, the browser withholds the whole conditional result. This is the numerical extent of the browser asset. For the full posterior, use the accepted run directory for the requested setting and your local prior file:
 
-Run `make stage-web` after changing Python browser-facing code or default data
-assets. Generated staged assets are not tracked.
-
-## Browser Behavior
-- Default calculations use the staged canonical bootstrap parameters for responsiveness.
-- Uploaded study tables or changed bootstrap settings recompute bootstrap parameters in the browser worker using the same Python model.
-- Prior-weighted inference requires an uploaded binned prior; selecting that mode without one fails
-  closed and clears any stale result.
-- No PaCO2 prior is staged or fetched. Normalized restricted-derived weights may reconstruct the
-  source distribution even without exact count columns, so the repository does not treat a
-  weight-only prior as automatically public-safe.
-- The posterior chart uses a posterior-focused x-axis for readability; calculations still use the full posterior and prior support.
-- In prior-weighted mode, the likelihood curve is Python-computed and normalized to sum to 1 over the histogram bins for visual comparison only.
-- Browser copy uses threshold-classification and posterior-mass terms rather than clinical correctness language.
-- The browser app does not read local filesystem paths, store values, send user inputs to a backend, or encode patient values in URLs.
-- Uploaded priors remain client-side. Governance of tracked and staged assets is defined in
-  `docs/data_release_contract.json`.
-
-## Local Run
-```bash
-uv sync --locked
-make serve
+```sh
+uv run python scripts/future_setting_prior.py .pytest_tmp/future-setting/public-main-simon-2003 prior.csv all 45 --threshold 45
 ```
 
-Open http://127.0.0.1:8000.
+Use `public-adjudicated-v2` for `icu`, `ed_inp`, and `pft`. Both evaluators require resolved discrete quantiles and adequate Monte Carlo and quadrature precision. Priors are processed locally. The public assets contain only literature-derived agreement information. The legacy custom-study and bootstrap workflows are available in the offline Python package.
 
-## Verification
-```bash
-make test
-make e2e
-make visual-qa
-make verify
-```
-
-`make e2e` runs Playwright against the staged static app and verifies the Pyodide contract executes in Chromium.
-`make visual-qa` writes desktop and mobile screenshots to `.pytest_tmp/visual-qa/`
-for chart-label review. It is an explicit local/reviewer aid and is not part of
-`make verify`.
+Run `make serve` for a local preview, `make verify` for contract and browser tests, and `make visual-qa` for desktop and mobile screenshots and measured load times. To regenerate the four public assets from their accepted run receipts, run `uv run python scripts/export_pages_predictions.py` followed by `make stage-web`. Independent biostatistical review and release are separate from numerical verification.

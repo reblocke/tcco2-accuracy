@@ -8,7 +8,7 @@ The machine-readable companion is `data_dictionary.csv`.
 
 | Asset | Purpose | Public status |
 | --- | --- | --- |
-| `Data/conway_studies.csv` | Operational canonical promotion and browser-staging source | Public |
+| `Data/conway_studies.csv` | Operational canonical promotion source | Public |
 | `Data/conway_studies.xlsx` | Human-editable review mirror of the canonical CSV | Public |
 | `Data/conway_studies_template.xlsx` | Template for future study additions | Public |
 | `Data/data_counts.csv` | Source-derived count fallback for Conway export workflows | Public, review provenance before reuse |
@@ -105,12 +105,7 @@ PaCO2 values and then aggregated. The production bin contract is
 
 ## Browser App Uploads
 
-The app accepts an optional CSV/XLSX upload for a custom Conway-compatible study table.
-Prior-weighted mode additionally requires a binned PaCO2 prior upload; likelihood-only mode does
-not use a prior. These files are parsed in the browser and
-passed to the Pyodide worker. They are not sent to a backend, persisted, logged,
-or encoded in URLs. Uploaded study tables and prior supports must satisfy the same validation
-contract as canonical inputs.
+Conditional inference uses a locally uploaded binned prior. The default agreement display uses public setting-specific predictions. The four NPZ kernels and comparison summary are documented in [the browser contract](docs/WEB_APP.md).
 
 ## Parameter Routing Fields
 
@@ -128,7 +123,7 @@ Small aggregate outputs under `artifacts/` support review and manuscript
 workflows. `artifacts/STATUS.md` is the authority for whether each output is
 corrected-provisional or frozen at the legacy agreement-method revision. The
 canonical bootstrap parameters include `agreement_method_version` and
-`results_status`; browser staging rejects missing, stale, or mixed values.
+`results_status`; legacy inference rejects missing, stale, or mixed values.
 Canonical promotion also requires the locked source, seed, draw count, and bootstrap mode in
 `artifacts/STATUS.md`; custom candidates must be written outside `artifacts/`.
 
@@ -143,7 +138,7 @@ The exact current-tree allowlists and SHA-256 values are machine-readable in
 | Asset | Purpose | Current status |
 | --- | --- | --- |
 | `artifacts/STATUS.md` | Current/frozen artifact manifest and promotion gates | Current documentation |
-| `artifacts/bootstrap_params.csv` | Canonical browser bootstrap parameters | Corrected-provisional |
+| `artifacts/bootstrap_params.csv` | Canonical legacy bootstrap parameters | Corrected-provisional |
 | Rounded/aggregate PaCO2-dependent artifacts retained in `artifacts/STATUS.md` | Simulation, classification, two-stage, prediction-interval, and manuscript review outputs | Frozen legacy-method; not release-approved |
 
 ## Restricted Or Local-Only Assets

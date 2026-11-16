@@ -19,14 +19,14 @@ permission, or retention fields remain visibly `HUMAN REVIEW REQUIRED`.
 
 ## Current tracked public/reference assets
 
-- `Data/conway_studies.csv` is the operational canonical promotion and browser-staging source;
+- `Data/conway_studies.csv` is the operational canonical promotion source;
   `Data/conway_studies.xlsx` is its human-editable review mirror. They contain public
   literature-derived reference summaries and must remain semantically equal.
-- `artifacts/bootstrap_params.csv` is the canonical corrected-provisional browser parameter asset.
+- `artifacts/bootstrap_params.csv` is the canonical corrected-provisional legacy parameter asset.
   It must contain exactly one current agreement-method revision and provisional status.
 - The other four corrected-provisional canonical agreement artifacts are listed in
   `artifacts/STATUS.md` and hash-locked by the release contract.
-- Pages stages only `conway_studies.csv`, `bootstrap_params.csv`, and the browser Python allowlist.
+- Pages stages the four literature-derived predictive kernels, their comparison summary, and the browser Python allowlist.
   It does not stage or fetch a PaCO2 prior.
 
 ## Restricted or private-only material

@@ -1,102 +1,70 @@
-const PYODIDE_VERSION = "0.29.0";
-const PYODIDE_INDEX_URL = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`;
-
-let pyodidePromise;
-let defaultAssetsPromise;
-
-self.onmessage = async (event) => {
-  const { id, type, payload } = event.data;
+// Only static public files are fetched. Uploaded values stay inside this worker.
+const indexURL = "https://cdn.jsdelivr.net/pyodide/v0.29.0/full/";
+let initialization;
+async function getRuntime() {
+  importScripts(indexURL + "pyodide.js");
+  const py = await loadPyodide({ indexURL });
+  await py.loadPackage(["numpy", "pandas", "scipy"]);
+  const manifest = await read("assets/py/manifest.json").then((r) => r.json());
+  const archive = await verifiedAsset(
+    "assets/py/pages.zip",
+    manifest.bundle_sha256,
+  );
+  py.FS.writeFile("/home/pyodide/pages.zip", archive);
+  py.runPython("import sys; sys.path.insert(0,'/home/pyodide/pages.zip')");
+  py.runPython(
+    "import io, json, numpy as np\nfrom tcco2_accuracy.pages_prediction import conditional",
+  );
+  return py;
+}
+async function read(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw Error("Cannot load public model asset.");
+  return r;
+}
+async function verifiedAsset(path, expected) {
+  const bytes = await read(path).then((response) => response.arrayBuffer());
+  const digest = Array.from(
+    new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
+    (v) => v.toString(16).padStart(2, "0"),
+  ).join("");
+  if (digest !== expected)
+    throw Error("Public asset checksum mismatch. Reload this page.");
+  return new Uint8Array(bytes);
+}
+const kernels = new Map();
+self.onmessage = async ({ data }) => {
+  const { id, group, hash, target, prior, tc, threshold } = data;
   try {
-    if (type === "init") {
-      await initializePyodide();
-      self.postMessage({ id, type: "result", result: { ok: true } });
-      return;
+    const py = await (initialization ??= getRuntime());
+    if (!kernels.has(group)) {
+      kernels.set(
+        group,
+        await verifiedAsset("assets/data/" + group + ".npz", hash),
+      );
     }
-    if (type === "compute") {
-      const result = await compute(payload);
-      self.postMessage({ id, type: "result", result });
-      return;
+    const locals = py.toPy({
+      blob: kernels.get(group),
+      target,
+      prior,
+      tc,
+      threshold,
+    });
+    try {
+      const result = JSON.parse(
+        py.runPython(
+          "with np.load(io.BytesIO(bytes(blob))) as kernel:\n    answer=conditional(kernel,target,prior,tc,threshold)\njson.dumps(answer,allow_nan=False)",
+          { locals },
+        ),
+      );
+      self.postMessage({ id, result });
+    } finally {
+      locals.destroy();
     }
-    throw new Error(`Unknown worker message: ${type}`);
-  } catch (error) {
-    self.postMessage({ id, type: "error", error: error.message || String(error) });
+  } catch (e) {
+    self.postMessage({
+      id,
+      error: String(e.message).split("\n").filter(Boolean).at(-1),
+    });
   }
 };
-
-async function initializePyodide() {
-  if (pyodidePromise) {
-    return pyodidePromise;
-  }
-  pyodidePromise = (async () => {
-    importScripts(`${PYODIDE_INDEX_URL}pyodide.js`);
-    const pyodide = await loadPyodide({ indexURL: PYODIDE_INDEX_URL });
-    await pyodide.loadPackage(["numpy", "pandas", "scipy"]);
-    await stagePythonPackage(pyodide);
-    pyodide.runPython(`
-import sys
-if "/home/pyodide/src" not in sys.path:
-    sys.path.insert(0, "/home/pyodide/src")
-from tcco2_accuracy.browser_contract import compute_ui_payload
-`);
-    return pyodide;
-  })();
-  return pyodidePromise;
-}
-
-async function stagePythonPackage(pyodide) {
-  const manifest = await fetchJson("assets/py/manifest.json");
-  pyodide.FS.mkdirTree("/home/pyodide/src");
-  for (const file of manifest.files) {
-    const source = await fetchText(`assets/py/${file}`);
-    const destination = `/home/pyodide/src/${file}`;
-    pyodide.FS.mkdirTree(destination.split("/").slice(0, -1).join("/"));
-    pyodide.FS.writeFile(destination, source);
-  }
-}
-
-async function compute(inputPayload) {
-  const pyodide = await initializePyodide();
-  const defaults = await defaultAssets();
-  const payload = { ...inputPayload };
-  if (inputPayload.use_canonical_params) {
-    payload.params_csv = defaults.params;
-    delete payload.study_csv;
-  } else {
-    payload.study_csv = inputPayload.study_csv || defaults.studies;
-    delete payload.params_csv;
-  }
-
-  const pyPayload = pyodide.toPy(payload);
-  pyodide.globals.set("_browser_payload", pyPayload);
-  const pyResult = await pyodide.runPythonAsync("compute_ui_payload(_browser_payload)");
-  const result = pyResult.toJs({ dict_converter: Object.fromEntries });
-  pyResult.destroy();
-  pyPayload.destroy();
-  return result;
-}
-
-function defaultAssets() {
-  if (!defaultAssetsPromise) {
-    defaultAssetsPromise = Promise.all([
-      fetchText("assets/data/bootstrap_params.csv"),
-      fetchText("assets/data/conway_studies.csv"),
-    ]).then(([params, studies]) => ({ params, studies }));
-  }
-  return defaultAssetsPromise;
-}
-
-async function fetchText(url) {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to load ${url}: ${response.status}`);
-  }
-  return response.text();
-}
-
-async function fetchJson(url) {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to load ${url}: ${response.status}`);
-  }
-  return response.json();
-}

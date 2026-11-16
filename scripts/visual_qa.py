@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 import contextlib
+import json
 import socket
 import subprocess
 import sys
 import time
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Any
 
-from playwright.sync_api import Browser, Page, sync_playwright
+from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -20,173 +20,60 @@ if str(ROOT) not in sys.path:
 from scripts.stage_web_python import stage_web_python  # noqa: E402
 
 OUTPUT_DIR = ROOT / ".pytest_tmp" / "visual-qa"
-MIN_SCREENSHOT_BYTES = 5_000
 SYNTHETIC_PRIOR_PATH = ROOT / "tests" / "fixtures" / "synthetic_paco2_prior.csv"
-DEFAULT_TRACES = ["Posterior"]
-PRIOR_WEIGHTED_TRACES = ["Posterior", "Likelihood (scaled)", "Prior"]
 
 
 def main() -> None:
-    """Stage the app, run browser states, and write review screenshots."""
-
     stage_web_python(ROOT)
-    _assert_no_staged_prior()
-    if not SYNTHETIC_PRIOR_PATH.exists():
-        raise FileNotFoundError(f"Missing synthetic visual-QA prior: {SYNTHETIC_PRIOR_PATH}")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    for old_screenshot in OUTPUT_DIR.glob("*.png"):
-        old_screenshot.unlink()
-
-    with _serve_web() as base_url:
-        with sync_playwright() as playwright:
+    measurements = []
+    with _serve_web() as url, sync_playwright() as playwright:
+        for device, width, height in [("desktop", 1440, 950), ("mobile", 390, 900)]:
             browser = playwright.chromium.launch()
             try:
-                _capture_desktop_states(browser, base_url)
-                _capture_mobile_state(browser, base_url)
+                page = browser.new_page(
+                    viewport={"width": width, "height": height}, is_mobile=device == "mobile"
+                )
+                start = time.perf_counter()
+                page.goto(url, wait_until="domcontentloaded")
+                page.locator("#bounds").get_by_text("−11.5 to +11.2 mmHg").wait_for()
+                initial = time.perf_counter() - start
+                assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+                page.screenshot(path=str(OUTPUT_DIR / f"{device}-agreement.png"), full_page=True)
+                page.select_option("#subgroup", "ed_inp")
+                page.locator("#inverse").check()
+                page.locator("#prior-file").set_input_files(SYNTHETIC_PRIOR_PATH)
+                page.fill("#tcco2", "45")
+                start = time.perf_counter()
+                page.click("#calculate")
+                page.wait_for_function(
+                    "document.querySelector('#estimate').textContent === '48.0 mmHg' || document.querySelector('#error').textContent !== ''",
+                    timeout=90000,
+                )
+                assert not page.locator("#error").inner_text(), page.locator("#error").inner_text()
+                latency = time.perf_counter() - start
+                assert page.locator("#probability").inner_text() == "0.8182"
+                assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+                page.locator(".calc").screenshot(path=str(OUTPUT_DIR / f"{device}-conditional.png"))
+                cdp = browser.new_browser_cdp_session()
+                processes = cdp.send("SystemInfo.getProcessInfo")["processInfo"]
+                pids = [str(proc["id"]) for proc in processes if proc["type"] == "renderer"]
+                rss = subprocess.check_output(["ps", "-o", "rss=", "-p", ",".join(pids)], text=True)
+                measurements.append(
+                    dict(
+                        device=device,
+                        viewport=[width, height],
+                        stratum="arf",
+                        kernel_bytes=(ROOT / "models/pages/arf.npz").stat().st_size,
+                        agreement_seconds=initial,
+                        cold_inverse_seconds=latency,
+                        renderer_rss_kib_after_calculation=sum(map(int, rss.split())),
+                    )
+                )
             finally:
                 browser.close()
-
-    print("Visual QA screenshots:")
-    for path in sorted(OUTPUT_DIR.glob("*.png")):
-        print(f"- {path.relative_to(ROOT)} ({path.stat().st_size} bytes)")
-
-
-def _capture_desktop_states(browser: Browser, base_url: str) -> None:
-    context = browser.new_context(viewport={"width": 1440, "height": 950})
-    page = context.new_page()
-    try:
-        page.goto(base_url, wait_until="domcontentloaded")
-        _wait_for_ready(page)
-        _assert_no_prior_fetchable(page)
-        _wait_for_trace_names(page, DEFAULT_TRACES)
-        _assert_chart_contract(page, DEFAULT_TRACES, require_prior_labels=False)
-        _screenshot(page, "desktop-default.png")
-
-        page.locator("details.panel > summary").click()
-        page.locator("#prior-file").set_input_files(SYNTHETIC_PRIOR_PATH)
-        page.locator("input[name='mode'][value='prior_weighted']").check()
-        page.locator("#calculate").click()
-        _wait_for_trace_names(page, PRIOR_WEIGHTED_TRACES)
-        _assert_chart_contract(page, PRIOR_WEIGHTED_TRACES, require_prior_labels=True)
-        _screenshot(page, "desktop-prior-weighted-synthetic.png")
-
-        page.locator("#threshold").fill("150")
-        page.locator("#calculate").click()
-        _wait_for_trace_names(page, PRIOR_WEIGHTED_TRACES)
-        page.wait_for_function(
-            """
-            () => document
-              .querySelector("#chart-caption")
-              ?.textContent
-              .includes("outside the focused plot range")
-            """,
-            timeout=180_000,
-        )
-        _assert_chart_contract(page, PRIOR_WEIGHTED_TRACES, require_prior_labels=True)
-        _screenshot(page, "desktop-threshold-outside.png")
-    finally:
-        context.close()
-
-
-def _capture_mobile_state(browser: Browser, base_url: str) -> None:
-    context = browser.new_context(
-        viewport={"width": 390, "height": 900},
-        is_mobile=True,
-        device_scale_factor=1,
-    )
-    page = context.new_page()
-    try:
-        page.goto(base_url, wait_until="domcontentloaded")
-        _wait_for_ready(page)
-        _wait_for_trace_names(page, DEFAULT_TRACES)
-        _assert_chart_contract(page, DEFAULT_TRACES, require_prior_labels=False)
-        _screenshot(page, "mobile-default.png")
-    finally:
-        context.close()
-
-
-def _assert_chart_contract(
-    page: Page,
-    trace_names: list[str],
-    *,
-    require_prior_labels: bool,
-) -> None:
-    state = _chart_state(page)
-    if state["trace_names"] != trace_names:
-        raise AssertionError(f"Unexpected chart traces: {state['trace_names']}")
-    if state["showlegend"]:
-        raise AssertionError("Expected direct labels with detached legend hidden.")
-    if "Median" not in state["annotation_text"]:
-        raise AssertionError("Expected median marker label in chart annotations.")
-    if require_prior_labels:
-        for label in ("Prior", "Likelihood (scaled)"):
-            if label not in state["annotation_text"]:
-                raise AssertionError(f"Missing direct chart label: {label}")
-    else:
-        for label in ("Prior", "Likelihood (scaled)"):
-            if label in state["annotation_text"]:
-                raise AssertionError(f"Unexpected direct chart label: {label}")
-
-
-def _assert_no_staged_prior() -> None:
-    data_dir = ROOT / "web" / "assets" / "data"
-    for filename in ("paco2_public_prior.csv", "paco2_prior_bins.csv"):
-        prior = data_dir / filename
-        if prior.exists():
-            raise AssertionError(f"PaCO2 prior should not be staged: {prior}")
-
-
-def _assert_no_prior_fetchable(page: Page) -> None:
-    for filename in ("paco2_public_prior.csv", "paco2_prior_bins.csv"):
-        is_fetchable = page.evaluate(
-            "(url) => fetch(url).then((response) => response.ok)",
-            f"assets/data/{filename}",
-        )
-        if is_fetchable is True:
-            raise AssertionError(f"PaCO2 prior should not be served by the static app: {filename}")
-
-
-def _screenshot(page: Page, filename: str) -> None:
-    path = OUTPUT_DIR / filename
-    page.screenshot(path=path, full_page=True)
-    size = path.stat().st_size
-    if size < MIN_SCREENSHOT_BYTES:
-        raise AssertionError(f"Screenshot appears empty: {path} ({size} bytes)")
-
-
-def _chart_state(page: Page) -> dict[str, Any]:
-    return page.evaluate(
-        """
-        () => {
-          const chart = document.querySelector("#posterior-chart");
-          const annotations = chart.layout.annotations ?? [];
-          return {
-            trace_names: chart.data.map((trace) => trace.name),
-            showlegend: Boolean(chart._fullLayout.showlegend),
-            annotation_text: annotations.map((annotation) => annotation.text),
-          };
-        }
-        """
-    )
-
-
-def _wait_for_ready(page: Page) -> None:
-    page.get_by_text("Calculation complete.").wait_for(timeout=180_000)
-
-
-def _wait_for_trace_names(page: Page, trace_names: list[str]) -> None:
-    page.wait_for_function(
-        """
-        (expectedNames) => {
-          const chart = document.querySelector("#posterior-chart");
-          const names = chart?.data?.map((trace) => trace.name) ?? [];
-          return names.length === expectedNames.length &&
-            names.every((name, index) => name === expectedNames[index]);
-        }
-        """,
-        arg=trace_names,
-        timeout=180_000,
-    )
+    (OUTPUT_DIR / "measurements.json").write_text(json.dumps(measurements, indent=2) + "\n")
+    print(OUTPUT_DIR)
 
 
 @contextlib.contextmanager

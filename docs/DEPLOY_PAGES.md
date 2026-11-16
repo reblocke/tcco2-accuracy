@@ -12,7 +12,7 @@ make stage-web
 make serve
 ```
 
-Open http://127.0.0.1:8000 and verify the default likelihood-only calculation completes.
+Open http://127.0.0.1:8000 and verify the initial table and overall disagreement interval appear.
 
 ## GitHub Setup
 1. Enable GitHub Pages for the repository.
@@ -21,10 +21,10 @@ Open http://127.0.0.1:8000 and verify the default likelihood-only calculation co
 4. Confirm `.github/workflows/pages.yml` completes successfully.
 
 ## Runtime Notes
-- Pyodide, Plotly.js, and SheetJS are pinned CDN dependencies loaded by the browser.
+- Pyodide and SheetJS are pinned CDN dependencies loaded by the browser.
 - User-entered values and uploads are processed client-side only.
 - The default app does not require `Data/In Silico TCCO2 Database.dta`.
-- Pages stages only `conway_studies.csv` and `bootstrap_params.csv` as data assets. It must not
+- Pages stages the four public kernels and comparison summary as data assets. It must not
   contain or fetch `paco2_public_prior.csv`, exact prior bins, or another restricted-derived prior.
 - Prior-weighted inference requires an explicit user upload and fails closed without one.
 - `docs/data_release_contract.json` is the machine-readable current-tree, Pages, and public-history

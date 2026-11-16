@@ -31,7 +31,7 @@ class EmpiricalPriorMetadata:
             _validate_target_data_revision(value)
 
 
-def load_candidate_kernel(run_dir, target):
+def load_candidate_draws(run_dir, target):
     """Read only a public posterior with passed sampler, precision and identity checks."""
     run_dir = Path(run_dir)
     manifest = json.loads((run_dir / "manifest.json").read_text())
@@ -67,7 +67,12 @@ def load_candidate_kernel(run_dir, target):
             or not np.array_equal(data["draw_ids"], np.arange(1, theta.shape[1] + 1))
         ):
             raise ValueError("Invalid posterior type, chain or draw identity")
-    return PredictiveKernel(theta, order=precision["quadrature_order"]), manifest
+    return theta, precision["quadrature_order"], manifest
+
+
+def load_candidate_kernel(run_dir, target):
+    theta, order, manifest = load_candidate_draws(run_dir, target)
+    return PredictiveKernel(theta, order=order), manifest
 
 
 def index_support(records, target, columns=PatientInputColumns()):
@@ -82,7 +87,7 @@ def index_support(records, target, columns=PatientInputColumns()):
     return np.unique(index.paco2.to_numpy(float), return_counts=True)
 
 
-def _empirical_precision(kernel, a, w, t, summary):
+def _empirical_precision(kernel, a, w, t, summary, threshold=45):
     # Stream across support to bound memory even for unbinned private priors.
     quantiles = summary["quantiles"]
     accum = np.zeros((8, *kernel.theta.shape[:2]))
@@ -91,7 +96,7 @@ def _empirical_precision(kernel, a, w, t, summary):
     for support, prior in zip(a, logmass, strict=True):
         joint = np.exp(kernel.draw_logpdf(support - t) + prior - log_evidence)
         accum[0] += joint
-        if support >= 45:
+        if support >= threshold:
             accum[1] += joint
         for j, q in enumerate(quantiles):
             if support < q:

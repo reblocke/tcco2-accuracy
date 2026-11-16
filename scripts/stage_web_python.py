@@ -3,37 +3,29 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import re
 import shutil
+import zipfile
 from pathlib import Path
 
 DEFAULT_DATA_ASSETS = {
-    "conway_studies.csv": Path("Data/conway_studies.csv"),
-    "bootstrap_params.csv": Path("artifacts/bootstrap_params.csv"),
+    name: Path("models/pages") / name
+    for name in ("summary.json", "main.npz", "icu.npz", "arf.npz", "lft.npz")
 }
 
 BROWSER_PYTHON_FILES = (
     "__init__.py",
-    "_files.py",
-    "_params.py",
-    "_posterior.py",
     "bland_altman.py",
-    "bootstrap.py",
-    "browser_contract.py",
-    "conway_meta.py",
-    "data.py",
     "inference.py",
-    "simulation.py",
-    "ui_api.py",
-    "utils.py",
-    "validate_inputs.py",
+    "pages_prediction.py",
     "core/__init__.py",
     "core/_params.py",
     "core/_posterior.py",
     "core/bland_altman.py",
-    "core/bootstrap.py",
     "core/constants.py",
-    "core/conway_meta.py",
+    "core/future_setting.py",
     "core/inference.py",
     "core/paco2.py",
     "core/simulation.py",
@@ -49,7 +41,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def stage_web_python(repo_root: Path, web_dir: Path | None = None) -> dict[str, list[str]]:
+def stage_web_python(repo_root: Path, web_dir: Path | None = None) -> dict:
     """Copy browser assets into web/ and return the staged manifest."""
 
     repo_root = repo_root.resolve()
@@ -84,11 +76,77 @@ def stage_web_python(repo_root: Path, web_dir: Path | None = None) -> dict[str, 
         shutil.copy2(source, data_dst / asset_name)
         staged_data.append(f"assets/data/{asset_name}")
 
+    summary = json.loads((data_dst / "summary.json").read_text())
+    groups = {
+        "main": "Overall",
+        "icu": "Intensive care",
+        "arf": "Acute respiratory failure",
+        "lft": "Lung function testing",
+    }
+    columns = {
+        ("published", "reference_limits"): "Conway limits",
+        ("published", "endpoint_confidence_envelope"): "Conway envelope",
+        ("corrected_legacy", "reference_limits"): "Corrected limits",
+        ("corrected_legacy", "endpoint_confidence_envelope"): "Corrected envelope",
+        ("hierarchical", "posterior_predictive_disagreement"): "Predictive interval",
+    }
+    rows = []
+    for group, label in groups.items():
+        fit = summary[group]
+        if (
+            hashlib.sha256((data_dst / f"{group}.npz").read_bytes()).hexdigest()
+            != fit["kernel_sha256"]
+        ):
+            raise ValueError(f"Browser kernel checksum mismatch for {group}")
+        pairs = {(r["method"], r["quantity_type"]): r for r in fit["intervals"]}
+        if (
+            set(pairs) != set(columns)
+            or len(fit["intervals"]) != len(columns)
+            or fit["method"] != "future_setting_joint_v1"
+            or fit["status"] != "candidate"
+            or any(row["unit"] != "mmHg" for row in pairs.values())
+        ):
+            raise ValueError(f"Invalid interval evidence for {group}")
+        cells = []
+        for key, heading in columns.items():
+            pair = pairs[key]
+            interval = f"{pair['lower']:+.1f} to {pair['upper']:+.1f}".replace("-", "−")
+            cells.append(f'<td data-label="{heading}">{interval}</td>')
+        rows.append(f'<tr><th scope="row">{label}</th>{"".join(cells)}</tr>')
+    page = (repo_root / "web/index.html").read_text()
+    page = re.sub(
+        r"<tbody>.*?</tbody>", "<tbody>\n" + "\n".join(rows) + "\n</tbody>", page, flags=re.S
+    )
+    # Bind the initial table and calculator to the same revision, including on a cached page.
+    display = {
+        g: {k: fit[k] for k in ("quantiles", "method", "run", "status", "kernel_sha256")}
+        for g, fit in summary.items()
+    }
+    page = re.sub(
+        r'(<script type="application/json" id="fit-summary">).*?(</script>)',
+        lambda match: (
+            match[1] + json.dumps(display, allow_nan=False).replace("<", r"\u003c") + match[2]
+        ),
+        page,
+        flags=re.S,
+    )
+    (web_dir / "index.html").write_text(page)
+
     py_files = sorted(
         str(path.relative_to(package_dst.parent)).replace("\\", "/")
         for path in package_dst.rglob("*.py")
     )
+    bundle = package_dst.parent / "pages.zip"
+    with zipfile.ZipFile(bundle, "w") as archive:
+        for name in py_files:
+            # Stable filenames and timestamps make the bundle reproducible in a fresh checkout.
+            archive.writestr(
+                zipfile.ZipInfo(name),
+                (package_dst.parent / name).read_bytes(),
+                compress_type=zipfile.ZIP_DEFLATED,
+            )
     manifest = {
+        "bundle_sha256": hashlib.sha256(bundle.read_bytes()).hexdigest(),
         "python_root": "assets/py",
         "files": py_files,
         "data": sorted(staged_data),

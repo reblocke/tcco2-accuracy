@@ -25,7 +25,7 @@ def test_stage_web_python_enforces_public_data_allowlist_and_clears_stale_priors
 
     assert set(manifest["data"]) == expected_data
     assert not (web_dir / "assets" / "data" / "paco2_public_prior.csv").exists()
-    assert (web_dir / "assets" / "data" / "bootstrap_params.csv").read_bytes() == (
-        ROOT / "artifacts" / "bootstrap_params.csv"
+    assert (web_dir / "assets" / "data" / "main.npz").read_bytes() == (
+        ROOT / "models/pages" / "main.npz"
     ).read_bytes()
     assert not (web_dir / "assets" / "data" / "paco2_prior_bins.csv").exists()

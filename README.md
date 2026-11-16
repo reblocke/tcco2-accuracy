@@ -69,8 +69,7 @@ from the repository root. It creates a fresh temporary clone and keeps its
 virtual environment, dependency cache, and staged public web assets there;
 the source checkout is not staged. The server remains active until `Ctrl-C`.
 Successful setup opens <http://127.0.0.1:8000> and, with the default
-likelihood-only form values, displays `Calculation complete.` plus estimates
-and a chart. Dependency, port, or browser download failures stop that route;
+overall setting, displays the four-stratum table and signed disagreement interval. Dependency, port, or browser download failures stop that route;
 check their messages before retrying with another fresh temporary directory.
 
 ```bash
@@ -88,10 +87,10 @@ make serve
 ```
 
 The `serve` target first stages the Python allowlist and public
-Conway/bootstrap data into the clone's `web/assets/py/` and
+future-setting kernels into the clone's `web/assets/py/` and
 `web/assets/data/`, then starts an HTTP server. Open the local URL in a
 browser with Web Worker support. The worker downloads Pyodide plus NumPy,
-pandas and SciPy; the page also loads plotting/XLSX libraries. A working
+pandas and SciPy; XLSX parsing loads a spreadsheet reader on demand. A working
 browser route does not establish independent statistical review or clinical
 validity. The temporary clone remains after stopping the server so its
 generated files can be inspected and removed deliberately.
@@ -130,7 +129,7 @@ browser setup step.
 
 Normalized restricted-derived weights are not automatically public-safe: they may reconstruct the
 exact source distribution even without a `count` column. The static app therefore stages no PaCO2
-prior and defaults to likelihood-only inference.
+prior and defaults to signed disagreement.
 
 ## In-Memory Downstream Implementation
 
@@ -229,17 +228,9 @@ local-only or source-linked materials and are not part of the public branch tip.
 
 - Python remains the single source of truth for computation.
 - JavaScript handles controls, uploads, worker messaging, and plotting.
-- The posterior chart uses a posterior-focused x-axis for readability; numeric
-  summaries still use the full posterior/prior support.
-- Default calculations use repo-shipped canonical bootstrap parameters in likelihood-only mode.
-- Prior-weighted inference requires an explicit binned-prior upload. No repository prior is staged
-  or fetched; the uploaded prior remains client-side with the rest of the inputs.
-- Custom study tables or changed bootstrap settings trigger in-browser
-  recomputation through the staged Python package.
-- Canonical and recomputed parameters must report the current agreement-method
-  revision and provisional result status; stale or mixed canonical assets fail closed.
-- Grouped parameter inputs must contain the mapped setting-specific group; missing groups fail
-  closed. Result metadata records the requested group and the parameter group actually used.
+- The homepage compares four source strata and shows signed future-setting disagreement by default.
+- Conditional PaCO₂ inference requires a local fixed empirical prior. The preview evaluates the selected public fit in a Python worker. See [browser methods and offline evaluation](docs/WEB_APP.md).
+- Custom-study and bootstrap calculations are offline.
 - User-entered values and uploads remain in the browser. The app has no backend,
   telemetry, persistence, or patient-value URLs.
 - Client-side processing does not grant permission to use or share restricted

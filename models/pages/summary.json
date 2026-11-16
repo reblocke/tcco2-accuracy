@@ -1,0 +1,270 @@
+{
+  "main": {
+    "run": "public-main-simon-2003",
+    "ledger": "13f4c9d12783c81d81b953074fda6389a85d26a90417dcadebb2bbdc451b6b36",
+    "method": "future_setting_joint_v1",
+    "status": "candidate",
+    "posterior": "c63d40fb814d628d18ba6d6828ac53d4cd77a63cbc5cfc4370cdb7010dd7a80c",
+    "kernel_sha256": "1b947b6c01f33a98c514f38cdfdc73b84637fc0a5fd915e00755ea09374b67e0",
+    "max_checked_logpdf_error": 6.508398109339453e-07,
+    "max_checked_cdf_error": 3.084223946792086e-07,
+    "quantiles": [
+      -11.489834878919929,
+      -0.33683380577692645,
+      11.192921298545459
+    ],
+    "intervals": [
+      {
+        "method": "published",
+        "quantity_type": "reference_limits",
+        "membership": "Table 1: 73 reported studies",
+        "unit": "mmHg",
+        "result_status": "published",
+        "input_revision": "ae74e5ed99b774c8a32ea354ceecc9b2722e8e40c267f2f94fcc046bc54c75d4",
+        "lower": -7.1,
+        "upper": 6.9
+      },
+      {
+        "method": "published",
+        "quantity_type": "endpoint_confidence_envelope",
+        "membership": "Table 1: 73 reported studies",
+        "unit": "mmHg",
+        "result_status": "published",
+        "input_revision": "ae74e5ed99b774c8a32ea354ceecc9b2722e8e40c267f2f94fcc046bc54c75d4",
+        "lower": -15.1,
+        "upper": 14.9
+      },
+      {
+        "method": "corrected_legacy",
+        "quantity_type": "reference_limits",
+        "membership": "76 legacy effect rows",
+        "unit": "mmHg",
+        "result_status": "provisional",
+        "input_revision": "892bba0aab5095c353258b8d945b9103d147f739bf05848a05c16ec3f2dd8d43",
+        "lower": -10.12980109750615,
+        "upper": 9.902178374354548
+      },
+      {
+        "method": "corrected_legacy",
+        "quantity_type": "endpoint_confidence_envelope",
+        "membership": "76 legacy effect rows",
+        "unit": "mmHg",
+        "result_status": "provisional",
+        "input_revision": "892bba0aab5095c353258b8d945b9103d147f739bf05848a05c16ec3f2dd8d43",
+        "lower": -11.280064953257936,
+        "upper": 11.052442230106335
+      },
+      {
+        "method": "hierarchical",
+        "quantity_type": "posterior_predictive_disagreement",
+        "membership": "75 adjudication ledger units",
+        "unit": "mmHg",
+        "result_status": "candidate",
+        "input_revision": "13f4c9d12783c81d81b953074fda6389a85d26a90417dcadebb2bbdc451b6b36",
+        "lower": -11.489834878919929,
+        "upper": 11.192921298545459
+      }
+    ]
+  },
+  "icu": {
+    "run": "public-adjudicated-v2",
+    "ledger": "19e272f4203f32554828f7216cefb183061a59fef13cb7362c4ac976c8b7ef25",
+    "method": "future_setting_joint_v1",
+    "status": "candidate",
+    "posterior": "67a3859dc661f8b1b8fde96f920dd229326c42e5f3244756760f8843a165ac13",
+    "kernel_sha256": "4846f23d7ff08c511ebd051c58c9b4ab7261792e136b4586e29fa60559d7e9f7",
+    "max_checked_logpdf_error": 4.95301802239112e-07,
+    "max_checked_cdf_error": 2.2395417509368798e-07,
+    "quantiles": [
+      -11.165289582890397,
+      -0.44814973623193743,
+      11.127392393162001
+    ],
+    "intervals": [
+      {
+        "method": "published",
+        "quantity_type": "reference_limits",
+        "membership": "Table 1: 16 reported studies",
+        "unit": "mmHg",
+        "result_status": "published",
+        "input_revision": "ae74e5ed99b774c8a32ea354ceecc9b2722e8e40c267f2f94fcc046bc54c75d4",
+        "lower": -5.4,
+        "upper": 4.2
+      },
+      {
+        "method": "published",
+        "quantity_type": "endpoint_confidence_envelope",
+        "membership": "Table 1: 16 reported studies",
+        "unit": "mmHg",
+        "result_status": "published",
+        "input_revision": "ae74e5ed99b774c8a32ea354ceecc9b2722e8e40c267f2f94fcc046bc54c75d4",
+        "lower": -7.3,
+        "upper": 6.1
+      },
+      {
+        "method": "corrected_legacy",
+        "quantity_type": "reference_limits",
+        "membership": "16 legacy effect rows",
+        "unit": "mmHg",
+        "result_status": "provisional",
+        "input_revision": "892bba0aab5095c353258b8d945b9103d147f739bf05848a05c16ec3f2dd8d43",
+        "lower": -10.377121376060513,
+        "upper": 9.184945440206755
+      },
+      {
+        "method": "corrected_legacy",
+        "quantity_type": "endpoint_confidence_envelope",
+        "membership": "16 legacy effect rows",
+        "unit": "mmHg",
+        "result_status": "provisional",
+        "input_revision": "892bba0aab5095c353258b8d945b9103d147f739bf05848a05c16ec3f2dd8d43",
+        "lower": -12.353895291581514,
+        "upper": 11.161719355727756
+      },
+      {
+        "method": "hierarchical",
+        "quantity_type": "posterior_predictive_disagreement",
+        "membership": "16 adjudication ledger units",
+        "unit": "mmHg",
+        "result_status": "candidate",
+        "input_revision": "19e272f4203f32554828f7216cefb183061a59fef13cb7362c4ac976c8b7ef25",
+        "lower": -11.165289582890397,
+        "upper": 11.127392393162001
+      }
+    ]
+  },
+  "arf": {
+    "run": "public-adjudicated-v2",
+    "ledger": "19e272f4203f32554828f7216cefb183061a59fef13cb7362c4ac976c8b7ef25",
+    "method": "future_setting_joint_v1",
+    "status": "candidate",
+    "posterior": "ef363a22cbb3477418cf182d6827aa9acace05bdc46e024d7a7d930e2a228e59",
+    "kernel_sha256": "7c663594bf13140f8b5870ac4fa7280a5b0cabcdf9bb029035d39f07b4cf981d",
+    "max_checked_logpdf_error": 8.070196035880883e-07,
+    "max_checked_cdf_error": 2.2892582210443102e-07,
+    "quantiles": [
+      -11.98787545802796,
+      1.483178083788318,
+      17.87434551447304
+    ],
+    "intervals": [
+      {
+        "method": "published",
+        "quantity_type": "reference_limits",
+        "membership": "Table 1: 14 reported studies",
+        "unit": "mmHg",
+        "result_status": "published",
+        "input_revision": "ae74e5ed99b774c8a32ea354ceecc9b2722e8e40c267f2f94fcc046bc54c75d4",
+        "lower": -3.7,
+        "upper": 7.1
+      },
+      {
+        "method": "published",
+        "quantity_type": "endpoint_confidence_envelope",
+        "membership": "Table 1: 14 reported studies",
+        "unit": "mmHg",
+        "result_status": "published",
+        "input_revision": "ae74e5ed99b774c8a32ea354ceecc9b2722e8e40c267f2f94fcc046bc54c75d4",
+        "lower": -7.8,
+        "upper": 11.2
+      },
+      {
+        "method": "corrected_legacy",
+        "quantity_type": "reference_limits",
+        "membership": "14 legacy effect rows",
+        "unit": "mmHg",
+        "result_status": "provisional",
+        "input_revision": "892bba0aab5095c353258b8d945b9103d147f739bf05848a05c16ec3f2dd8d43",
+        "lower": -8.714411049396091,
+        "upper": 12.09808274094118
+      },
+      {
+        "method": "corrected_legacy",
+        "quantity_type": "endpoint_confidence_envelope",
+        "membership": "14 legacy effect rows",
+        "unit": "mmHg",
+        "result_status": "provisional",
+        "input_revision": "892bba0aab5095c353258b8d945b9103d147f739bf05848a05c16ec3f2dd8d43",
+        "lower": -12.396544841569916,
+        "upper": 15.780216533115006
+      },
+      {
+        "method": "hierarchical",
+        "quantity_type": "posterior_predictive_disagreement",
+        "membership": "14 adjudication ledger units",
+        "unit": "mmHg",
+        "result_status": "candidate",
+        "input_revision": "19e272f4203f32554828f7216cefb183061a59fef13cb7362c4ac976c8b7ef25",
+        "lower": -11.98787545802796,
+        "upper": 17.87434551447304
+      }
+    ]
+  },
+  "lft": {
+    "run": "public-adjudicated-v2",
+    "ledger": "19e272f4203f32554828f7216cefb183061a59fef13cb7362c4ac976c8b7ef25",
+    "method": "future_setting_joint_v1",
+    "status": "candidate",
+    "posterior": "f3e98da54c71d69cbc2e77febbece2859a46a214c98320a5441b43f64e8cf0de",
+    "kernel_sha256": "4285cfa358a4b41cb9a30ca812aba569c6da4f2389be66a8857b733c0ef7199b",
+    "max_checked_logpdf_error": 1.9335513754548117e-05,
+    "max_checked_cdf_error": 1.392265744137866e-06,
+    "quantiles": [
+      -8.874205039853743,
+      -0.1332041981801339,
+      9.603518787906419
+    ],
+    "intervals": [
+      {
+        "method": "published",
+        "quantity_type": "reference_limits",
+        "membership": "Table 1: 4 reported studies",
+        "unit": "mmHg",
+        "result_status": "published",
+        "input_revision": "ae74e5ed99b774c8a32ea354ceecc9b2722e8e40c267f2f94fcc046bc54c75d4",
+        "lower": -4.0,
+        "upper": 3.9
+      },
+      {
+        "method": "published",
+        "quantity_type": "endpoint_confidence_envelope",
+        "membership": "Table 1: 4 reported studies",
+        "unit": "mmHg",
+        "result_status": "published",
+        "input_revision": "ae74e5ed99b774c8a32ea354ceecc9b2722e8e40c267f2f94fcc046bc54c75d4",
+        "lower": -7.3,
+        "upper": 7.3
+      },
+      {
+        "method": "corrected_legacy",
+        "quantity_type": "reference_limits",
+        "membership": "4 legacy effect rows",
+        "unit": "mmHg",
+        "result_status": "provisional",
+        "input_revision": "892bba0aab5095c353258b8d945b9103d147f739bf05848a05c16ec3f2dd8d43",
+        "lower": -6.109603761298873,
+        "upper": 6.015700732443628
+      },
+      {
+        "method": "corrected_legacy",
+        "quantity_type": "endpoint_confidence_envelope",
+        "membership": "4 legacy effect rows",
+        "unit": "mmHg",
+        "result_status": "provisional",
+        "input_revision": "892bba0aab5095c353258b8d945b9103d147f739bf05848a05c16ec3f2dd8d43",
+        "lower": -11.16291739005976,
+        "upper": 11.069014361204516
+      },
+      {
+        "method": "hierarchical",
+        "quantity_type": "posterior_predictive_disagreement",
+        "membership": "4 adjudication ledger units",
+        "unit": "mmHg",
+        "result_status": "candidate",
+        "input_revision": "19e272f4203f32554828f7216cefb183061a59fef13cb7362c4ac976c8b7ef25",
+        "lower": -8.874205039853743,
+        "upper": 9.603518787906419
+      }
+    ]
+  }
+}

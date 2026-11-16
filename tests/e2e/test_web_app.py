@@ -1,323 +1,86 @@
-from __future__ import annotations
-
-import contextlib
-import socket
-import subprocess
-import sys
-import time
+import json
 from pathlib import Path
 
-import pandas as pd
 import pytest
 from playwright.sync_api import expect
 
 from scripts.stage_web_python import stage_web_python
+from scripts.visual_qa import _serve_web
 
 ROOT = Path(__file__).resolve().parents[2]
-SYNTHETIC_PRIOR_PATH = ROOT / "tests" / "fixtures" / "synthetic_paco2_prior.csv"
-EXPECTED_AGREEMENT_METHOD_VERSION = "agreement_natural_log_tau2_direct_v1"
-EXPECTED_RESULTS_STATUS = "provisional"
-SYNTHETIC_STUDY_CSV = """study_id,bias,s2,n_pairs,n_participants,c,is_icu,is_arf,is_lft
-synthetic_a,-1.0,4.0,20,20,1,0,0,1
-synthetic_b,0.5,9.0,24,24,1,1,0,0
-synthetic_c,1.5,16.0,30,30,1,0,1,0
-"""
-INVALID_STUDY_CSV = """study_id,bias
-invalid_a,-1.0
-"""
 
 
 @pytest.fixture(scope="session")
-def web_server() -> str:
+def web_server():
     stage_web_python(ROOT)
-    port = _free_port()
-    process = subprocess.Popen(
-        [sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1"],
-        cwd=ROOT / "web",
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    try:
-        _wait_for_server(port)
-        yield f"http://127.0.0.1:{port}"
-    finally:
-        process.terminate()
-        with contextlib.suppress(subprocess.TimeoutExpired):
-            process.wait(timeout=5)
+    with _serve_web() as url:
+        yield url
 
 
-def test_static_app_default_calculation(page, web_server: str) -> None:
-    requested_urls: list[str] = []
-    page.on("request", lambda request: requested_urls.append(request.url))
-    page.goto(web_server, wait_until="domcontentloaded")
-
-    revision_notice = page.locator("#revision-notice")
-    expect(revision_notice).to_be_visible()
-    expect(revision_notice).to_contain_text("agreement-model equations were corrected")
-    expect(revision_notice).to_contain_text("provisional pending independent biostatistical review")
-    expect(revision_notice).to_contain_text("downstream manuscript numbers remain frozen")
-    expect(revision_notice).to_contain_text("Research use only—not for clinical decision-making")
-    page.get_by_text("Calculation complete.").wait_for(timeout=180_000)
-
-    expect(page.locator("input[name='mode'][value='likelihood_only']")).to_be_checked()
-    expect(page.locator("input[name='mode'][value='prior_weighted']")).not_to_be_checked()
-    assert not any("assets/data/paco2" in url for url in requested_urls)
-    assert page.locator("body").get_attribute("data-agreement-method-version") == (
-        EXPECTED_AGREEMENT_METHOD_VERSION
-    )
-    assert page.locator("body").get_attribute("data-results-status") == EXPECTED_RESULTS_STATUS
-    assert page.locator("body").get_attribute("data-params-source") == "payload_params"
-    assert page.locator("body").get_attribute("data-requested-group") == "all"
-    assert page.locator("body").get_attribute("data-parameter-group-used") == "main"
-    assert page.locator("#metric-interval").inner_text() != "-"
-    assert page.locator("#metric-probability").inner_text() != "-"
-    assert page.locator("#posterior-chart .main-svg").count() >= 1
-    expect(page.get_by_text("TcCO2 threshold result", exact=True)).to_be_visible()
-    expect(page.get_by_text("Threshold classification mass", exact=True)).to_be_visible()
-    expect(page.get_by_text("At/above threshold", exact=True)).to_be_visible()
-    expect(page.get_by_text("Posterior mass at/above threshold:")).to_be_visible()
-    expect(page.get_by_text("TcCO2 decision", exact=True)).to_have_count(0)
-    expect(page.get_by_text("Decision correctness", exact=True)).to_have_count(0)
-    expect(page.get_by_text("True positive")).to_have_count(0)
-    expect(page.get_by_text("False positive")).to_have_count(0)
+def test_comparison_without_javascript(browser, web_server):
+    ctx = browser.new_context(java_script_enabled=False)
+    page = ctx.new_page()
+    page.goto(web_server)
+    rows = page.locator("tbody tr")
+    expect(rows).to_have_count(4)
+    for i, group in enumerate(["main", "icu", "arf", "lft"]):
+        row = json.loads((ROOT / "models/pages/summary.json").read_text())[group]
+        for j, pair in enumerate(row["intervals"]):
+            label = f"{pair['lower']:+.1f} to {pair['upper']:+.1f}".replace("-", "−")
+            expect(rows.nth(i).locator("td").nth(j)).to_have_text(label)
+    ctx.close()
 
 
-def test_static_app_uploaded_studies_use_current_provisional_method(page, web_server: str) -> None:
-    page.goto(web_server, wait_until="domcontentloaded")
-    page.get_by_text("Calculation complete.").wait_for(timeout=180_000)
-    default_method = page.locator("body").get_attribute("data-agreement-method-version")
-    default_status = page.locator("body").get_attribute("data-results-status")
-
-    page.locator("details.panel > summary").click()
-    page.locator("#study-file").set_input_files(
-        {
-            "name": "synthetic_conway.csv",
-            "mimeType": "text/csv",
-            "buffer": SYNTHETIC_STUDY_CSV.encode(),
-        }
-    )
-    # One synthetic draw is enough to exercise the uploaded-study Pyodide path;
-    # native contract tests carry the higher-draw numerical checks.
-    page.locator("#n-boot").evaluate(
-        "element => { element.min = '1'; element.step = '1'; element.value = '1'; }"
-    )
-    page.locator("#n-param-draws").evaluate(
-        "element => { element.step = '1'; element.value = '1'; }"
-    )
-    calculate = page.locator("#calculate")
-    calculate.click()
-    page.wait_for_function(
-        """
-        () => document.body.dataset.paramsSource === "computed" ||
-          !document.querySelector("#error").hidden
-        """,
-        timeout=180_000,
-    )
-    assert page.locator("#error").inner_text() == ""
-    expect(page.locator("body")).to_have_attribute("data-params-source", "computed")
-    expect(page.locator("body")).to_have_attribute("data-requested-group", "all")
-    expect(page.locator("body")).to_have_attribute("data-parameter-group-used", "single_model")
-    expect(page.locator("#status")).to_have_text("Calculation complete.")
-
-    assert page.locator("body").get_attribute("data-agreement-method-version") == default_method
-    assert page.locator("body").get_attribute("data-results-status") == default_status
-    assert default_method == EXPECTED_AGREEMENT_METHOD_VERSION
-    assert default_status == EXPECTED_RESULTS_STATUS
-
-
-def test_static_app_failed_recalculation_clears_previous_result(page, web_server: str) -> None:
-    page.goto(web_server, wait_until="domcontentloaded")
-    page.get_by_text("Calculation complete.").wait_for(timeout=180_000)
-
-    assert page.locator("#metric-interval").inner_text() != "-"
-    assert page.locator("#posterior-chart .main-svg").count() >= 1
-    assert page.locator("body").get_attribute("data-params-source") == "payload_params"
-
-    page.locator("details.panel > summary").click()
-    page.locator("#study-file").set_input_files(
-        {
-            "name": "invalid_studies.csv",
-            "mimeType": "text/csv",
-            "buffer": INVALID_STUDY_CSV.encode(),
-        }
-    )
-    page.locator("#n-boot").evaluate(
-        "element => { element.min = '1'; element.step = '1'; element.value = '1'; }"
-    )
-    page.locator("#n-param-draws").evaluate(
-        "element => { element.step = '1'; element.value = '1'; }"
-    )
+def test_all_settings_against_offline(page, web_server):
+    page.goto(web_server)
+    expect(page.locator("#bounds")).to_contain_text("−11.5")
+    page.locator("#inverse").check()
     page.locator("#calculate").click()
-
-    expect(page.locator("#status")).to_have_text("Calculation failed.", timeout=180_000)
-    expect(page.locator("#error")).to_be_visible()
-    expect(page.locator("#error")).not_to_be_empty()
-    expect(page.locator("#metrics")).to_be_hidden()
-    expect(page.locator("#metric-interval")).to_have_text("-")
-    expect(page.locator("#metric-probability")).to_have_text("-")
-    expect(page.locator("#metric-decision")).to_have_text("-")
-    expect(page.locator("#posterior-chart")).to_be_hidden()
-    expect(page.locator("#posterior-chart .main-svg")).to_have_count(0)
-    expect(page.locator("#chart-caption")).to_be_empty()
-    expect(page.locator("#decision-text")).to_have_text(
-        "Run a calculation to show posterior threshold mass."
+    expect(page.locator("#error")).to_contain_text("prior")
+    page.locator("#prior-file").set_input_files(ROOT / "tests/fixtures/synthetic_paco2_prior.csv")
+    cases = json.loads(
+        (ROOT / "tests/fixtures/future_setting_synthetic_reference.json").read_text()
     )
-    assert page.locator("body").get_attribute("data-agreement-method-version") is None
-    assert page.locator("body").get_attribute("data-results-status") is None
-    assert page.locator("body").get_attribute("data-params-source") is None
-    assert page.locator("body").get_attribute("data-requested-group") is None
-    assert page.locator("body").get_attribute("data-parameter-group-used") is None
+    for r in cases:
+        page.select_option("#subgroup", r["target_stratum"])
+        page.fill("#tcco2", r["tcco2"])
+        page.click("#calculate")
+        expect(page.locator("#estimate")).to_have_text(
+            f"{float(r['median']):.1f} mmHg", timeout=90000
+        )
+        expect(page.locator("#bounds")).to_have_text(
+            f"{float(r['lower']):.1f} to {float(r['upper']):.1f} mmHg"
+        )
+        expect(page.locator("#probability")).to_have_text(f"{float(r['probability_ge']):.4f}")
+    page.fill("#tcco2", "999")
+    expect(page.locator("#results")).to_be_hidden()
+    page.click("#calculate")
+    expect(page.locator("#error")).to_contain_text("offline")
+    expect(page.locator("#results")).to_be_hidden()
 
 
-def test_static_app_missing_parameter_group_fails_closed_and_clears_result(
-    page, web_server: str
-) -> None:
-    params = pd.read_csv(ROOT / "artifacts" / "bootstrap_params.csv")
-    main_only = params.loc[params["group"] == "main"].to_csv(index=False)
-    page.route(
-        "**/assets/data/bootstrap_params.csv",
-        lambda route: route.fulfill(status=200, content_type="text/csv", body=main_only),
+def test_local_spreadsheet_equality_and_no_prior_fetch(page, web_server, tmp_path):
+    import pandas as pd
+
+    traffic = []
+    page.context.on("request", lambda request: traffic.append((request.method, request.url)))
+    page.goto(web_server, wait_until="domcontentloaded")
+    expect(page.locator("#bounds")).to_be_visible()
+    assert not any("pyodide.js" in url or ".npz" in url for _, url in traffic)
+    page.locator("#inverse").focus()
+    page.keyboard.press("Space")
+    expect(page.locator("#prior-file")).to_be_visible()
+    sheet = tmp_path / "invented.xlsx"
+    pd.DataFrame(dict(group=["all", "icu", "ed_inp", "pft"], paco2_bin=45, weight=1)).to_excel(
+        sheet, index=False
     )
-    page.goto(web_server, wait_until="domcontentloaded")
-    page.get_by_text("Calculation complete.").wait_for(timeout=180_000)
-
-    expect(page.locator("body")).to_have_attribute("data-parameter-group-used", "main")
-    assert page.locator("#metric-interval").inner_text() != "-"
-
-    page.locator("#subgroup").select_option("pft")
-    page.locator("#calculate").click()
-
-    expect(page.locator("#status")).to_have_text("Calculation failed.", timeout=180_000)
-    expect(page.locator("#error")).to_contain_text("No parameters found for requested subgroup")
-    expect(page.locator("#metric-interval")).to_have_text("-")
-    expect(page.locator("#posterior-chart")).to_be_hidden()
-    assert page.locator("body").get_attribute("data-requested-group") is None
-    assert page.locator("body").get_attribute("data-parameter-group-used") is None
-
-
-def test_static_app_prior_weighted_chart_uses_posterior_focused_axis(page, web_server: str) -> None:
-    page.goto(web_server, wait_until="domcontentloaded")
-    page.get_by_text("Calculation complete.").wait_for(timeout=180_000)
-
-    page.locator("details.panel > summary").click()
-    page.locator("#prior-file").set_input_files(SYNTHETIC_PRIOR_PATH)
-    page.locator("input[name='mode'][value='prior_weighted']").check()
-    page.locator("#calculate").click()
-    _wait_for_trace_names(page, ["Posterior", "Likelihood (scaled)", "Prior"])
-
-    state = _chart_state(page)
-
-    assert state["trace_names"] == ["Posterior", "Likelihood (scaled)", "Prior"]
-    assert state["yaxis_title"] == "Probability per bin"
-    assert state["showlegend"] is False
-    assert "Likelihood (scaled)" in state["annotation_text"]
-    assert "Prior" in state["annotation_text"]
-    assert state["range_width"] < state["trace_width"]
-    assert "Median" in state["annotation_text"]
-    assert "PI low" in state["annotation_text"]
-    assert "PI high" in state["annotation_text"]
-
-
-def test_static_app_prior_weighted_requires_upload_and_clears_result(page, web_server: str) -> None:
-    page.goto(web_server, wait_until="domcontentloaded")
-    page.get_by_text("Calculation complete.").wait_for(timeout=180_000)
-
-    assert page.locator("#metric-interval").inner_text() != "-"
-    assert page.locator("#posterior-chart .main-svg").count() >= 1
-
-    page.locator("input[name='mode'][value='prior_weighted']").check()
-    page.locator("#calculate").click()
-
-    expect(page.locator("#status")).to_have_text("Calculation failed.")
-    expect(page.locator("#error")).to_contain_text(
-        "Prior-weighted mode requires an uploaded binned PaCO2 prior"
-    )
-    expect(page.locator("#metrics")).to_be_hidden()
-    expect(page.locator("#metric-interval")).to_have_text("-")
-    expect(page.locator("#posterior-chart")).to_be_hidden()
-    expect(page.locator("#posterior-chart .main-svg")).to_have_count(0)
-    assert page.locator("body").get_attribute("data-params-source") is None
-
-
-def test_static_app_likelihood_only_chart_uses_posterior_focused_axis(
-    page, web_server: str
-) -> None:
-    page.goto(web_server, wait_until="domcontentloaded")
-    page.get_by_text("Calculation complete.").wait_for(timeout=180_000)
-
-    page.locator("input[name='mode'][value='likelihood_only']").check()
-    page.locator("#calculate").click()
-    _wait_for_trace_names(page, ["Posterior"])
-
-    state = _chart_state(page)
-
-    assert state["trace_names"] == ["Posterior"]
-    assert state["showlegend"] is False
-    assert "Likelihood (scaled)" not in state["annotation_text"]
-    assert "Prior" not in state["annotation_text"]
-    assert state["range_width"] < state["trace_width"]
-    assert "Median" in state["annotation_text"]
-
-
-def test_static_app_threshold_change_updates_metric(page, web_server: str) -> None:
-    page.goto(web_server, wait_until="domcontentloaded")
-    page.get_by_text("Calculation complete.").wait_for(timeout=180_000)
-
-    page.locator("#threshold").fill("150")
-    page.locator("#calculate").click()
-
-    expect(page.locator("#metric-threshold-label")).to_contain_text("150", timeout=180_000)
-    expect(page.locator("#chart-caption")).to_contain_text("outside the focused plot range")
-    assert page.locator("#posterior-chart .main-svg").count() >= 1
-
-
-def _chart_state(page) -> dict[str, bool | float | int | str | list[str]]:
-    return page.evaluate(
-        """
-        () => {
-          const chart = document.querySelector("#posterior-chart");
-          const range = chart._fullLayout.xaxis.range.map(Number);
-          const traceX = chart.data[0].x.map(Number);
-          const annotations = chart.layout.annotations ?? [];
-          return {
-            range_width: range[1] - range[0],
-            trace_width: Math.max(...traceX) - Math.min(...traceX),
-            trace_names: chart.data.map((trace) => trace.name),
-            yaxis_title: chart._fullLayout.yaxis.title.text,
-            showlegend: Boolean(chart._fullLayout.showlegend),
-            annotation_text: annotations.map((annotation) => annotation.text),
-          };
-        }
-        """
-    )
-
-
-def _wait_for_trace_names(page, trace_names: list[str]) -> None:
-    page.wait_for_function(
-        """
-        (expectedNames) => {
-          const chart = document.querySelector("#posterior-chart");
-          const names = chart?.data?.map((trace) => trace.name) ?? [];
-          return names.length === expectedNames.length &&
-            names.every((name, index) => name === expectedNames[index]);
-        }
-        """,
-        arg=trace_names,
-        timeout=180_000,
-    )
-
-
-def _free_port() -> int:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.bind(("127.0.0.1", 0))
-        return int(sock.getsockname()[1])
-
-
-def _wait_for_server(port: int) -> None:
-    deadline = time.time() + 10
-    while time.time() < deadline:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            if sock.connect_ex(("127.0.0.1", port)) == 0:
-                return
-        time.sleep(0.1)
-    raise RuntimeError("Timed out waiting for local web server.")
+    page.locator("#prior-file").set_input_files(sheet)
+    page.click("#calculate")
+    expect(page.locator("#probability")).to_have_text("1.0000", timeout=90000)
+    page.fill("#threshold", "45.01")
+    expect(page.locator("#results")).to_be_hidden()
+    page.click("#calculate")
+    expect(page.locator("#probability")).to_have_text("0.0000")
+    assets = {url.split("/")[-1] for _, url in traffic if "/assets/data/" in url}
+    assert assets == {"main.npz"}
+    assert all(method == "GET" for method, _ in traffic)

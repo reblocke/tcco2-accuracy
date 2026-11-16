@@ -3,13 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TcCO2 to PaCO2 inference</title>
+    <title>CO₂ agreement and conditional inference</title>
     <meta
       name="description"
       content="Research-only browser app for estimating PaCO2 posterior distributions from TcCO2 values using the tcco2-accuracy Python model in Pyodide."
     />
     <link rel="canonical" href="https://reblocke.github.io/tcco2-accuracy/" />
-    <meta property="og:title" content="TcCO2 to PaCO2 inference" />
+    <meta property="og:title" content="CO₂ agreement and conditional inference" />
     <meta
       property="og:description"
       content="Client-side research software for TcCO2-to-PaCO2 inference. No backend, telemetry, persistence, or patient-value URLs."
@@ -17,13 +17,13 @@
     <meta property="og:url" content="https://reblocke.github.io/tcco2-accuracy/" />
     <meta property="og:type" content="website" />
     <link rel="stylesheet" href="assets/css/styles.css" />
-    <script defer src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <script type="application/json" id="fit-summary">{"main": {"quantiles": [-11.489834878919929, -0.33683380577692645, 11.192921298545459], "method": "future_setting_joint_v1", "run": "public-main-simon-2003", "status": "candidate", "kernel_sha256": "1b947b6c01f33a98c514f38cdfdc73b84637fc0a5fd915e00755ea09374b67e0"}, "icu": {"quantiles": [-11.165289582890397, -0.44814973623193743, 11.127392393162001], "method": "future_setting_joint_v1", "run": "public-adjudicated-v2", "status": "candidate", "kernel_sha256": "4846f23d7ff08c511ebd051c58c9b4ab7261792e136b4586e29fa60559d7e9f7"}, "arf": {"quantiles": [-11.98787545802796, 1.483178083788318, 17.87434551447304], "method": "future_setting_joint_v1", "run": "public-adjudicated-v2", "status": "candidate", "kernel_sha256": "7c663594bf13140f8b5870ac4fa7280a5b0cabcdf9bb029035d39f07b4cf981d"}, "lft": {"quantiles": [-8.874205039853743, -0.1332041981801339, 9.603518787906419], "method": "future_setting_joint_v1", "run": "public-adjudicated-v2", "status": "candidate", "kernel_sha256": "4285cfa358a4b41cb9a30ca812aba569c6da4f2389be66a8857b733c0ef7199b"}}</script>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
-        "name": "TcCO2 to PaCO2 inference",
+        "name": "CO₂ agreement and conditional inference",
         "applicationCategory": "ResearchApplication",
         "operatingSystem": "Web browser",
         "url": "https://reblocke.github.io/tcco2-accuracy/",
@@ -45,131 +45,34 @@
     </script>
     <script type="module" src="assets/js/app.js"></script>
   </head>
-  <body>
-    <header class="app-header">
-      <div>
-        <p class="eyebrow">Research software</p>
-        <h1>TcCO2 to PaCO2 inference</h1>
-        <p class="lede">
-          Estimate a PaCO2 posterior distribution from an observed TcCO2 using the
-          repository Python model in your browser.
-        </p>
-      </div>
-      <div id="revision-notice" class="notice" role="note">
-        Statistical revision: agreement-model equations were corrected. Browser outputs are
-        provisional pending independent biostatistical review; downstream manuscript numbers
-        remain frozen. Research use only—not for clinical decision-making.
-      </div>
-    </header>
-
-    <main class="app-shell">
-      <form id="controls" class="controls">
-        <section class="panel">
-          <h2>Inputs</h2>
-          <label>
-            TcCO2 (mmHg)
-            <input id="tcco2" name="tcco2" type="number" min="0" step="0.1" value="50" />
-          </label>
-          <label>
-            Setting
-            <select id="subgroup" name="subgroup">
-              <option value="all" selected>All</option>
-              <option value="pft">Ambulatory / PFT</option>
-              <option value="ed_inp">ED / Inpatient</option>
-              <option value="icu">ICU</option>
-            </select>
-          </label>
-          <label>
-            Hypercapnia threshold (mmHg)
-            <input id="threshold" name="threshold" type="number" step="0.5" value="45" />
-          </label>
-          <fieldset>
-            <legend>Inference mode</legend>
-            <label class="inline">
-              <input type="radio" name="mode" value="prior_weighted" />
-              Prior-weighted
-            </label>
-            <label class="inline">
-              <input type="radio" name="mode" value="likelihood_only" checked />
-              Likelihood-only
-            </label>
-          </fieldset>
-          <label>
-            Prediction interval
-            <select id="interval" name="interval">
-              <option value="0.95" selected>95%</option>
-            </select>
-          </label>
-          <button id="calculate" type="submit">Calculate</button>
-          <p id="status" class="status" role="status">Loading browser Python runtime...</p>
-        </section>
-
-        <details class="panel">
-          <summary>Advanced settings and uploads</summary>
-          <div class="advanced-grid">
-            <label>
-              Study table override (CSV/XLSX)
-              <input id="study-file" type="file" accept=".csv,.xlsx,text/csv" />
-            </label>
-            <label>
-              Binned PaCO2 prior upload (required for prior-weighted mode; CSV/XLSX)
-              <input id="prior-file" type="file" accept=".csv,.xlsx,text/csv" />
-            </label>
-            <label>
-              Bootstrap draws
-              <input id="n-boot" type="number" min="25" step="25" value="1000" />
-            </label>
-            <label>
-              Bootstrap mode
-              <select id="bootstrap-mode">
-                <option value="cluster_plus_withinstudy" selected>Cluster + within-study</option>
-                <option value="cluster_only">Cluster only</option>
-              </select>
-            </label>
-            <label>
-              Parameter draws (0 = all)
-              <input id="n-param-draws" type="number" min="0" step="100" value="1000" />
-            </label>
-            <label>
-              Seed (0 = random)
-              <input id="seed" type="number" min="0" step="1" value="202401" />
-            </label>
-            <label>
-              Histogram bin width (mmHg)
-              <input id="bin-width" type="number" min="0.1" step="0.1" value="1.0" />
-            </label>
-          </div>
-        </details>
-      </form>
-
-      <section class="results" aria-live="polite">
-        <div id="error" class="error" hidden></div>
-        <div class="metrics" id="metrics" hidden>
-          <article>
-            <span>PaCO2 median [PI]</span>
-            <strong id="metric-interval">-</strong>
-          </article>
-          <article>
-            <span id="metric-threshold-label">P(PaCO2 >= 45)</span>
-            <strong id="metric-probability">-</strong>
-          </article>
-          <article>
-            <span>TcCO2 threshold result</span>
-            <strong id="metric-decision">-</strong>
-          </article>
-        </div>
-
-        <section class="panel output-panel">
-          <h2>Threshold classification mass</h2>
-          <p id="decision-text">Run a calculation to show posterior threshold mass.</p>
-        </section>
-
-        <section class="panel output-panel">
-          <h2>Posterior distribution</h2>
-          <div id="posterior-chart" class="chart"></div>
-          <p id="chart-caption" class="caption"></p>
-        </section>
-      </section>
-    </main>
-  </body>
-</html>
+<body>
+<header><div class="wrap mast"><strong>Respiratory measurement</strong><a href="https://github.com/reblocke/tcco2-accuracy">Research repository ↗</a></div></header>
+<main class="wrap">
+<section class="intro"><p class="overline">Agreement meta-analysis</p>
+<h1>Arterial and transcutaneous CO₂</h1>
+<p>Compare agreement across study settings, then explore the expected difference for one paired measurement in a comparable new setting.</p>
+<small>Research use only. Candidate estimates await independent biostatistical review.</small> <a class="skip-calc" href="#calculator">Jump to calculator ↓</a></section>
+<section aria-labelledby="comparison"><div class="section-title"><h2 id="comparison">Agreement by setting</h2><span>95% intervals · mmHg</span></div>
+<p>Differences are arterial minus transcutaneous CO₂. Positive values mean the arterial reading is higher.</p>
+<table><caption class="sr">Agreement intervals by source setting, in mmHg</caption>
+<thead><tr><th rowspan="2" scope="col">Source setting</th><th colspan="2" scope="colgroup">Conway, Table 1</th><th colspan="2" scope="colgroup">Corrected legacy</th><th scope="col">New Bayesian fit</th></tr>
+<tr><th>Reference limits</th><th>Outer envelope</th><th>Reference limits</th><th>Outer envelope</th><th>Predictive interval</th></tr></thead><tbody>
+<tr><th scope="row">Overall</th><td data-label="Conway limits">−7.1 to +6.9</td><td data-label="Conway envelope">−15.1 to +14.9</td><td data-label="Corrected limits">−10.1 to +9.9</td><td data-label="Corrected envelope">−11.3 to +11.1</td><td data-label="Predictive interval">−11.5 to +11.2</td></tr>
+<tr><th scope="row">Intensive care</th><td data-label="Conway limits">−5.4 to +4.2</td><td data-label="Conway envelope">−7.3 to +6.1</td><td data-label="Corrected limits">−10.4 to +9.2</td><td data-label="Corrected envelope">−12.4 to +11.2</td><td data-label="Predictive interval">−11.2 to +11.1</td></tr>
+<tr><th scope="row">Acute respiratory failure</th><td data-label="Conway limits">−3.7 to +7.1</td><td data-label="Conway envelope">−7.8 to +11.2</td><td data-label="Corrected limits">−8.7 to +12.1</td><td data-label="Corrected envelope">−12.4 to +15.8</td><td data-label="Predictive interval">−12.0 to +17.9</td></tr>
+<tr><th scope="row">Lung function testing</th><td data-label="Conway limits">−4.0 to +3.9</td><td data-label="Conway envelope">−7.3 to +7.3</td><td data-label="Corrected limits">−6.1 to +6.0</td><td data-label="Corrected envelope">−11.2 to +11.1</td><td data-label="Predictive interval">−8.9 to +9.6</td></tr>
+</tbody></table>
+<p class="note">Each outer envelope spans the outer confidence bounds on the two agreement limits. The predictive interval covers the central 95% of modeled differences for one new pair.</p>
+<details><summary>Source populations and methods</summary><p>Conway reported 73 studies overall. The corrected legacy calculation uses 76 rows, including the ICU-only Bolliger cohort. The new overall fit uses 75 adjudicated units from 73 publications and incorporates the Simon steady-state correction. Each stratum was fitted separately with future_setting_joint_v1. Subgroup memberships overlap. <a href="https://doi.org/10.1136/thoraxjnl-2017-211466">Conway et al., Thorax 2019</a></p></details></section>
+<section class="calc" aria-labelledby="calculator"><div class="section-title"><h2 id="calculator">Explore a setting</h2></div>
+<div class="workspace"><form id="controls"><label for="subgroup">Measurement setting</label><select id="subgroup"><option value="all">All settings</option><option value="icu">ICU</option><option value="ed_inp">ED / inpatient</option><option value="pft">Ambulatory / PFT</option></select>
+<fieldset><legend>Calculation</legend><label><input type="radio" name="mode" checked id="agreement"> Paired disagreement</label><label><input type="radio" name="mode" id="inverse"> PaCO₂ given TcCO₂</label></fieldset>
+<div id="inputs" hidden><label for="tcco2">Observed TcCO₂ (mmHg)</label><input id="tcco2" type="number" step="any" value="50" required>
+<label for="threshold">PaCO₂ threshold (mmHg)</label><input id="threshold" type="number" step="any" value="45" required>
+<label for="prior-file">Fixed PaCO₂ prior (CSV or XLSX)</label><input id="prior-file" type="file" accept=".csv,.xlsx">
+<small>Use group, paco2_bin and weight for all, icu, ed_inp and pft. Uploads stay in this browser.</small>
+<button id="calculate">Calculate</button></div></form>
+<div class="panel"><p id="source"></p><p id="status" role="status"></p><p id="error" role="alert"></p><details id="offline-help" hidden><summary>Run with the full posterior offline</summary><p>From the repository, use the accepted run directory for the selected stratum and the path to your local prior.</p><code id="offline-command"></code></details>
+<div id="results" hidden><h3 id="result-title"></h3><div class="metrics"><div><small>Median</small><strong id="estimate"></strong></div><div><small>Central 95% interval</small><strong id="bounds"></strong></div><div id="prob-card" hidden><small id="prob-label"></small><strong id="probability"></strong></div></div><div id="plot"></div></div></div></div>
+<p class="note">Conditional estimates assume that, within the selected setting, the disagreement distribution applies across arterial CO₂ levels. The calculation treats the uploaded prior as fixed.</p>
+</section></main></body></html>
