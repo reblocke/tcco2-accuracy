@@ -26,6 +26,7 @@ from tcco2_accuracy.workflows.future_setting_data import (
 )
 from tcco2_accuracy.workflows.future_setting_fit import (
     evidence_revision,
+    matches_evidence,
     offline_model,
     sample_attempt,
 )
@@ -103,13 +104,14 @@ def run(mode, run_id, resume=False, sample_only=False, *, stratum=None):
         stratum = manifest.get("requested_stratum")
         if (
             manifest["mode"] != mode
-            or manifest["input_sha256"] != revision["input_sha256"]
+            or not matches_evidence(manifest, revision["input_sha256"])
             or manifest["backend"] != backend
             or manifest["run_id"] != run_id
         ):
             raise ValueError("Cannot resume a different evidence revision, backend, or mode")
         if sample_only and manifest.get("run_status") == "complete":
             return manifest
+        manifest["input_sha256"] = revision["input_sha256"]
     else:
         out.mkdir(parents=True, exist_ok=False)
         manifest = {

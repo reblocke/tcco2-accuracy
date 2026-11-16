@@ -74,3 +74,76 @@ def test_failed_preflight_leaves_run_id_available(tmp_path, monkeypatch):
     with pytest.raises(ValueError, match="toolchain"):
         workflow.run("public", "retry")
     assert not (tmp_path / ".pytest_tmp/future-setting/retry").exists()
+
+
+def test_resume_verifies_repeated_measures_helper_against_original_commit(tmp_path, monkeypatch):
+    """Use actual Git objects and the resume entry point without changing a candidate run."""
+    import shutil
+    import subprocess
+
+    from tcco2_accuracy.workflows import future_setting_fit as fitter
+
+    repo = tmp_path.resolve()
+    helper = Path("src/tcco2_accuracy/core/conway_meta.py")
+    inputs = [p.relative_to(fitter.ROOT) for p in fitter.FILES]
+    for rel in set(inputs) | {helper}:
+        (repo / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(fitter.ROOT / rel, repo / rel)
+
+    def git(*args):
+        subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repo),
+                "-c",
+                "user.name=Test",
+                "-c",
+                "user.email=test@example.org",
+                "-c",
+                "commit.gpgsign=false",
+                *args,
+            ],
+            check=True,
+            capture_output=True,
+        )
+
+    git("init", "-q")
+    git("add", ".")
+    git("commit", "-qm", "Original fit inputs")
+    monkeypatch.setattr(fitter, "ROOT", repo)
+    monkeypatch.setattr(fitter, "FILES", [repo / rel for rel in inputs])
+    monkeypatch.setattr(workflow, "ROOT", repo)
+    monkeypatch.setattr(workflow, "offline_model", lambda: (None, {}))
+    monkeypatch.setattr(workflow, "load_ledger", lambda: None)
+    revision = fitter.evidence_revision()
+    assert revision["input_sha256"][str(helper)] == fitter.digest(repo / helper)
+
+    out = repo / ".pytest_tmp/future-setting/test-resume"
+    out.mkdir(parents=True)
+    path = out / "manifest.json"
+    manifest = dict(**revision, run_id=out.name, mode="public", run_status="complete", backend={})
+    legacy = {**manifest, "input_sha256": dict(manifest["input_sha256"])}
+    del legacy["input_sha256"][str(helper)]
+
+    def resume():
+        return workflow.run("public", out.name, resume=True, sample_only=True)
+
+    for original in [manifest, legacy]:
+        workflow.write(path, original)
+        before = path.read_bytes()
+        assert resume() == original
+        assert path.read_bytes() == before
+
+    workflow.write(path, {**legacy, "git_commit": "0" * 40})
+    with pytest.raises(ValueError, match="evidence"):
+        resume()
+    with (repo / helper).open("a") as f:
+        f.write("\n# Different observation preparation revision.\n")
+    git("commit", "-qam", "Change adjustment implementation")
+    for original in [manifest, legacy]:
+        workflow.write(path, original)
+        before = path.read_bytes()
+        with pytest.raises(ValueError, match="evidence"):
+            resume()
+        assert path.read_bytes() == before

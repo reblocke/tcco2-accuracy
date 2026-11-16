@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import platform
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -16,9 +17,11 @@ from ..core.future_setting import PARAMETERS
 from .future_setting_data import MODEL_DIR, ROOT, SPEC, digest
 
 SEED = 88032
+REPEATED_MEASURES_SOURCE = "src/tcco2_accuracy/core/conway_meta.py"
 FILES = [
     *sorted(MODEL_DIR.glob("*")),
     Path(__file__).with_name("future_setting_data.py"),
+    ROOT / REPEATED_MEASURES_SOURCE,
     ROOT / "Data/conway_studies.csv",
     ROOT / "tests/fixtures/conway_table1.csv",
     ROOT / "tests/fixtures/synthetic_paco2_prior.csv",
@@ -29,16 +32,40 @@ def _git(*args):
     return subprocess.check_output(["git", "-C", str(ROOT), *args], text=True).strip()
 
 
+def _committed_digest(commit, rel):
+    contents = subprocess.check_output(
+        ["git", "-C", str(ROOT), "show", f"{commit}:{rel}"], stderr=subprocess.PIPE
+    )
+    return hashlib.sha256(contents).hexdigest()
+
+
 def evidence_revision():
+    commit = _git("rev-parse", "HEAD")
     files = {}
     for p in FILES:
         rel = str(p.relative_to(ROOT))
         current = digest(p)
-        tracked = subprocess.check_output(["git", "-C", str(ROOT), "show", "HEAD:" + rel])
-        if hashlib.sha256(tracked).hexdigest() != current:
+        if _committed_digest(commit, rel) != current:
             raise ValueError(f"Commit the approved input before fitting: {rel}")
         files[rel] = current
-    return {"git_commit": _git("rev-parse", "HEAD"), "input_sha256": files}
+    return {"git_commit": commit, "input_sha256": files}
+
+
+def matches_evidence(manifest, current):
+    recorded = manifest["input_sha256"]
+    if recorded == current:
+        return True
+    # Earlier fit manifests identified the observation helper only by the fit commit.
+    if current.keys() - recorded.keys() != {REPEATED_MEASURES_SOURCE}:
+        return False
+    commit = manifest.get("git_commit")
+    if not isinstance(commit, str) or not re.fullmatch(r"[0-9a-f]{40}|[0-9a-f]{64}", commit):
+        return False
+    try:
+        original = _committed_digest(commit, REPEATED_MEASURES_SOURCE)
+    except subprocess.CalledProcessError:
+        return False
+    return {**recorded, REPEATED_MEASURES_SOURCE: original} == current
 
 
 def offline_model():
