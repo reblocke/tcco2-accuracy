@@ -91,7 +91,6 @@ def run(mode, run_id, resume=False, sample_only=False, *, stratum=None):
     out = base / run_id
     if base != ROOT.resolve() / ".pytest_tmp/future-setting" or out.resolve() != out:
         raise ValueError("Run directory must resolve under repository scratch")
-    out.mkdir(parents=True, exist_ok=resume)
     model, backend = offline_model()
     revision = evidence_revision()
     ledger = load_ledger()
@@ -109,7 +108,10 @@ def run(mode, run_id, resume=False, sample_only=False, *, stratum=None):
             or manifest["run_id"] != run_id
         ):
             raise ValueError("Cannot resume a different evidence revision, backend, or mode")
+        if sample_only and manifest.get("run_status") == "complete":
+            return manifest
     else:
+        out.mkdir(parents=True, exist_ok=False)
         manifest = {
             **revision,
             "mode": mode,

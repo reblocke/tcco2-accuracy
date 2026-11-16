@@ -42,6 +42,8 @@ def test_source_selection_and_resume_keep_the_bridge_and_membership_in_scope(mon
             rows = list(csv.DictReader(f))
         assert len(rows) == 5 and {r["stratum"] for r in rows} == {"main"}
         manifest_bytes = (out / "manifest.json").read_bytes()
+        workflow.run("public", run_id, resume=True, sample_only=True)
+        assert (out / "manifest.json").read_bytes() == manifest_bytes
         with pytest.raises(ValueError, match="strat"):
             workflow.run("public", run_id, resume=True, stratum="icu")
         assert (out / "manifest.json").read_bytes() == manifest_bytes
@@ -61,3 +63,14 @@ def test_source_selection_and_resume_keep_the_bridge_and_membership_in_scope(mon
 def test_recovery_rejects_public_stratum_before_sampling():
     with pytest.raises(ValueError, match="public"):
         workflow.run("recovery", "test-invalid-recovery-selection", stratum="main")
+
+
+def test_failed_preflight_leaves_run_id_available(tmp_path, monkeypatch):
+    def missing_toolchain():
+        raise ValueError("missing toolchain")
+
+    monkeypatch.setattr(workflow, "ROOT", tmp_path)
+    monkeypatch.setattr(workflow, "offline_model", missing_toolchain)
+    with pytest.raises(ValueError, match="toolchain"):
+        workflow.run("public", "retry")
+    assert not (tmp_path / ".pytest_tmp/future-setting/retry").exists()
