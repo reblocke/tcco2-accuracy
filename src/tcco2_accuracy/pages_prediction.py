@@ -14,6 +14,34 @@ from .core.paco2 import prior_distribution_from_bins, validate_paco2_prior_bins
 GROUPS = {"all": "main", "icu": "icu", "ed_inp": "arf", "pft": "lft"}
 
 
+THRESHOLDS = (45, 52)
+
+
+def evidence_masks(support, quantiles, thresholds):
+    return np.array(
+        [support >= k for k in thresholds]
+        + [m for q in quantiles for m in (support < q, support <= q)]
+    )
+
+
+def resolved_summaries(a, quantiles, coarse, masks, ratios, errors, *, margin=0):
+    """Check each tail separately, and all three discrete endpoints as one interval."""
+    n = len(masks) - 2 * len(LEVELS)
+    tails = []
+    for mask, p, se in zip(masks[:n], ratios[:n], errors[:n], strict=True):
+        if mask.all() or not mask.any():
+            tails.append(float(mask.all()))
+        elif se <= 0.00025 and abs(p - coarse[mask].sum()) <= 0.0001:
+            tails.append(float(np.clip(p, 0, 1)))
+        else:
+            tails.append(None)
+    resolved = np.array_equal(quantiles, weighted_quantile(a, coarse, LEVELS)) and all(
+        ratios[j] + 2 * errors[j] + margin < level <= ratios[j + 1] - 2 * errors[j + 1] - margin
+        for j, level in zip(range(n, len(masks), 2), LEVELS, strict=True)
+    )
+    return quantiles.tolist() if resolved else None, tails
+
+
 def conditional(kernel, target, prior_csv, tcco2, threshold):
     if GROUPS.get(target) != str(kernel["group"]):
         raise ValueError("No matched fit for this setting.")
@@ -28,18 +56,13 @@ def conditional(kernel, target, prior_csv, tcco2, threshold):
             f"The verified arterial-minus-transcutaneous range is {grid[0]:g} to {grid[-1]:g} mmHg. Use the offline calculation for this prior."
         )
     logw = np.log(w)
-    logjoint = CubicSpline(grid, kernel["logpdf"], axis=1)(offsets) + logw
+    loglike = CubicSpline(grid, kernel["logpdf"], axis=1)(offsets)
+    logjoint = loglike + logw
     mass, coarse = map(normalize_log_weights, logjoint)
     quantiles = weighted_quantile(a, mass, LEVELS)
-    masks = [a >= threshold]
-    for q in quantiles:
-        masks.extend([a < q, a <= q])
-    masks = np.asarray(masks)
+    thresholds = list(dict.fromkeys([*THRESHOLDS, threshold]))
+    masks = evidence_masks(a, quantiles, thresholds)
     ratios = masks @ mass
-    if abs(ratios[0] - coarse[masks[0]].sum()) > 1e-4 or not np.array_equal(
-        quantiles, weighted_quantile(a, coarse, LEVELS)
-    ):
-        raise ValueError("Quadrature precision is insufficient for this prior.")
     # Sum over the support before estimating the ratio SE from contiguous MCMC batches.
     # The all-draw denominator includes any incomplete final batch in each chain.
     evidence = logsumexp(logjoint[0])
@@ -55,18 +78,15 @@ def conditional(kernel, target, prior_csv, tcco2, threshold):
         deviations.extend(residual)
     errors = np.std(deviations, axis=0, ddof=1) / np.sqrt(len(deviations))
     # Include interpolation margin when resolving a discrete support point.
-    if errors[0] > 0.00025 or any(
-        ratios[j] + 2 * errors[j] + 1e-5 >= level
-        or ratios[j + 1] - 2 * errors[j + 1] - 1e-5 < level
-        for j, level in zip((1, 3, 5), LEVELS, strict=True)
-    ):
-        raise ValueError(
-            "Posterior simulation precision does not resolve this result for the supplied prior."
-        )
+    interval, tails = resolved_summaries(a, quantiles, coarse, masks, ratios, errors, margin=1e-5)
+    idx = thresholds.index(threshold)
     return dict(
-        quantiles=quantiles.tolist(),
-        probability=float(np.clip(ratios[0], 0, 1)),
-        se=float(errors[0]),
+        quantiles=interval,
+        probability=tails[idx],
+        tails=tails[:2],
+        se=float(errors[idx]),
         support=a.tolist(),
         mass=mass.tolist(),
+        prior=w.tolist(),
+        likelihood=np.exp(loglike[0] - loglike[0].max()).tolist(),
     )

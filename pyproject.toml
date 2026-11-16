@@ -45,3 +45,6 @@ ignore = ["E501"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["tcco2_accuracy"]
+
+[tool.uv]
+constraint-dependencies = ["certifi>=2026.10.19"]

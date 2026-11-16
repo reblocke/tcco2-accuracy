@@ -171,3 +171,5 @@ permission, and retention items remain `HUMAN REVIEW REQUIRED`.
   retain earlier material.
 
 The public [TCCO2-008 source ledger](models/future_setting/source_ledger.csv) records original and fitted summary statistics, source membership and adjudication. Bias and limits use mmHg, variances use mmHg², and log variance uses the natural logarithm relative to 1 mmHg². The run manifest and quantity labels are described in the [offline workflow](docs/FUTURE_SETTING.md).
+
+The Pages synthetic conditional lookup contains 81 integer readings per setting, posterior endpoints, separate ≥45 and ≥52 probabilities, synthetic prior and posterior masses on a quarter-mmHg grid and a separate fitted likelihood curve, prior-only endpoints, and three conditional variance components in mmHg². The [lookup methods](docs/WEB_APP.md) define component order, precision holds and units. The corresponding TriNetX candidate and its provenance receipt belong in the approved private workspace.

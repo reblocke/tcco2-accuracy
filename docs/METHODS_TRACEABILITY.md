@@ -29,7 +29,6 @@ governance, and independent-review gates are complete.
 
 `docs/data_release_contract.json` is the machine-readable current-tree, Pages, and public-history
 authority. Normalized restricted-derived weights are governed like exact counts because they may
-reconstruct the source distribution. Browser default inference is likelihood-only; prior-weighted
-inference is upload-only and client-side. Public branch and tag history is continuously checked;
+reconstruct the source distribution. The lookup uses offline marginal predictions checked against the accepted public fits. Real TriNetX summaries require separate whole-file release review. Custom priors stay client-side. Public branch and tag history is continuously checked;
 independently retained clones, caches, and historical deployments outside repository-controlled refs
 may remain.

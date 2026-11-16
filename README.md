@@ -69,7 +69,7 @@ from the repository root. It creates a fresh temporary clone and keeps its
 virtual environment, dependency cache, and staged public web assets there;
 the source checkout is not staged. The server remains active until `Ctrl-C`.
 Successful setup opens <http://127.0.0.1:8000> and, with the default
-overall setting, displays the four-stratum table and signed disagreement interval. Dependency, port, or browser download failures stop that route;
+overall setting, displays the TcCO₂ input, lookup availability and four-stratum agreement table. Dependency, port, or browser download failures stop that route;
 check their messages before retrying with another fresh temporary directory.
 
 ```bash
@@ -129,7 +129,7 @@ browser setup step.
 
 Normalized restricted-derived weights are not automatically public-safe: they may reconstruct the
 exact source distribution even without a `count` column. The static app therefore stages no PaCO2
-prior and defaults to signed disagreement.
+prior. Its initial view shows the signed disagreement distribution and conditional lookup availability.
 
 ## In-Memory Downstream Implementation
 
@@ -228,8 +228,8 @@ local-only or source-linked materials and are not part of the public branch tip.
 
 - Python remains the single source of truth for computation.
 - JavaScript handles controls, uploads, worker messaging, and plotting.
-- The homepage compares four source strata and shows signed future-setting disagreement by default.
-- Conditional PaCO₂ inference requires a local fixed empirical prior. The preview evaluates the selected public fit in a Python worker. See [browser methods and offline evaluation](docs/WEB_APP.md).
+- Enter an observed TcCO₂ and optionally select a setting. The conditional view shows the arterial median, central 95% interval, probabilities at or above 45 and 52 mmHg and variance contributions when available. The current demonstration uses the four fitted models and an invented prior. TriNetX results require an approved index cohort and release review.
+- The four-stratum agreement table and advanced local CSV/XLSX prior calculator are available below the prediction. See [browser methods and offline evaluation](docs/WEB_APP.md).
 - Custom-study and bootstrap calculations are offline.
 - User-entered values and uploads remain in the browser. The app has no backend,
   telemetry, persistence, or patient-value URLs.

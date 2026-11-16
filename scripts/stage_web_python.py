@@ -10,9 +10,21 @@ import shutil
 import zipfile
 from pathlib import Path
 
+import numpy as np
+
+from tcco2_accuracy.pages_prediction import GROUPS
+from tcco2_accuracy.workflows.conditional_lookup import validate_lookup
+
 DEFAULT_DATA_ASSETS = {
     name: Path("models/pages") / name
-    for name in ("summary.json", "main.npz", "icu.npz", "arf.npz", "lft.npz")
+    for name in (
+        "summary.json",
+        "synthetic-lookup.json",
+        "main.npz",
+        "icu.npz",
+        "arf.npz",
+        "lft.npz",
+    )
 }
 
 BROWSER_PYTHON_FILES = (
@@ -69,14 +81,48 @@ def stage_web_python(repo_root: Path, web_dir: Path | None = None) -> dict:
         shutil.rmtree(data_dst)
     data_dst.mkdir(parents=True, exist_ok=True)
     staged_data: list[str] = []
-    for asset_name, source_rel in DEFAULT_DATA_ASSETS.items():
+
+    assets = DEFAULT_DATA_ASSETS.copy()
+    contract = json.loads((repo_root / "docs/data_release_contract.json").read_text())
+    release_hash = contract["approved_conditional_lookup_sha256"]
+    if release_hash is not None:
+        assets["conditional-lookup.json"] = Path("models/pages/conditional-lookup.json")
+    if set(contract["pages_data_allowlist"]) != {f"web/assets/data/{name}" for name in assets}:
+        raise ValueError("Lookup approval and Pages allowlist disagree")
+    summary = json.loads((repo_root / assets["summary.json"]).read_text())
+    verified_lookups = {}
+    for filename, expected_source in (
+        ("synthetic-lookup.json", "synthetic"),
+        ("conditional-lookup.json", "trinetx"),
+    ):
+        if filename not in assets:
+            continue
+        content = (repo_root / assets[filename]).read_bytes()
+        doc = json.loads(content)
+        validate_lookup(doc)
+        if doc["source"] != expected_source or any(
+            doc["groups"][target]["posterior"] != summary[group]["posterior"]
+            for target, group in GROUPS.items()
+        ):
+            raise ValueError("Lookup provenance or agreement posterior mismatch")
+        expected = (
+            release_hash
+            if expected_source == "trinetx"
+            else contract["synthetic_conditional_lookup_sha256"]
+        )
+        if hashlib.sha256(content).hexdigest() != expected:
+            raise ValueError("Lookup differs from the whole-file release approval")
+        verified_lookups[filename] = content
+    for asset_name, source_rel in assets.items():
         source = repo_root / source_rel
         if not source.exists():
             raise FileNotFoundError(f"Required web data asset not found: {source}")
-        shutil.copy2(source, data_dst / asset_name)
+        if asset_name in verified_lookups:
+            (data_dst / asset_name).write_bytes(verified_lookups[asset_name])
+        else:
+            shutil.copy2(source, data_dst / asset_name)
         staged_data.append(f"assets/data/{asset_name}")
 
-    summary = json.loads((data_dst / "summary.json").read_text())
     groups = {
         "main": "Overall",
         "icu": "Intensive care",
@@ -119,14 +165,43 @@ def stage_web_python(repo_root: Path, web_dir: Path | None = None) -> dict:
     )
     # Bind the initial table and calculator to the same revision, including on a cached page.
     display = {
-        g: {k: fit[k] for k in ("quantiles", "method", "run", "status", "kernel_sha256")}
+        g: {
+            k: fit[k]
+            for k in (
+                "quantiles",
+                "method",
+                "run",
+                "status",
+                "kernel_sha256",
+                "posterior",
+                "variance",
+            )
+        }
         for g, fit in summary.items()
     }
+    # Plot knots come from the checksum-verified predictive density itself.
+    for group in display:
+        with np.load(data_dst / f"{group}.npz", allow_pickle=False) as kernel:
+            display[group]["curve"] = {
+                "x": kernel["x"].tolist(),
+                "density": np.exp(kernel["logpdf"][0]).tolist(),
+            }
     page = re.sub(
         r'(<script type="application/json" id="fit-summary">).*?(</script>)',
         lambda match: (
             match[1] + json.dumps(display, allow_nan=False).replace("<", r"\u003c") + match[2]
         ),
+        page,
+        flags=re.S,
+    )
+    hashes = {
+        name: hashlib.sha256((data_dst / name).read_bytes()).hexdigest()
+        for name in assets
+        if name.endswith("-lookup.json")
+    }
+    page = re.sub(
+        r'(<script type="application/json" id="lookup-hashes">).*?(</script>)',
+        lambda m: m[1] + json.dumps(hashes) + m[2],
         page,
         flags=re.S,
     )

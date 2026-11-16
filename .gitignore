@@ -40,6 +40,7 @@ temp.log
 # Restricted or exact-count PaCO2 outputs. Broad stem rules prevent a format
 # change (for example CSV -> XLSX) from bypassing the current-tree contract.
 *.xls
+/models/pages/conditional-lookup.json
 /Data/paco2_public_prior.*
 /Data/paco2_prior_bins.*
 /artifacts/paco2_distribution_summary.*

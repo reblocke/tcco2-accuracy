@@ -32,8 +32,11 @@
     ".tmp/",
     "explicit path outside the repository"
   ],
+  "approved_conditional_lookup_sha256": null,
+  "synthetic_conditional_lookup_sha256": "90ab00b7f1338b593a0aaa6571358d3370d13b1738cffea5f15fc8e55262e7b3",
   "pages_data_allowlist": [
     "web/assets/data/summary.json",
+    "web/assets/data/synthetic-lookup.json",
     "web/assets/data/main.npz",
     "web/assets/data/icu.npz",
     "web/assets/data/arf.npz",

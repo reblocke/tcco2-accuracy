@@ -181,11 +181,7 @@
   because the browser supplies or validates those arguments before calling the API.
 - Staging: `tests/contracts/test_stage_web_python.py` enforces the public-data allowlist, removes
   stale private priors, and checks deployed parameter bytes against the canonical artifact.
-- E2E: `tests/e2e/test_web_app.py` verifies Pyodide loads, the default likelihood-only calculation
-  completes, uploaded synthetic studies recompute with current method provenance, an uploaded
-  synthetic prior enables prior-weighted mode, a missing prior fails closed, threshold changes
-  update the browser result, and failed recalculation clears prior metrics, chart output, and
-  result-provenance attributes before displaying the error.
+- Browser checks cover the four-stratum table without JavaScript, exact lookup selection, inclusive 45 and 52 mmHg tails, range and threshold highlighting, legacy lookup compatibility, input invalidation, client-side privacy, and Python-worker parity with twenty offline conditional reference cases.
 - Scientific claim: browser-facing outputs are a serialization of the authoritative Python model, not
   a separate JavaScript implementation.
 - Version gate: canonical parameter assets must contain exactly one current method revision and
@@ -198,7 +194,7 @@
 
 ## Artifact and release gates
 - `docs/data_release_contract.json` rejects prohibited tracked paths and exact or reconstructable
-  restricted-derived schemas, verifies that only Conway/bootstrap data are staged to Pages, and
+  restricted-derived schemas, verifies the public Pages data allowlist and pinned lookup bytes, and
   preserves exact hashes for the five canonical agreement artifacts and eight retained frozen
   downstream comparators. Alternate known output extensions and prohibited CSV/TSV/XLSX schemas
   are covered so a format change does not bypass the gate. Legacy binary `.xls` is unsupported and
@@ -223,8 +219,7 @@
   It accepts in-memory data only, writes nothing, and does not alter this legacy profile or public
   artifacts.
 - Restricted-derived prior or exact-count regeneration is allowed only under `.pytest_tmp/`,
-  `.tmp/`, or an explicitly approved external private workspace. The browser defaults to
-  likelihood-only and does not stage or fetch such a prior.
+  `.tmp/`, or an explicitly approved external private workspace. The browser stages the public agreement kernels and the synthetic lookup.
 - Retained rounded/aggregate downstream files remain frozen historical comparators, not
   release-approved outputs. No PaCO2-dependent result was regenerated, promoted, or unfrozen in
   this governance wave.
@@ -251,3 +246,5 @@ In `recovery-adjudicated-v2`, the largest absolute predictive endpoint error aga
 The comparison uses the two completed candidate runs above. Browser parity covers all 20 synthetic-prior cases across four source strata. The overall case at TcCO₂ of 45 mmHg gives a PaCO₂ median of 49, a central 95% interval from 41 to 57 mmHg, and P(PaCO₂ ≥45) of 0.6316. Additional native comparisons on five off-grid offsets per stratum, including ±47.875 mmHg, found maximum absolute log-density error below 0.000001 and CDF error below 0.000001. Quantiles obtained by inverting the compact CDF differed from the uncompressed predictive endpoints by less than 0.000007 mmHg. All four evaluators withheld a deliberately unresolved median. The stored grid bounds apply to arterial minus transcutaneous CO₂.
 
 Use `make verify` for the browser and scientific regression cases. Use `make visual-qa` for desktop and mobile-emulated Chromium renders and a cold-start measurement on the largest compressed kernel. Public release and independent biostatistical review are pending.
+
+The dense-prior previews for the opening view and the 47 mmHg synthetic example are written by `make visual-qa` under `.pytest_tmp/e2e/prediction-interval-preview/`. Browser checks cover equality, independently withheld tails, local version-1 summaries, prediction-band endpoints, threshold-invariant interpretations, setting-specific wording, and full-range inspection.

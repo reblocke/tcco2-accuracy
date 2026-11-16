@@ -30,3 +30,20 @@ def test_bounds_and_equality():
             f"{g},45,1\n" for g in ["all", "icu", "ed_inp", "pft"]
         )
         assert conditional(kernel, "all", prior, 45.25, 45)["probability"] == 1
+
+
+def test_dense_tail_precision_independent_at_47():
+    with np.load(SOURCE / "main.npz") as kernel:
+        k = dict(kernel)
+    r = conditional(k, "all", PRIOR, 47, 52)
+    assert r["tails"] == pytest.approx([0.8003835221376633, 0.05302181782790692])
+    assert max(r["likelihood"]) == pytest.approx(1)
+    assert sum(r["mass"]) == pytest.approx(1)
+    assert r["prior"] == pytest.approx([0.1, 0.2, 0.4, 0.2, 0.1])
+    # Force coarse-order density error only for the upper two support values.
+    prior = "group,paco2_bin,weight\n" + "".join(
+        f"{g},{a},0.5\n" for g in ["all", "pft", "icu", "ed_inp"] for a in (45, 52)
+    )
+    k["logpdf"][1, k["x"] == 5] += 0.2
+    r = conditional(k, "all", prior, 47, 45)
+    assert r["tails"] == [1, None]

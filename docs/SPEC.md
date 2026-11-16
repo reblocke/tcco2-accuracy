@@ -208,9 +208,7 @@ retention, publication, and external review decisions are outside this code cont
 - Restricted workflows require in-memory `paco2_data` or an explicitly supplied private `.dta`
   path. Package and workflow loaders do not auto-discover repository-local extracts. Historical
   local filenames may still be passed explicitly for compatibility.
-- The static browser app defaults to signed future-setting disagreement and stages no PaCO2 prior. It can run
-  without the restricted `.dta`; prior-weighted inference requires an explicit user-supplied binned
-  prior that remains client-side.
+- The static browser opens with the signed disagreement density and accepts observed TcCO₂ for conditional prediction. It displays exact conditional lookup rows for an explicitly selected synthetic example, local lookup, or whole-file approved release. The advanced calculator takes a local binned prior. All inputs stay in the browser.
 - Exact counts and normalized weights derived from the restricted source are both private-only
   unless release is explicitly approved; a weight vector may reconstruct the exact source histogram
   even when count columns are absent. Generate them only under `.pytest_tmp/`, `.tmp/`, or an

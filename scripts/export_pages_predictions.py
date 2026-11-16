@@ -49,6 +49,21 @@ def checked_rows(folder, name, manifest, group):
         return [row for row in csv.DictReader(f) if row["stratum"] == group]
 
 
+def forward_variance(folder, manifest, group):
+    [row] = checked_rows(folder, "variance_bookkeeping.csv", manifest, group)
+    parts = [
+        float(row[key])
+        for key in (
+            "expected_within_variance",
+            "expected_between_bias_variance",
+            "variance_of_overall_bias",
+        )
+    ]
+    if row["unit"] != "mmHg^2" or not np.isclose(sum(parts), float(row["total"])):
+        raise ValueError("Invalid forward variance decomposition")
+    return parts
+
+
 def main():
     DEST.mkdir(exist_ok=True)
     summary = {}
@@ -87,6 +102,7 @@ def main():
                 np.max(np.abs(CubicSpline(knots, cdf[::2])(GRID[1::2]) - cdf[1::2]))
             ),
             quantiles=[float(pred[k]) for k in ["lower", "median", "upper"]],
+            variance=forward_variance(folder, m, group),
             intervals=[
                 {
                     **{

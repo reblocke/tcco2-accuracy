@@ -17,12 +17,13 @@ Tests live under `tests/core/`, `tests/contracts/`, `tests/workflows/`, and
 
 ## Static App
 The app under `web/` is static HTML/CSS/JS. It uses:
+- `web/assets/js/lookup.js` for exact conditional row selection and the variance display.
 - `web/assets/js/app.js` for UI state, uploads, worker messages, and SVG rendering.
 - `web/pyodide_worker.js` for Pyodide initialization and Python execution.
 - `web/assets/data/` for generated staged public models and comparison data.
 - `web/assets/py/` for generated staged Python source copied from an explicit allowlist.
 
-The default chart displays the fitted signed disagreement and zero reference. The conditional chart presents the empirical posterior masses computed by `tcco2_accuracy.pages_prediction.conditional` in the worker. Its compressed, setting-specific kernel and uploaded prior provide all numerical inputs. The previous bootstrap contract is retained for offline clients.
+The homepage initially plots the signed density from the verified setting kernel. Both calculators use the same distribution chart renderer. In the advanced calculator, the agreement chart shows signed disagreement and the zero reference. Its conditional chart presents the empirical posterior masses computed by `tcco2_accuracy.pages_prediction.conditional` in the worker. Its compressed, setting-specific kernel and uploaded prior provide all numerical inputs. The previous bootstrap contract is retained for offline clients.
 
 ## Staging
 `scripts/stage_web_python.py` copies only the browser-required Python allowlist
