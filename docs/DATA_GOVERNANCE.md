@@ -77,8 +77,8 @@ uv run python scripts/rebuild_artifacts.py --profile full \
 ## Public-reference history remediation and retained outputs
 
 The current branch tip removes exact-count and reconstructable restricted-derived public-tree
-outputs. Public branch and tag history is also scanned against the same contract; non-allowlisted
-historical blobs fail CI and Pages before deployment. `artifacts/STATUS.md` accurately enumerates
+outputs. CI and Pages check public branch and tag history and the ancestry of the checked-out commit.
+This includes detached pull request candidates whose earlier commits have no branch on the host repository. `artifacts/STATUS.md` accurately enumerates
 removed files and the rounded/aggregate downstream files retained as frozen historical comparators.
 Retention is not release approval: those files are not corrected-method results, submission-ready
 evidence, or suitable for clinical use. Their hashes are locked so accidental regeneration fails the

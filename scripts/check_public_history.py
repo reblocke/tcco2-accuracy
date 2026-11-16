@@ -2,8 +2,8 @@
 """Fail closed when public Git history contains prohibited release-contract blobs.
 
 The current-tree contract prevents newly tracked restricted-derived assets.  This
-tool extends that protection to every blob reachable from public branches and
-tags, without inspecting or printing data values.  It emits only paths, rule
+tool extends that protection to every blob reachable from the checkout, public branches,
+and tags, without inspecting or printing data values.  It emits only paths, rule
 identifiers, and Git blob identifiers; ``--write-blob-ids`` produces the exact
 manifest consumed by ``git-filter-repo --strip-blobs-with-ids``.
 """
@@ -53,7 +53,7 @@ def load_contract(contract_path: Path) -> dict[str, Any]:
 
 
 def public_refs(repo: Path, contract: dict[str, Any]) -> list[str]:
-    """Return only refs that are public repository history, never local scratch refs."""
+    """Return the public refs and the checkout under review, including detached PR commits."""
 
     history = contract["history"]
     prefixes = tuple(history["public_ref_prefixes"])
@@ -63,13 +63,18 @@ def public_refs(repo: Path, contract: dict[str, Any]) -> list[str]:
         for ref in result.stdout.splitlines()
         if ref.startswith(prefixes) and not ref.endswith("/HEAD")
     ]
+    # Fork PR merge candidates can be detached and absent from origin's named refs.
+    # rev-list deduplicates shared ancestry. An unborn HEAD adds no revision.
+    refs.extend(_git_text(repo, "rev-parse", "--revs-only", "HEAD^{commit}").stdout.splitlines())
     if not refs:
-        raise RuntimeError("No public branch or tag refs were found for history validation.")
+        raise RuntimeError(
+            "No public refs or checked-out commit were found for history validation."
+        )
     return refs
 
 
 def public_history_violations(repo: Path, contract: dict[str, Any]) -> list[HistoryViolation]:
-    """Return every release-contract violation reachable from public heads and tags."""
+    """Return violations reachable from public refs or the checked-out candidate."""
 
     refs = public_refs(repo, contract)
     occurrences = _reachable_blob_occurrences(repo, refs)
