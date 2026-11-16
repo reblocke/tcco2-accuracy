@@ -268,7 +268,17 @@ def test_public_history_scans_deleted_ancestor_and_tag_only_blobs(tmp_path: Path
     assert "artifacts/inference_demo.md" in paths
 
 
-def test_private_lookup_in_ancestor_requires_exact_release_path_and_hash(tmp_path):
+@pytest.mark.parametrize(
+    ("version", "with_curves", "can_promote"),
+    [
+        ("conditional_lookup_v2", False, True),
+        ("conditional_lookup_private_chart_v1", True, False),
+        ("conditional_lookup_v2", True, False),
+    ],
+)
+def test_private_lookup_in_ancestor_requires_exact_release_path_and_hash(
+    tmp_path, version, with_curves, can_promote
+):
     repo = tmp_path / "lookup-history"
     repo.mkdir()
     _git_in_repo(repo, "init", "-q", "--initial-branch", "main")
@@ -276,14 +286,19 @@ def test_private_lookup_in_ancestor_requires_exact_release_path_and_hash(tmp_pat
     _git_in_repo(repo, "config", "user.name", "Release Contract Test")
     canonical = "models/pages/conditional-lookup.json"
     renamed = "archived-review.backup"
-    content = json.dumps(
-        dict(
-            version="conditional_lookup_v2",
-            source="trinetx",
-            groups={},
-            prior_uncertainty="fixed_empirical",
+    from tcco2_accuracy.workflows.conditional_lookup import GROUPS, READINGS, lookup_document
+
+    document = lookup_document("trinetx")
+    document["version"] = version
+    for target in GROUPS:
+        document["groups"][target] = dict(
+            prior_interval=[40, 50],
+            posterior="a" * 64,
+            rows=[dict(interval=None, variance=None, tails=[None, None]) for _ in READINGS],
         )
-    ).encode()
+    if with_curves:
+        document["groups"]["all"].update(support=[40, 50], prior=[0.5, 0.5])
+    content = json.dumps(document).encode()
     (repo / canonical).parent.mkdir(parents=True)
     for relative in [canonical, renamed]:
         (repo / relative).write_bytes(content)
@@ -304,7 +319,7 @@ def test_private_lookup_in_ancestor_requires_exact_release_path_and_hash(tmp_pat
     contract["approved_conditional_lookup_sha256"] = "0" * 64
     assert violations() == {canonical, renamed}
     contract["approved_conditional_lookup_sha256"] = hashlib.sha256(content).hexdigest()
-    assert violations() == {renamed}
+    assert violations() == ({renamed} if can_promote else {canonical, renamed})
     contract["pages_data_allowlist"].remove("web/assets/data/conditional-lookup.json")
     assert violations() == {canonical, renamed}
 

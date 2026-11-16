@@ -228,7 +228,7 @@ local-only or source-linked materials and are not part of the public branch tip.
 
 - Python remains the single source of truth for computation.
 - JavaScript handles controls, uploads, worker messaging, and plotting.
-- Enter an observed TcCO₂ and optionally select a setting. The conditional view shows the arterial median, central 95% interval, probabilities at or above 45 and 52 mmHg and variance contributions when available. The current demonstration uses the four fitted models and an invented prior. TriNetX results require an approved index cohort and release review.
+- Enter an observed TcCO₂ and optionally select a setting. The conditional view shows the arterial median, central 95% interval, probabilities at or above 45 and 52 mmHg and variance contributions when available. The current demonstration uses the four fitted models and an invented prior. For a private TriNetX cohort, the [offline chart workflow](docs/FUTURE_SETTING.md#private-distribution-preview) uses an approved index extract or frequency table to show the full prior and posterior at TcCO₂ 47 mmHg. Public release of a summary lookup requires separate review.
 - The four-stratum agreement table and advanced local CSV/XLSX prior calculator are available below the prediction. See [browser methods and offline evaluation](docs/WEB_APP.md).
 - Custom-study and bootstrap calculations are offline.
 - User-entered values and uploads remain in the browser. The app has no backend,

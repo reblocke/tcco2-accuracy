@@ -504,6 +504,27 @@ details label[for="lookup-file"] {
   background: #75578c;
   border-radius: 50%;
 }
+.distribution svg.zoomable {
+  cursor: crosshair;
+  user-select: none;
+}
+.distribution .likelihood-points {
+  stroke: #4f6276;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.zoom-help {
+  margin: 4px 0 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.zoom-selection {
+  fill: #186d69;
+  fill-opacity: 0.13;
+  stroke: #215d58;
+  stroke-dasharray: 4 2;
+  pointer-events: none;
+}
 .chart-range {
   background: white;
   color: var(--accent);
@@ -676,6 +697,8 @@ details label[for="lookup-file"] {
 }
 
 .distribution .cut-label,
+.distribution .threshold-reference,
+.distribution .threshold-offscreen,
 .distribution .marker-label {
   paint-order: stroke;
   stroke: white;
@@ -685,6 +708,11 @@ details label[for="lookup-file"] {
 .distribution .cut-label {
   fill: #90451e;
   font-weight: bold;
+}
+
+.reference-tick {
+  stroke: #556571;
+  stroke-dasharray: 2 2;
 }
 
 .distribution .tail-area {

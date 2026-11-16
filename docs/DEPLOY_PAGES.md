@@ -26,7 +26,7 @@ Open http://127.0.0.1:8000 and select the synthetic example at TcCO₂ 47 mmHg. 
 - The default app does not require `Data/In Silico TCCO2 Database.dta`.
 - Pages stages the four public kernels, comparison summary and synthetic lookup as data assets. It must not
   contain or fetch `paco2_public_prior.csv`, exact prior bins, or another restricted-derived prior.
-- Staging accepts a real lookup only when its exact SHA-256 is approved in the release contract and its data path is allowlisted. Default staging has no TriNetX lookup.
+- Private chart JSON contains the empirical distribution and stays outside Pages. Staging accepts a real summary lookup only when its exact SHA-256 is approved in the release contract and its data path is allowlisted. Default staging has no TriNetX lookup.
 - `docs/data_release_contract.json` is the machine-readable current-tree, Pages, and public-history
   release contract. Pages runs the public-history check before staging deployment assets.
 - If Pyodide CDN availability is a deployment concern, vendor Pyodide assets in a follow-up decision and update `docs/DECISIONS.md`.

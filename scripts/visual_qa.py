@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import json
 import socket
 import subprocess
@@ -11,6 +12,7 @@ import time
 from collections.abc import Iterator
 from pathlib import Path
 
+import numpy as np
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,9 +20,84 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.stage_web_python import stage_web_python  # noqa: E402
+from tcco2_accuracy.workflows.private_chart import display_curves  # noqa: E402
+from tcco2_accuracy.workflows.private_preview_html import private_viewer_html  # noqa: E402
 
 OUTPUT_DIR = ROOT / ".pytest_tmp" / "visual-qa"
 SYNTHETIC_PRIOR_PATH = ROOT / "tests" / "fixtures" / "synthetic_paco2_prior.csv"
+
+
+def _synthetic_private_preview():
+    """Prepare the offline viewer using only the public, invented reference row."""
+    directory = ROOT / ".pytest_tmp/e2e/private-preview"
+    directory.mkdir(parents=True, exist_ok=True)
+    reference = json.loads((ROOT / "models/pages/synthetic-lookup.json").read_text())
+    if reference["source"] != "synthetic" or reference["version"] != "conditional_lookup_dense_v1":
+        raise ValueError("Private visual QA requires the public synthetic fixture")
+    group = reference["groups"]["all"]
+    row = group["rows"][47 - 20]
+    a = np.asarray(group["support"])
+    curve = group["curve"]
+    grid = np.asarray(curve["x"])
+    indices = np.searchsorted(grid, a - 47)
+    np.testing.assert_array_equal(grid[indices], a - 47)
+    density = np.asarray(curve["density"])[indices]
+    doc = dict(
+        version="conditional_lookup_private_chart_v1",
+        source="synthetic",
+        method=reference["method"],
+        prior_uncertainty=reference["prior_uncertainty"],
+        target="all",
+        tcco2=47,
+        posterior=group["posterior"],
+        support=group["support"],
+        prior=group["prior"],
+        mass=row["mass"],
+        interval=row["interval"],
+        tails=row["tails"],
+        likelihood=(density / density.max()).tolist(),
+        display=display_curves(a, group["prior"], row["mass"]),
+    )
+    chart = directory / "private-chart.json"
+    chart.write_text(json.dumps(doc, allow_nan=False, separators=(",", ":")) + "\n")
+    (directory / "preview.html").write_text(
+        private_viewer_html(hashlib.sha256(chart.read_bytes()).hexdigest())
+    )
+    return directory
+
+
+def _capture_private_preview(directory, browser, device, width, height):
+    with browser.new_context(
+        offline=True, viewport={"width": width, "height": height}, is_mobile=device == "mobile"
+    ) as context:
+        page = context.new_page()
+        page.goto((directory / "preview.html").as_uri())
+        page.locator("#chart-file").set_input_files(directory / "private-chart.json")
+        page.locator("#private-bounds").get_by_text("38.75 to 56.25 mmHg").wait_for()
+        assert "Synthetic example" in page.locator("#private-context").inner_text()
+        chart = page.locator("#private-chart")
+        assert chart.locator(".tail-value").all_text_contents() == ["71.61%", "13.43%"]
+        if device == "mobile":
+            chart.get_by_role("button", name="Highlight ≥52 mmHg").click()
+        assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+        page.mouse.move(0, 0)
+        view = page.locator("main")
+        view.screenshot(path=directory / f"{device}-47.png")
+        gray = page.add_style_tag(content="main {filter: grayscale(1)}")
+        view.screenshot(path=directory / f"{device}-47-grayscale.png")
+        gray.evaluate("(style) => style.remove()")
+        if device == "desktop":
+            svg = chart.locator("svg")
+            svg.scroll_into_view_if_needed()
+            box = svg.bounding_box()
+            y = box["y"] + box["height"] * 0.40
+            page.mouse.move(box["x"] + box["width"] * 0.33, y)
+            page.mouse.down()
+            page.mouse.move(box["x"] + box["width"] * 0.62, y, steps=10)
+            page.mouse.up()
+            chart.get_by_role("button", name="Reset zoom").wait_for()
+            page.mouse.move(0, 0)
+            view.screenshot(path=directory / "desktop-47-zoom.png")
 
 
 def main() -> None:
@@ -28,6 +105,7 @@ def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     previews = ROOT / ".pytest_tmp/e2e/prediction-interval-preview"
     previews.mkdir(parents=True, exist_ok=True)
+    private_preview = _synthetic_private_preview()
     measurements = []
     with _serve_web() as url, sync_playwright() as playwright:
         for device, width, height in [("desktop", 1440, 950), ("mobile", 390, 900)]:
@@ -93,6 +171,7 @@ def main() -> None:
                         renderer_rss_kib_after_calculation=sum(map(int, rss.split())),
                     )
                 )
+                _capture_private_preview(private_preview, browser, device, width, height)
             finally:
                 browser.close()
     (OUTPUT_DIR / "measurements.json").write_text(json.dumps(measurements, indent=2) + "\n")

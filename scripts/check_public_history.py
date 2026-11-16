@@ -26,6 +26,8 @@ from typing import Any
 
 import pandas as pd
 
+from tcco2_accuracy.workflows.conditional_lookup import validate_lookup
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -167,17 +169,31 @@ def conditional_lookup_violation(
 ) -> bool:
     """Check the reserved promotion path and recognize private lookup documents after a rename."""
 
-    if relative_path == contract["conditional_lookup_public_source"]:
-        return (
-            "web/assets/data/conditional-lookup.json" not in contract["pages_data_allowlist"]
-            or hashlib.sha256(content).hexdigest() != contract["approved_conditional_lookup_sha256"]
-        )
+    release_path = relative_path == contract["conditional_lookup_public_source"]
+    if release_path and (
+        "web/assets/data/conditional-lookup.json" not in contract["pages_data_allowlist"]
+        or hashlib.sha256(content).hexdigest() != contract["approved_conditional_lookup_sha256"]
+    ):
+        return True
     # The private exporter writes a JSON object. Avoid decoding other tracked formats.
     if not content.lstrip(b" \r\n\t").removeprefix(b"\xef\xbb\xbf").lstrip().startswith(b"{"):
-        return False
+        return release_path
     try:
         document = json.loads(content)
     except (UnicodeDecodeError, json.JSONDecodeError):
+        return release_path
+    if release_path:
+        # Only a summary lookup can be promoted. The curve format carries the full prior.
+        if (
+            not isinstance(document, dict)
+            or document.get("source") != "trinetx"
+            or document.get("version") not in contract["conditional_lookup_public_versions"]
+        ):
+            return True
+        try:
+            validate_lookup(document)
+        except (KeyError, TypeError, ValueError, OverflowError):
+            return True
         return False
     return (
         isinstance(document, dict)

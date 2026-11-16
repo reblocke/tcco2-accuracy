@@ -40,3 +40,23 @@ The approved input must already contain arterial measurements in mmHg within the
 In the approved workspace, prepare a JSON receipt with `use` set to `approved_private_index_analysis`, `eligible_extract` (CSV or Stata path), `eligible_extract_sha256`, `private_destination` (existing approved directory), and `revisions` containing custodian-confirmed `cohort_revision`, `eligibility_revision` and `window_revision`. Optional `columns` maps the four index roles to input field names. The [restricted provenance record](restricted_data_provenance.template.json) documents authority and permitted destinations. Validate the extraction and window before issuing the receipt.
 
 Run `uv run python scripts/conditional_lookup.py /approved/private/receipt.json`. It selects one index measurement per patient in each target, and one overall for All. It writes the aggregate lookup and provenance receipt together in the new `conditional-lookup/` directory under the approved private destination. Each lookup contains four prior intervals and 81 ordered rows per setting on the inclusive integer grid 20 through 100 mmHg. A local JSON file may be opened in the browser. Public promotion requires review of the complete file, approval of its SHA-256 and the Pages destination, and an explicit data allowlist change. The prior support and weights stay private.
+
+### Private distribution preview
+
+Use the existing fit for the requested setting and one approved input. With the eligible-record receipt above, the builder selects the index ABG within that setting. For `all`, it selects one index ABG per patient across all eligible settings.
+
+Alternatively, the custodian can supply an exact frequency table for that single target. Each CSV row represents one distinct arterial PaCO₂ value at its original precision. Use `paco2_bin,count` for positive integer patient counts or `paco2_bin,weight` for positive proportions summing to one. The counts or weights must come from the same index rule. Broad bins, encounter-level averages and pooling setting-specific tables can change the prior.
+
+Use the same receipt fields for the approved file, its SHA-256, revisions, use and destination. For a frequency table, also set `input_kind` to `index_frequencies`, `index_target` to the requested setting, and `index_policy` to `earliest_eligible_measurement_in_earliest_eligible_encounter_per_patient`. These entries document the upstream index selection. Only the custodian can confirm that the underlying records satisfy it.
+
+The original-cohort all-settings preview uses `index_policy` set to `equal_patient_weight_split_across_eligible_draws_on_first_testing_day`. Determine the first eligible arterial testing date per patient across all their cohort encounters over the full observation period. A patient with three eligible results on that date contributes one third of their weight to each result. Sum contributions at each observed PaCO₂ value, divide by the number of contributing patients and supply the resulting `paco2_bin,weight` table. The private viewer identifies this population rule.
+
+From the checkout containing the accepted public fits, run
+
+```sh
+uv run python scripts/conditional_lookup.py /approved/private/receipt.json --private-chart all
+```
+
+Choose `all`, `icu`, `ed_inp` or `pft`. The command writes `private-chart-<target>/` inside the approved destination. Open its `preview.html` directly in a browser, then select the adjacent `private-chart.json`. The viewer reads that file locally and works offline. The accompanying `receipt.json` records the input and fit provenance. Keep all derived distributions and real-data screenshots in the approved workspace.
+
+The model evaluates the disagreement density at each observed arterial value minus 47 mmHg, multiplies by its empirical prior mass and normalizes once. The displayed interval and inclusive probabilities use the complete support. Zoom and threshold selection change the display only. An unresolved interval or threshold probability is withheld independently.
