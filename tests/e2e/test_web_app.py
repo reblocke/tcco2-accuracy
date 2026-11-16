@@ -138,7 +138,9 @@ def test_local_spreadsheet_equality_and_no_prior_fetch(page, web_server, tmp_pat
     expect(page.locator("#plot .posterior-bar")).to_have_count(1)
     assert page.locator("#plot .likelihood-line").get_attribute("d").count("L") >= 20
     page.locator("#plot").get_by_role("button", name="Highlight ≥52 mmHg").click()
-    expect(page.locator("#plot figcaption")).to_contain_text("52 mmHg is outside")
+    expect(page.locator("#plot figcaption")).to_contain_text("45 to 55 mmHg")
+    expect(page.locator("#plot .cut-label")).to_have_text("≥52")
+    expect(page.locator("#plot .threshold-reference")).to_have_text("45")
     page.fill("#tcco2", "47.25")
     page.fill("#threshold", "45.01")
     expect(page.locator("#results")).to_be_hidden()

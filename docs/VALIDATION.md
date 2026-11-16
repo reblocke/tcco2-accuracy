@@ -248,3 +248,5 @@ The comparison uses the two completed candidate runs above. Browser parity cover
 Use `make verify` for the browser and scientific regression cases. Use `make visual-qa` for desktop and mobile-emulated Chromium renders and a cold-start measurement on the largest compressed kernel. Public release and independent biostatistical review are pending.
 
 The dense-prior previews for the opening view and the 47 mmHg synthetic example are written by `make visual-qa` under `.pytest_tmp/e2e/prediction-interval-preview/`. Browser checks cover equality, independently withheld tails, local version-1 summaries, prediction-band endpoints, threshold-invariant interpretations, setting-specific wording, and full-range inspection.
+
+The offline private-preview E2E uses invented index frequencies and an independently calculated Gaussian reference at TcCO₂ 47 mmHg. The release checks reject the private chart format at the summary promotion path, including when its digest is pinned, and recognize the file after a rename in Git history.

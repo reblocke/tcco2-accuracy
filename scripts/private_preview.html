@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'sha256-VIEWER_SCRIPT_HASH'; style-src 'unsafe-inline'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Private PaCO₂ prediction</title>
+  <style>
+/* SHARED_STYLES */
+    body { margin: 0; }
+    main { width: min(840px, 92%); margin: 24px auto 40px; }
+    header { padding-bottom: 12px; }
+    h1 { font-size: clamp(28px, 4vw, 42px); }
+    #file-panel { margin: 14px 0; }
+    #file-panel label { margin-top: 12px; }
+    #chart-file { width: min(100%, 440px); }
+    #chart-status:empty { display: none; }
+    #private-result { background: white; border: 1px solid var(--line); border-radius: 5px;
+                      padding: clamp(12px, 3vw, 26px); }
+    #private-context { margin: 0 0 6px; }
+    #private-bounds { display: block; font: 500 clamp(28px, 4vw, 42px) Georgia, serif; }
+    #private-summary { border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 12px; }
+    #private-median { margin: 4px 0 0; }
+  </style>
+</head>
+<body>
+<main>
+  <header><h1>Private PaCO₂ prediction</h1><small>Research use only · Individual-patient coverage has yet to be validated.</small></header>
+  <details id="file-panel" open>
+    <summary id="file-summary">Open private chart</summary>
+    <label for="chart-file">Choose private-chart.json from the same folder as this page.</label>
+    <input id="chart-file" type="file" accept="application/json,.json">
+    <p class="note">This viewer opens the file on this device and works without an internet connection.</p>
+  </details>
+  <p id="chart-status" role="status"></p>
+  <section id="private-result" aria-label="Paired arterial prediction" hidden>
+    <div id="private-summary" aria-live="polite">
+      <p id="private-context" class="note"></p>
+      <small>95% Prediction Interval for PaCO₂</small>
+      <strong id="private-bounds"></strong>
+      <p id="private-median"></p>
+    </div>
+    <div id="private-chart"></div>
+    <div id="private-interpretation" class="prediction-interpretation" hidden></div>
+    <button type="button" id="close-chart" class="text-button">Close chart</button>
+  </section>
+  <noscript>Enable JavaScript to open the interactive chart.</noscript>
+</main>
+<script type="module">
+/* DISTRIBUTION_MODULE */
+/* INTERPRETATION_MODULE */
+
+const byId = (id) => document.getElementById(id);
+const settingNames = {
+  all: "All eligible settings", icu: "Intensive care",
+  ed_inp: "Emergency department / inpatient", pft: "Ambulatory / pulmonary function testing",
+};
+const fmt = new Intl.NumberFormat("en-US", {maximumSignificantDigits: 12}).format;
+let revision = 0;
+
+function closeChart() {
+  revision++;
+  byId("private-result").hidden = true;
+  showDistribution(byId("private-chart"), null);
+  showInterpretation(byId("private-interpretation"), null);
+  for (const id of ["private-bounds", "private-context", "private-median", "chart-status"]) {
+    byId(id).textContent = "";
+  }
+  byId("file-panel").open = true;
+  byId("file-summary").textContent = "Open private chart";
+}
+
+byId("close-chart").addEventListener("click", () => {
+  byId("chart-file").value = "";
+  closeChart();
+  byId("chart-file").focus();
+});
+
+byId("chart-file").addEventListener("change", async (event) => {
+  closeChart();
+  const request = revision;
+  const file = event.target.files[0];
+  if (!file) return;
+  byId("chart-status").textContent = "Opening chart…";
+  try {
+    const bytes = await file.arrayBuffer();
+    const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+    if (request !== revision) return;
+    if (Array.from(hash, b => b.toString(16).padStart(2, "0")).join("") !== "EXPECTED_CHART_SHA256") {
+      byId("chart-status").textContent = "This file does not match this viewer. Choose the chart from the same output folder.";
+      return;
+    }
+    // This hash pins the complete Python-generated document, including the resolved
+    // summaries and exact masses. JavaScript only formats and plots those values.
+    const data = JSON.parse(new TextDecoder().decode(bytes));
+    if (data.version !== "conditional_lookup_private_chart_v1" ||
+        data.method !== "future_setting_joint_v1" || data.prior_uncertainty !== "fixed_empirical" ||
+        !Object.hasOwn(settingNames, data.target) || !["trinetx", "synthetic"].includes(data.source) ||
+        data.tcco2 !== 47) throw new Error();
+
+    const q = data.interval;
+    const bounds = q ? fmt(q[0]) + " to " + fmt(q[2]) + " mmHg" : "Unresolved";
+    byId("private-bounds").textContent = bounds;
+    byId("private-context").textContent = (data.source === "trinetx" ? "TriNetX" : "Synthetic example") +
+      " · " + settingNames[data.target];
+    if (data.index_policy === "equal_patient_weight_split_across_eligible_draws_on_first_testing_day") {
+      byId("private-context").textContent += ". Each patient contributes equal weight, split among their recorded arterial results on their first testing day.";
+    }
+    byId("private-median").textContent = q
+      ? "Median " + fmt(q[1]) + " mmHg · Width " + fmt(q[2] - q[0]) + " mmHg"
+      : "The fit does not resolve the interval at this reading.";
+    byId("private-result").hidden = false;
+    showDistribution(byId("private-chart"), {
+      kind: "posterior", title: "PaCO₂ given TcCO₂ " + data.tcco2 + " mmHg",
+      x: data.support, prior: data.prior, mass: data.mass, q, tails: data.tails,
+      tc: data.tcco2, display: data.display, formatEndpoint: fmt,
+      curve: { x: data.support.map(v => v - data.tcco2), density: data.likelihood },
+    });
+    if (q) showInterpretation(byId("private-interpretation"), {
+      source: data.source, setting: data.target, reading: fmt(data.tcco2), bounds,
+    });
+    byId("file-panel").open = false;
+    byId("file-summary").textContent = "Change chart file";
+    byId("chart-status").textContent = "";
+  } catch {
+    if (request !== revision) return;
+    closeChart();
+    byId("chart-status").textContent = "Unable to open this chart. Open preview.html in a local browser and choose its matching JSON file.";
+  }
+});
+</script>
+</body>
+</html>

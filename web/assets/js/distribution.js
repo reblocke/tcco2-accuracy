@@ -39,6 +39,43 @@ function nearest(xs, v) {
   }
   return l && Math.abs(xs[l - 1] - v) < Math.abs(xs[l] - v) ? l - 1 : l;
 }
+// View bounds use the supplied empirical masses, including for smoothed plots.
+function posteriorRange(xs, mass) {
+  let cumulative = 0;
+  let lower;
+  let upper = xs.at(-1);
+  for (let i = 0; i < xs.length; i++) {
+    cumulative += mass[i];
+    if (lower === undefined && cumulative >= 0.0005) lower = xs[i];
+    if (cumulative >= 0.9995) {
+      upper = xs[i];
+      break;
+    }
+  }
+  return [
+    5 * Math.floor(Math.min(lower, 45) / 5),
+    5 * Math.ceil(Math.max(upper, 52) / 5),
+  ];
+}
+// Interpolate only the visible endpoints. Interior samples use the supplied plot series.
+function segment(xs, lo, hi, ...series) {
+  lo = Math.max(lo, xs[0]);
+  hi = Math.min(hi, xs.at(-1));
+  if (!xs.length || lo > hi) return [];
+  function at(v) {
+    const i = nearest(xs, v);
+    if (xs[i] === v) return [v, ...series.map((s) => s[i])];
+    const j = xs[i] < v ? i + 1 : i - 1;
+    const f = (v - xs[i]) / (xs[j] - xs[i]);
+    return [v, ...series.map((s) => s[i] + f * (s[j] - s[i]))];
+  }
+  const points = [at(lo)];
+  for (let i = nearest(xs, lo); i < xs.length && xs[i] < hi; i++)
+    if (xs[i] > lo) points.push([xs[i], ...series.map((s) => s[i])]);
+  if (hi > lo) points.push(at(hi));
+  return points;
+}
+
 export function showDistribution(host, model) {
   const previous = views.get(host);
   previous?.observer.disconnect();
@@ -49,6 +86,13 @@ export function showDistribution(host, model) {
   const forward = kind === "agreement",
     summary = kind === "summary";
   const conditional = !forward && !summary;
+  const smooth = dense || (model.display && x.length > 1);
+  // The demo uses quarter-mmHg bins. Other smooth curves are already densities.
+  const displayX = smooth && model.display ? model.display.x : x;
+  const priorDensity =
+    model.display?.prior_density ?? (dense ? prior.map((v) => v * 4) : null);
+  const posteriorDensity =
+    model.display?.posterior_density ?? (dense ? mass.map((v) => v * 4) : null);
   const likelihoodX = conditional ? curve.x.map((offset) => offset + tc) : [];
   const maximum = conditional
     ? curve.density.reduce((m, v) => Math.max(m, v), 0)
@@ -66,7 +110,10 @@ export function showDistribution(host, model) {
   const sameView =
     previous?.kind === kind && previous?.source === model.subtitle;
   let active = model.active ?? (sameView ? previous.active : 45);
-  let full = sameView && previous.full;
+  const openingRange = conditional ? posteriorRange(x, mass) : null;
+  let full = !conditional && sameView && previous.full;
+  let zoom = null;
+  const canZoom = !summary && x.length > 1;
   const thresholds = [...new Set([45, 52, active])];
   const probs = new Map(
     thresholds.map((k, i) => [
@@ -75,7 +122,7 @@ export function showDistribution(host, model) {
     ]),
   );
   const figure = html(host, "figure", undefined, "distribution");
-  figure.classList.toggle("dense", Boolean(dense));
+  figure.classList.toggle("dense", Boolean(smooth));
   const heading = html(figure, "div", undefined, "figure-head");
   html(heading, "h3", model.title);
   if (model.subtitle) html(heading, "span", model.subtitle, "chart-source");
@@ -94,9 +141,15 @@ export function showDistribution(host, model) {
       "p",
       summary
         ? "Select a threshold to see the probability above and below it."
-        : dense
-          ? "Shading marks values at or above the selected threshold. The percentages include all qualifying values."
-          : "Select a threshold to highlight the arterial values at or above it.",
+        : model.display && x.length === 1
+          ? "The prior and posterior both put all probability on the single observed arterial value."
+          : model.display
+            ? "Curves use Gaussian smoothing (SD " +
+              value(model.display.bandwidth) +
+              " mmHg) for display. Shading marks values at or above the selected threshold. The interval and probabilities use the original arterial values."
+            : dense
+              ? "Shading marks values at or above the selected threshold. The percentages include all qualifying values."
+              : "Select a threshold to highlight the arterial values at or above it.",
       "chart-explanation",
     );
     const band = html(figure, "div", undefined, "tail-cards");
@@ -133,7 +186,7 @@ export function showDistribution(host, model) {
       html(
         legend,
         "strong",
-        dense ? "Density per mmHg" : "Probability per value",
+        smooth ? "Density per mmHg" : "Probability per value",
       );
     const series = forward
       ? [["density", "Predictive density"]]
@@ -147,9 +200,11 @@ export function showDistribution(host, model) {
   }
   const rangeButton = html(tools, "button", "Full range", "chart-range");
   rangeButton.type = "button";
-  rangeButton.hidden = summary || !q || x.length < 2;
   rangeButton.onclick = () => {
-    full = !full;
+    if (zoom) {
+      zoom = null;
+      if (conditional) full = false;
+    } else full = !full;
     paint();
   };
   const svg = shape(figure, "svg", {
@@ -159,6 +214,17 @@ export function showDistribution(host, model) {
       model.title +
       (summary ? "" : ". Use the left and right arrow keys to inspect values."),
   });
+  if (canZoom) {
+    const help = html(
+      figure,
+      "p",
+      "Drag to zoom. Double-click to reset. Or choose each end with the arrow keys and Enter.",
+      "zoom-help",
+    );
+    help.id = host.id + "-zoom-help";
+    svg.setAttribute("aria-describedby", help.id);
+  }
+  if (canZoom) svg.classList.add("zoomable");
   const caption = html(figure, "figcaption", "");
   const readout = html(figure, "output", "", "chart-readout");
   let selectedIndex = null,
@@ -180,12 +246,17 @@ export function showDistribution(host, model) {
             : "The selected probability is unresolved at this reading."
           : percent(1 - p) + " below " + active + " mmHg";
     }
-    rangeButton.textContent = full ? "Focused range" : "Full range";
+    rangeButton.hidden = (!canZoom && !conditional) || (!q && !conditional && !zoom);
+    rangeButton.textContent = zoom
+      ? "Reset zoom"
+      : full
+        ? "Focused range"
+        : "Full range";
     rangeButton.setAttribute("aria-pressed", String(full));
     svg.replaceChildren();
     readout.textContent = "";
     const left = forward || summary ? 39 : 42,
-      right = width - (forward || summary ? 14 : 39);
+      right = width - (forward || summary || model.display ? 14 : 39);
     const top = 52,
       bottom = summary ? 82 : 190,
       axis = conditional ? bottom + 108 : bottom,
@@ -201,11 +272,13 @@ export function showDistribution(host, model) {
       return;
     }
     svg.style.display = "";
-    const lo0 = x.length ? x[0] : q[0],
-      hi0 = x.length ? x.at(-1) : q[2];
+    const lo0 = x.length ? Math.min(x[0], displayX[0]) : q[0],
+      hi0 = x.length ? Math.max(x.at(-1), displayX.at(-1)) : q[2];
     let lo = lo0,
       hi = hi0;
-    if (!full && q) {
+    if (!full && conditional) {
+      [lo, hi] = openingRange;
+    } else if (!full && q) {
       const span = Math.max(q[2] - q[0], 1);
       lo = Math.max(lo0, q[0] - span * 0.28);
       hi = Math.min(hi0, q[2] + span * 0.28);
@@ -215,26 +288,42 @@ export function showDistribution(host, model) {
       (hi - lo) * 0.07,
       Math.abs(hi) * Number.EPSILON * 8,
     );
-    lo -= pad;
-    hi += pad;
+    // The private density grid already extends past the extreme observed pressures.
+    if ((!conditional || full) && !(full && model.display && smooth)) {
+      lo -= pad;
+      hi += pad;
+    }
+    if (full && conditional) {
+      lo = Math.min(lo, 45, openingRange[0]);
+      hi = Math.max(hi, 52, openingRange[1]);
+    }
+    if (zoom) [lo, hi] = zoom;
     const sx = (v) => left + ((v - lo) / (hi - lo)) * (right - left);
+    const onAxis = (v) => lo <= v && v <= hi;
+    const clampX = (px) => Math.max(left, Math.min(right, px));
     const shown = [];
     for (let i = 0; i < x.length; i++)
       if (x[i] >= lo && x[i] <= hi) shown.push(i);
-    const peak = forward
-      ? shown.reduce((m, i) => Math.max(m, density[i]), 0)
-      : shown.reduce((m, i) => Math.max(m, mass[i], prior[i]), 0);
-    const ymax = forward
-      ? Math.max(0.001, Math.ceil(peak * 100) / 100)
-      : dense
-        ? Math.max(0.001, Math.ceil(peak * 400) / 400)
+    const plotted = forward
+      ? segment(x, lo, hi, density)
+      : smooth
+        ? segment(displayX, lo, hi, priorDensity, posteriorDensity)
+        : [];
+    const peak =
+      forward || smooth
+        ? plotted.reduce((m, p) => Math.max(m, p[1], p[2] ?? 0), 0)
+        : shown.reduce((m, i) => Math.max(m, mass[i], prior[i]), 0);
+    const ymax =
+      forward || smooth
+        ? Math.max(0.001, Math.ceil(peak * 100) / 100)
         : Math.min(1, Math.max(0.01, Math.ceil(peak * 20) / 20));
     const y = (v, max = ymax) => bottom - ((bottom - top) * v) / max;
-    if (q) {
+    const visibleInterval = q && q[0] <= hi && q[2] >= lo;
+    if (visibleInterval) {
       shape(svg, "rect", {
-        x: sx(q[0]),
+        x: clampX(sx(q[0])),
         y: top,
-        width: sx(q[2]) - sx(q[0]),
+        width: clampX(sx(q[2])) - clampX(sx(q[0])),
         height: bottom - top,
         class: "prediction-band",
       });
@@ -246,62 +335,70 @@ export function showDistribution(host, model) {
         text(
           left - 6,
           yy + 4,
-          forward
-            ? value(f * ymax)
-            : dense
-              ? value(f * ymax * 4)
-              : value(100 * f * ymax) + "%",
+          forward || smooth ? value(f * ymax) : value(100 * f * ymax) + "%",
           "end",
         );
       }
     }
     line(left, bottom, right, bottom, "axis-line");
-    for (const v of ticks(lo, hi, width < 450 ? 5 : 8)) {
+    const pressureTicks = ticks(lo, hi, width < 450 ? 5 : 8);
+    const tickStep = pressureTicks[1] - pressureTicks[0];
+    const tickValue =
+      tickStep < 0.001
+        ? new Intl.NumberFormat("en-US", {
+            maximumFractionDigits: Math.min(
+              15,
+              Math.ceil(-Math.log10(tickStep)),
+            ),
+          }).format
+        : value;
+    for (const v of pressureTicks) {
       line(sx(v), axis, sx(v), axis + 4, "axis-line");
-      text(sx(v), axis + 18, value(v));
+      text(sx(v), axis + 18, tickValue(v));
     }
     text((left + right) / 2, axis + 39, xLabel);
-    function trace(vals, max) {
-      return shown
+    function trace(points, series, scale) {
+      return points
         .map(
-          (i, j) =>
-            (j ? "L" : "M") +
-            sx(x[i]).toFixed(2) +
+          (p, i) =>
+            (i ? "L" : "M") +
+            sx(p[0]).toFixed(2) +
             "," +
-            y(vals[i], max).toFixed(2),
+            scale(p[series]).toFixed(2),
         )
         .join(" ");
     }
-    if (forward && shown.length) {
-      const d = trace(density, ymax);
-      shape(svg, "path", {
-        d:
-          d +
-          " L" +
-          sx(x[shown.at(-1)]) +
-          "," +
-          bottom +
-          " L" +
-          sx(x[shown[0]]) +
-          "," +
-          bottom +
-          " Z",
-        class: "density-fill",
-      });
-      shape(svg, "path", { d, class: "density-line" });
+    function fillUnder(points, series, cls) {
+      if (points.length < 2) return;
+      const d =
+        trace(points, series, y) +
+        " L" +
+        sx(points.at(-1)[0]) +
+        "," +
+        bottom +
+        " L" +
+        sx(points[0][0]) +
+        "," +
+        bottom +
+        " Z";
+      shape(svg, "path", { d, class: cls });
+    }
+    if (forward) {
+      fillUnder(plotted, 1, "density-fill");
+      shape(svg, "path", { d: trace(plotted, 1, y), class: "density-line" });
       if (lo <= 0 && hi >= 0) line(sx(0), top, sx(0), bottom, "zero-marker");
-    } else if (dense) {
-      const tail = shown.filter((i) => x[i] >= active);
-      if (tail.length) {
-        const polygon = [
-          "M" + sx(x[tail[0]]) + "," + bottom,
-          ...tail.map((i) => "L" + sx(x[i]) + "," + y(mass[i])),
-          "L" + sx(x[tail.at(-1)]) + "," + bottom + " Z",
-        ].join(" ");
-        shape(svg, "path", { d: polygon, class: "tail-area" });
+    } else if (smooth) {
+      if (active <= x.at(-1)) {
+        const tail = segment(
+          displayX,
+          Math.max(lo, active),
+          hi,
+          posteriorDensity,
+        );
+        fillUnder(tail, 1, "tail-area");
       }
-      shape(svg, "path", { d: trace(prior, ymax), class: "prior-line" });
-      shape(svg, "path", { d: trace(mass, ymax), class: "posterior-line" });
+      shape(svg, "path", { d: trace(plotted, 1, y), class: "prior-line" });
+      shape(svg, "path", { d: trace(plotted, 2, y), class: "posterior-line" });
     } else if (!summary) {
       let gap = right - left;
       for (let j = 1; j < shown.length; j++)
@@ -312,9 +409,10 @@ export function showDistribution(host, model) {
       );
       for (const i of shown)
         shape(svg, "rect", {
-          x: sx(x[i]) - barWidth / 2,
+          x: clampX(sx(x[i]) - barWidth / 2),
           y: y(mass[i]),
-          width: barWidth,
+          width:
+            clampX(sx(x[i]) + barWidth / 2) - clampX(sx(x[i]) - barWidth / 2),
           height: bottom - y(mass[i]),
           class: "posterior-bar" + (x[i] >= active ? " tail-bar" : ""),
         });
@@ -327,44 +425,54 @@ export function showDistribution(host, model) {
         });
     }
     if (conditional) {
-      text(left, bottom + 27, "Relative likelihood", "start", "axis-title");
+      text(
+        left,
+        bottom + 27,
+        model.display
+          ? "Relative likelihood at observed values"
+          : "Relative likelihood",
+        "start",
+        "axis-title",
+      );
       const panelTop = bottom + 40;
       for (const level of [0, 1]) {
         const yy = axis - level * (axis - panelTop);
         line(left, yy, right, yy, "grid-line");
         text(left - 7, yy + 4, String(level), "end");
       }
-      const start = Math.max(lo, likelihoodX[0]);
-      const end = Math.min(hi, likelihoodX.at(-1));
-      if (start < end) {
-        // Clip the polyline to the visible range, including ranges between two knots.
-        const visible = [
-          start,
-          ...likelihoodX.filter((v) => v > start && v < end),
-          end,
-        ];
-        const d = visible.map((v, i) => {
-          const yy = axis - likelihoodAt(v) * (axis - panelTop);
-          return (i ? "L" : "M") + sx(v).toFixed(2) + "," + yy.toFixed(2);
-        });
-        shape(svg, "path", { d: d.join(" "), class: "likelihood-line" });
+      const sy = (v) => axis - v * (axis - panelTop);
+      if (model.display) {
+        const points = shown.map(
+          (i) =>
+            "M" + sx(x[i]).toFixed(2) + "," + sy(relative[i]).toFixed(2) + "v0",
+        );
+        shape(svg, "path", { d: points.join(" "), class: "likelihood-points" });
+      } else {
+        const visible = segment(likelihoodX, lo, hi, relative);
+        if (visible.length >= 2)
+          shape(svg, "path", {
+            d: trace(visible, 1, sy),
+            class: "likelihood-line",
+          });
       }
       if (active >= lo && active <= hi)
         line(sx(active), panelTop, sx(active), axis, "cut-marker");
     }
-    if (q) {
+    if (visibleInterval) {
       const [l, m, u] = q;
-      for (const v of [l, u]) {
+      for (const v of [l, u].filter(onAxis)) {
         line(sx(v), 19, sx(v), 23, "interval-rule");
         line(sx(v), top, sx(v), bottom, "interval-marker");
       }
-      line(sx(l), 19, sx(u), 19, "interval-rule");
-      line(sx(m), top, sx(m), bottom, "median-marker");
-      shape(svg, "circle", { cx: sx(m), cy: 19, r: 3, class: "median-dot" });
+      line(clampX(sx(l)), 19, clampX(sx(u)), 19, "interval-rule");
+      if (onAxis(m)) {
+        line(sx(m), top, sx(m), bottom, "median-marker");
+        shape(svg, "circle", { cx: sx(m), cy: 19, r: 3, class: "median-dot" });
+      }
       const mm =
         model.formatEndpoint ?? (forward ? (v) => v.toFixed(1) : value);
       const span = sx(u) - sx(l);
-      const center = (sx(l) + sx(u)) / 2;
+      const center = (clampX(sx(l)) + clampX(sx(u))) / 2;
       const label = text(
         center,
         12,
@@ -376,16 +484,19 @@ export function showDistribution(host, model) {
       const margin = label.getComputedTextLength() / 2 + 2;
       const labelX = Math.max(margin, Math.min(width - margin, center));
       label.setAttribute("x", labelX);
-      if (span > 90) {
-        text(sx(l), 33, mm(l), "middle", "endpoint-label");
-        text(sx(u), 33, mm(u), "middle", "endpoint-label");
+      if (span > 90 && onAxis(l) && onAxis(u)) {
+        for (const v of [l, u])
+          text(sx(v), 33, mm(v), "middle", "endpoint-label");
       } else {
         const limits = text(labelX, 33, "");
         shape(limits, "tspan", { class: "endpoint-label" }, mm(l));
         shape(limits, "tspan", {}, " to ");
         shape(limits, "tspan", { class: "endpoint-label" }, mm(u));
       }
-      if (Math.min(sx(m) - sx(l), sx(u) - sx(m)) > 37 || span === 0)
+      if (
+        onAxis(m) &&
+        (Math.min(sx(m) - sx(l), sx(u) - sx(m)) > 37 || span === 0)
+      )
         text(sx(m), 43, "Median " + mm(m), "middle", "marker-label");
     }
     if (!forward && active >= lo && active <= hi) {
@@ -399,7 +510,43 @@ export function showDistribution(host, model) {
         "cut-label",
       );
     }
+    if (conditional) {
+      // Separate label rows keep nearby thresholds legible even at full range.
+      const markers = [active, ...thresholds.filter((k) => k !== active)];
+      markers.forEach((k, row) => {
+        const yy = top + 11 + 15 * row;
+        if (!onAxis(k)) {
+          const below = k < lo;
+          text(below ? left + 3 : right - 3, yy,
+            below ? "← " + value(k) : value(k) + " →",
+            below ? "start" : "end", "threshold-offscreen");
+        } else if (k !== active) {
+          line(sx(k), top, sx(k), yy - 3, "reference-tick");
+          const nearEdge = sx(k) > right - 30;
+          text(sx(k) + (nearEdge ? -3 : 3), yy, value(k),
+            nearEdge ? "end" : "start", "threshold-reference");
+        }
+      });
+    }
     const info = [];
+    if (conditional) {
+      const coverage = (weights) => percent(shown.reduce((s, i) => s + weights[i], 0));
+      info.push("The view from " + value(lo) + " to " + value(hi) +
+        " mmHg contains " + coverage(mass) + " of the posterior and " +
+        coverage(prior) + " of the prior.");
+    }
+    if (model.display && full && !zoom && x.length > 1)
+      info.push("Full range of observed PaCO₂ values.");
+    if (zoom && q && !visibleInterval) {
+      const mm = model.formatEndpoint ?? value;
+      info.push(
+        "The 95% prediction interval of " +
+          mm(q[0]) +
+          " to " +
+          mm(q[2]) +
+          " mmHg is outside the zoomed range.",
+      );
+    }
     if (q && forward)
       info.push(
         "Median " +
@@ -413,7 +560,7 @@ export function showDistribution(host, model) {
     if (!forward && (active < lo || active > hi))
       info.push(active + " mmHg is outside the plotted range.");
     if (!forward && !summary) {
-      if (!dense && shown.length < x.length)
+      if (!smooth && shown.length < x.length)
         info.push(
           "Showing " +
             shown.length +
@@ -424,26 +571,31 @@ export function showDistribution(host, model) {
     }
     if (forward) info.push("Density per mmHg.");
     caption.textContent = info.join(" ");
-    if (summary || !shown.length) return;
+    if (summary) return;
     const cursor = line(left, top, left, axis, "inspection-line");
     cursor.style.display = "none";
     const inspect = (i) => {
+      if (!shown.length) return;
       selectedIndex = Math.min(shown.at(-1), Math.max(shown[0], i));
       const v = x[selectedIndex];
-      const likelihood = likelihoodAt(v);
+      const likelihood = model.display
+        ? relative[selectedIndex]
+        : likelihoodAt(v);
       cursor.style.display = "";
       cursor.setAttribute("x1", sx(v));
       cursor.setAttribute("x2", sx(v));
       readout.textContent =
-        value(v) +
+        (model.formatEndpoint ?? value)(v) +
         " mmHg · " +
         (forward
           ? "Density " + value(density[selectedIndex]) + " per mmHg"
-          : "Posterior " +
+          : (model.display
+              ? "Observed value · Posterior mass "
+              : "Posterior ") +
             (dense
               ? value(4 * mass[selectedIndex]) + " per mmHg"
               : percent(mass[selectedIndex])) +
-            " · Prior " +
+            (model.display ? " · Prior mass " : " · Prior ") +
             (dense
               ? value(4 * prior[selectedIndex]) + " per mmHg"
               : percent(prior[selectedIndex])) +
@@ -452,20 +604,94 @@ export function showDistribution(host, model) {
               ? "outside verified grid"
               : value(likelihood)));
     };
-    svg.onpointermove = svg.onpointerdown = (e) => {
-      const rect = svg.getBoundingClientRect();
-      inspect(
-        nearest(
-          x,
-          lo +
-            ((((e.clientX - rect.left) * width) / rect.width - left) /
-              (right - left)) *
-              (hi - lo),
-        ),
+    const selection = shape(svg, "rect", {
+      y: top,
+      height: axis - top,
+      class: "zoom-selection",
+      width: 0,
+    });
+    let anchor = null,
+      pointer = null;
+    function updateSelection(px) {
+      selection.setAttribute("x", Math.min(anchor, px));
+      selection.setAttribute("width", Math.abs(px - anchor));
+    }
+    function cancelSelection() {
+      anchor = null;
+      pointer = null;
+      selection.setAttribute("width", 0);
+    }
+    const pressure = (px) => lo + ((px - left) / (right - left)) * (hi - lo);
+    function finishSelection(px, keyboard = false) {
+      const start = anchor;
+      cancelSelection();
+      if (!keyboard && Math.abs(start - px) < 6) return;
+      const endpoint = keyboard ? (v) => x[nearest(x, pressure(v))] : pressure;
+      const lower = Math.max(conditional ? lo : lo0, endpoint(Math.min(start, px)));
+      const upper = Math.min(conditional ? hi : hi0, endpoint(Math.max(start, px)));
+      if (upper - lower <= Number.EPSILON * Math.max(1, Math.abs(upper)) * 16)
+        return;
+      zoom = [lower, upper];
+      selectedIndex = null;
+      paint();
+    }
+    function position(e) {
+      return new DOMPoint(e.clientX, e.clientY).matrixTransform(
+        svg.getScreenCTM().inverse(),
       );
+    }
+    svg.onpointerdown = (e) => {
+      if (!e.isPrimary || e.button !== 0) return;
+      const point = position(e);
+      if (point.y < top || point.y > axis || point.x < left || point.x > right)
+        return;
+      inspect(nearest(x, pressure(point.x)));
+      if (!canZoom) return;
+      anchor = point.x;
+      pointer = e.pointerId;
+      svg.setPointerCapture(pointer);
+      updateSelection(anchor);
     };
+    svg.onpointermove = (e) => {
+      if (!e.isPrimary) return;
+      const px = clampX(position(e).x);
+      if (pointer === e.pointerId) updateSelection(px);
+      else if (anchor === null) inspect(nearest(x, pressure(px)));
+    };
+    svg.onpointerup = (e) => {
+      if (pointer !== e.pointerId) return;
+      svg.releasePointerCapture(pointer);
+      finishSelection(clampX(position(e).x));
+    };
+    svg.onpointercancel = svg.onlostpointercapture = (e) => {
+      if (pointer === e.pointerId) cancelSelection();
+    };
+    function resetZoom() {
+      cancelSelection();
+      if (zoom || (conditional && full)) {
+        zoom = null;
+        if (conditional) full = false;
+        selectedIndex = null;
+        paint();
+      }
+    }
+    svg.ondblclick = resetZoom;
     svg.onkeydown = (e) => {
+      if (e.key === "Escape") {
+        if (anchor !== null) cancelSelection();
+        else resetZoom();
+        return;
+      }
+      if (!shown.length) return;
       const base = selectedIndex ?? nearest(x, q?.[1] ?? (lo + hi) / 2);
+      if (canZoom && e.key === "Enter" && pointer === null) {
+        e.preventDefault();
+        inspect(base);
+        const px = sx(x[selectedIndex]);
+        if (anchor !== null) finishSelection(px, true);
+        else anchor = px;
+        return;
+      }
       const pos = {
         ArrowLeft: base - 1,
         ArrowRight: base + 1,
@@ -475,6 +701,8 @@ export function showDistribution(host, model) {
       if (Object.hasOwn(pos, e.key)) {
         e.preventDefault();
         inspect(pos[e.key]);
+        if (anchor !== null && pointer === null)
+          updateSelection(sx(x[selectedIndex]));
       }
     };
     if (

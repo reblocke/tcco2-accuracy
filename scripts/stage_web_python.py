@@ -100,6 +100,11 @@ def stage_web_python(repo_root: Path, web_dir: Path | None = None) -> dict:
             continue
         content = (repo_root / assets[filename]).read_bytes()
         doc = json.loads(content)
+        if expected_source == "trinetx" and (
+            not isinstance(doc, dict)
+            or doc.get("version") not in contract["conditional_lookup_public_versions"]
+        ):
+            raise ValueError("Pages requires an eligible summary lookup version for TriNetX")
         validate_lookup(doc)
         if doc["source"] != expected_source or any(
             doc["groups"][target]["posterior"] != summary[group]["posterior"]

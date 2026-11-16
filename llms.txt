@@ -41,7 +41,7 @@ App behavior:
 - User-entered values and uploaded CSV/XLSX files remain in the browser.
 - Generated staged assets under web/assets/py/ and web/assets/data/ come from make stage-web and must not be edited by hand.
 - The in-memory downstream workflow is intentionally absent from the Pages Python staging allowlist and cannot be called by the browser app.
-- The homepage opens with signed disagreement by setting, accepts observed TcCO2 and offers a labeled synthetic conditional lookup, a local lookup and an advanced prior-upload calculator. A public TriNetX lookup requires whole-file release review.
+- The homepage opens with signed disagreement by setting, accepts observed TcCO2 and offers a labeled synthetic conditional lookup, a local lookup and an advanced prior-upload calculator. A public TriNetX summary lookup requires whole-file release review. See docs/FUTURE_SETTING.md for the separate, offline private prior and posterior chart at TcCO2 47 mmHg.
 - The static comparison and calculator share the accepted candidate method and kernel checksums.
 - Grouped parameters fail closed when a requested mapped group is missing; the public calculator uses the matched predictive kernel.
 
