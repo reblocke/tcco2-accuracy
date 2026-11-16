@@ -100,11 +100,11 @@ def main() -> None:
 
 
 @contextlib.contextmanager
-def _serve_web() -> Iterator[str]:
+def _serve_web(directory: Path = ROOT / "web") -> Iterator[str]:
     port = _free_port()
     process = subprocess.Popen(
         [sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1"],
-        cwd=ROOT / "web",
+        cwd=directory,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )

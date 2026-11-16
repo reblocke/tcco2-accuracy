@@ -1,6 +1,9 @@
 import hashlib
+import io
 import json
+import zipfile
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import pytest
 from playwright.sync_api import expect
@@ -12,10 +15,12 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.fixture(scope="session")
-def web_server():
+def web_server(tmp_path_factory):
     stage_web_python(ROOT)
-    with _serve_web() as url:
-        yield url
+    directory = tmp_path_factory.mktemp("pages-project")
+    (directory / "tcco2-accuracy").symlink_to(ROOT / "web", target_is_directory=True)
+    with _serve_web(directory) as url:
+        yield url + "/tcco2-accuracy/"
 
 
 def test_comparison_without_javascript(browser, web_server):
@@ -66,6 +71,48 @@ def test_all_settings_against_offline(page, web_server):
     page.click("#calculate")
     expect(page.locator("#error")).to_contain_text("offline")
     expect(page.locator("#results")).to_be_hidden()
+
+
+def test_current_page_rejects_matching_stale_manifest_and_python(page, web_server):
+    # The old ZIP is valid Python and its manifest agrees with its bytes.
+    assets = ROOT / "web/assets/py"
+    stale = io.BytesIO((assets / "pages.zip").read_bytes())
+    with zipfile.ZipFile(stale, "a") as archive:
+        archive.comment = b"previous deployment"
+    stale_bytes = stale.getvalue()
+    manifest = json.loads((assets / "manifest.json").read_text())
+    manifest["bundle_sha256"] = hashlib.sha256(stale_bytes).hexdigest()
+    page.context.route("**/assets/py/manifest.json*", lambda r: r.fulfill(json=manifest))
+    page.context.route("**/assets/py/pages.zip*", lambda r: r.fulfill(body=stale_bytes))
+    page.goto(web_server)
+    page.locator("#advanced > summary").click()
+    page.locator("#inverse").check()
+    page.locator("#prior-file").set_input_files(ROOT / "tests/fixtures/synthetic_paco2_prior.csv")
+    with page.expect_worker() as created:
+        page.click("#calculate")
+    page.wait_for_function(
+        "document.querySelector('#error').textContent || !document.querySelector('#results').hidden",
+        timeout=90_000,
+    )
+    expect(page.locator("#error")).to_contain_text("checksum mismatch")
+    expect(page.locator("#results")).to_be_hidden()
+    # A stale worker at the previous deployment's fixed URL cannot bypass the page pin.
+    worker_url = urlsplit(created.value.url)
+    worker_hash = hashlib.sha256((ROOT / "web/pyodide_worker.js").read_bytes()).hexdigest()
+    assert worker_url.path.endswith(f"/assets/py/worker-{worker_hash}.js")
+    assert (assets / f"worker-{worker_hash}.js").read_bytes() == (
+        ROOT / "web/pyodide_worker.js"
+    ).read_bytes()
+
+    # A stale upload entrypoint must not be able to start its former unpinned worker.
+    page.route(
+        "**/assets/js/app.js",
+        lambda r: r.fulfill(
+            content_type="text/javascript", body="document.body.dataset.stale = 'yes'"
+        ),
+    )
+    page.reload()
+    assert page.locator("body").get_attribute("data-stale") is None
 
 
 def test_local_spreadsheet_equality_and_no_prior_fetch(page, web_server, tmp_path):
@@ -304,7 +351,7 @@ def test_distribution_inspection_and_summary_compatibility(page, web_server, tmp
         )
         route.fulfill(response=response, body=html)
 
-    page.route(web_server + "/", with_release)
+    page.route(web_server, with_release)
     page.route(
         "**/assets/data/conditional-lookup.json",
         lambda route: route.fulfill(body=payload, content_type="application/json"),

@@ -139,7 +139,7 @@ $("controls").addEventListener("submit", async (e) => {
     const prior = await readUploadAsCsv(file);
     if (id !== revision) return;
     if (!worker) {
-      worker = new Worker("pyodide_worker.js");
+      worker = new Worker($("upload-calculator").dataset.worker);
       worker.onmessage = ({ data }) => {
         if (data.id !== revision) return;
         $("status").textContent = "";

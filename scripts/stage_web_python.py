@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import json
 import re
@@ -65,8 +66,8 @@ def stage_web_python(repo_root: Path, web_dir: Path | None = None) -> dict:
     if not package_src.exists():
         raise FileNotFoundError(f"Package source not found: {package_src}")
 
-    if package_dst.exists():
-        shutil.rmtree(package_dst)
+    if package_dst.parent.exists():
+        shutil.rmtree(package_dst.parent)
     package_dst.parent.mkdir(parents=True, exist_ok=True)
     package_dst.mkdir(parents=True, exist_ok=True)
     for relative_name in BROWSER_PYTHON_FILES:
@@ -205,7 +206,6 @@ def stage_web_python(repo_root: Path, web_dir: Path | None = None) -> dict:
         page,
         flags=re.S,
     )
-    (web_dir / "index.html").write_text(page)
 
     py_files = sorted(
         str(path.relative_to(package_dst.parent)).replace("\\", "/")
@@ -226,6 +226,21 @@ def stage_web_python(repo_root: Path, web_dir: Path | None = None) -> dict:
         "files": py_files,
         "data": sorted(staged_data),
     }
+    worker = (repo_root / "web/pyodide_worker.js").read_bytes()
+    worker_name = f"worker-{hashlib.sha256(worker).hexdigest()}.js"
+    (package_dst.parent / worker_name).write_bytes(worker)
+    worker_url = f"assets/py/{worker_name}?bundle={manifest['bundle_sha256']}"
+    entrypoint = (repo_root / "web/assets/js/app.js").read_bytes()
+    integrity = base64.b64encode(hashlib.sha256(entrypoint).digest()).decode("ascii")
+    page, count = re.subn(
+        r'<script id="upload-calculator"[^>]*></script>',
+        f'<script id="upload-calculator" type="module" src="assets/js/app.js" '
+        f'integrity="sha256-{integrity}" data-worker="{worker_url}"></script>',
+        page,
+    )
+    if count != 1:
+        raise ValueError("Expected exactly one upload calculator entrypoint")
+    (web_dir / "index.html").write_text(page)
     manifest_path = web_dir / "assets" / "py" / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
     (web_dir / ".nojekyll").write_text("")

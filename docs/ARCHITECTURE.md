@@ -28,7 +28,7 @@ The homepage initially plots the signed density from the verified setting kernel
 ## Staging
 `scripts/stage_web_python.py` copies only the browser-required Python allowlist
 and default data assets into `web/`. It writes `web/assets/py/manifest.json`,
-which the worker uses to mount the staged package into Pyodide. Generated
+which records the bundle checksum and staged assets. The page pins the upload script by subresource integrity and names the worker by its content hash. The worker URL carries the page’s expected Python bundle checksum. Generated
 `web/assets/py/` and `web/assets/data/` files are ignored by git and should not
 be edited by hand.
 

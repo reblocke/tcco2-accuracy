@@ -2,14 +2,11 @@
 const indexURL = "https://cdn.jsdelivr.net/pyodide/v0.29.0/full/";
 let initialization;
 async function getRuntime() {
+  const expected = new URL(self.location.href).searchParams.get("bundle");
+  const archive = await verifiedAsset("pages.zip", expected);
   importScripts(indexURL + "pyodide.js");
   const py = await loadPyodide({ indexURL });
   await py.loadPackage(["numpy", "pandas", "scipy"]);
-  const manifest = await read("assets/py/manifest.json").then((r) => r.json());
-  const archive = await verifiedAsset(
-    "assets/py/pages.zip",
-    manifest.bundle_sha256,
-  );
   py.FS.writeFile("/home/pyodide/pages.zip", archive);
   py.runPython("import sys; sys.path.insert(0,'/home/pyodide/pages.zip')");
   py.runPython(
@@ -40,7 +37,7 @@ self.onmessage = async ({ data }) => {
     if (!kernels.has(group)) {
       kernels.set(
         group,
-        await verifiedAsset("assets/data/" + group + ".npz", hash),
+        await verifiedAsset("../data/" + group + ".npz", hash),
       );
     }
     const locals = py.toPy({
