@@ -157,9 +157,36 @@ def _read_blobs(repo: Path, paths_by_blob: dict[str, set[str]]) -> dict[str, byt
     return blobs
 
 
+def conditional_lookup_violation(
+    relative_path: str, content: bytes, contract: dict[str, Any]
+) -> bool:
+    """Check the reserved promotion path and recognize private lookup documents after a rename."""
+
+    if relative_path == contract["conditional_lookup_public_source"]:
+        return (
+            "web/assets/data/conditional-lookup.json" not in contract["pages_data_allowlist"]
+            or hashlib.sha256(content).hexdigest() != contract["approved_conditional_lookup_sha256"]
+        )
+    # The private exporter writes a JSON object. Avoid decoding other tracked formats.
+    if not content.lstrip(b" \r\n\t").removeprefix(b"\xef\xbb\xbf").lstrip().startswith(b"{"):
+        return False
+    try:
+        document = json.loads(content)
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return False
+    return (
+        isinstance(document, dict)
+        and document.get("source") == "trinetx"
+        and isinstance(document.get("version"), str)
+        and document["version"].startswith("conditional_lookup_")
+    )
+
+
 def _blob_rule_ids(relative_path: str, content: bytes, contract: dict[str, Any]) -> list[str]:
     content_hash = hashlib.sha256(content).hexdigest()
     rules: list[str] = []
+    if conditional_lookup_violation(relative_path, content, contract):
+        rules.append("unapproved_conditional_lookup")
     allowlisted = _is_hash_allowlisted(relative_path, content_hash, contract)
     history = contract["history"]
     if not allowlisted:

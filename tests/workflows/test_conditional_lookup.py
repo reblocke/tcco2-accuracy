@@ -134,6 +134,18 @@ def test_private_lookup_handoff_selects_index_and_writes_complete_pair(tmp_path,
             dict(run_id=run.name, strata={GROUPS[target]: {"posterior_sha256": "a" * 64}}),
         )
 
+    original_receipt_hash = hashlib.sha256(receipt.read_bytes()).hexdigest()
+    read_csv = cli.pd.read_csv
+
+    def refresh_during_parse(*args, **kwargs):
+        # Both paths can be refreshed during a long authorized private run.
+        replacement = tmp_path / "refresh.csv"
+        replacement.write_bytes(source.read_bytes().replace(b"icu,40", b"icu,39"))
+        replacement.replace(source)
+        receipt.write_bytes(receipt.read_bytes() + b"\n")
+        return read_csv(*args, **kwargs)
+
+    monkeypatch.setattr(cli.pd, "read_csv", refresh_during_parse)
     monkeypatch.setattr(cli, "load_candidate_draws", accepted)
     cli.private_build(receipt, tmp_path)
     folder = dest / "conditional-lookup"
@@ -144,6 +156,7 @@ def test_private_lookup_handoff_selects_index_and_writes_complete_pair(tmp_path,
     assert obj["groups"]["pft"]["rows"][25]["tails"] == [1, 0]
     assert obj["groups"]["icu"]["rows"][25]["variance"] == [0, 0, 0]
     audit = json.loads((folder / "receipt.json").read_text())
+    assert audit["input_receipt_sha256"] == original_receipt_hash
     assert audit["lookup_sha256"] == hashlib.sha256(out.read_bytes()).hexdigest()
     with pytest.raises(FileExistsError):
         cli.private_build(receipt, tmp_path)

@@ -48,7 +48,7 @@ permission, or retention fields remain visibly `HUMAN REVIEW REQUIRED`.
 
 ## Browser and workflow rules
 
-- The observed-TcCO₂ lookup stages an explicitly labeled example from a synthetic prior. Private lookup files and uploaded binned priors are read locally. Only the synthetic lookup includes distribution arrays. A posterior plotted on its full support together with the known likelihood can reveal the underlying prior. A public TriNetX lookup requires approval of the complete aggregate file for Pages, a pinned SHA-256 and a matching allowlist entry. Reading and setting selection stay in browser memory.
+- The observed-TcCO₂ lookup stages an explicitly labeled example from a synthetic prior. Private lookup files and uploaded binned priors are read locally. Only the synthetic lookup includes distribution arrays. A posterior plotted on its full support together with the known likelihood can reveal the underlying prior. A public TriNetX lookup requires approval of the complete aggregate file for Pages, a pinned SHA-256 and a matching allowlist entry. The tracked tree and public branch/tag history admit that file only at the approved source path with the approved bytes. The history check also recognizes renamed TriNetX lookup documents. Reading and setting selection stay in browser memory.
 - Browser and Pages assets are staged with `make stage-web`; never hand-edit generated files under
   `web/assets/`.
 - Canonical agreement artifacts are rebuilt only with the locked `public-agreement` command in

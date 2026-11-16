@@ -86,7 +86,7 @@ def stage_web_python(repo_root: Path, web_dir: Path | None = None) -> dict:
     contract = json.loads((repo_root / "docs/data_release_contract.json").read_text())
     release_hash = contract["approved_conditional_lookup_sha256"]
     if release_hash is not None:
-        assets["conditional-lookup.json"] = Path("models/pages/conditional-lookup.json")
+        assets["conditional-lookup.json"] = Path(contract["conditional_lookup_public_source"])
     if set(contract["pages_data_allowlist"]) != {f"web/assets/data/{name}" for name in assets}:
         raise ValueError("Lookup approval and Pages allowlist disagree")
     summary = json.loads((repo_root / assets["summary.json"]).read_text())

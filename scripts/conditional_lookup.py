@@ -5,7 +5,7 @@ import hashlib
 import json
 from dataclasses import asdict
 from pathlib import Path
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, TemporaryFile
 
 import pandas as pd
 
@@ -38,31 +38,37 @@ def group_lookup(theta, order, a, w):
 
 def private_build(receipt_path, runs):
     # The custodian supplies an approved, already eligibility/window-filtered extract.
-    receipt = json.loads(receipt_path.read_text())
+    receipt_bytes = receipt_path.read_bytes()
+    receipt = json.loads(receipt_bytes)
     meta = EmpiricalPriorMetadata(**receipt["revisions"])
     destination = require_private_output_path(receipt["private_destination"])
     if not destination.is_dir():
         raise ValueError("Choose an existing approved private directory")
     source = Path(receipt["eligible_extract"]).resolve(strict=True)
-    with source.open("rb") as f:
-        source_hash = hashlib.file_digest(f, "sha256").hexdigest()
-    if (
-        source_hash != receipt["eligible_extract_sha256"]
-        or receipt["use"] != "approved_private_index_analysis"
-    ):
-        raise ValueError("Private eligibility receipt does not match this extract or use")
+    if receipt["use"] != "approved_private_index_analysis":
+        raise ValueError("Private eligibility receipt does not authorize this use")
     columns = PatientInputColumns(**receipt.get("columns", {}))
     output_dir = destination / "conditional-lookup"
     if output_dir.exists():
         raise FileExistsError("Use a fresh approved private output directory")
-    if source.suffix.lower() == ".dta":
-        records = pd.read_stata(source, convert_categoricals=False)
-    elif source.suffix.lower() == ".csv":
-        records = pd.read_csv(
-            source, dtype={columns.patient_id: "string", columns.encounter_id: "string"}
-        )
-    else:
+    if source.suffix.lower() not in {".dta", ".csv"}:
         raise ValueError("Expected an eligible CSV or DTA extract")
+    # Snapshot the approved bytes in private scratch. The source path can be refreshed
+    # while pandas parses a large export. The temporary copy closes before fitting.
+    with TemporaryFile(dir=destination) as snapshot, source.open("rb") as extract:
+        source_hash = hashlib.sha256()
+        while chunk := extract.read(1024 * 1024):
+            source_hash.update(chunk)
+            snapshot.write(chunk)
+        if source_hash.hexdigest() != receipt["eligible_extract_sha256"]:
+            raise ValueError("Private eligibility receipt does not match this extract")
+        snapshot.seek(0)
+        if source.suffix.lower() == ".dta":
+            records = pd.read_stata(snapshot, convert_categoricals=False)
+        else:
+            records = pd.read_csv(
+                snapshot, dtype={columns.patient_id: "string", columns.encounter_id: "string"}
+            )
     supports = {target: index_support(records, target, columns) for target in GROUPS}
     result = lookup_document("trinetx")
     fits = {}
@@ -86,7 +92,7 @@ def private_build(receipt_path, runs):
             revisions=asdict(meta),
             use="private_candidate",
             fits=fits,
-            input_receipt_sha256=digest(receipt_path),
+            input_receipt_sha256=hashlib.sha256(receipt_bytes).hexdigest(),
             lookup_sha256=digest(out),
             prior_uncertainty="fixed_empirical",
             index_policy="earliest eligible measurement in earliest eligible encounter per patient within target",
