@@ -181,11 +181,7 @@
   because the browser supplies or validates those arguments before calling the API.
 - Staging: `tests/contracts/test_stage_web_python.py` enforces the public-data allowlist, removes
   stale private priors, and checks deployed parameter bytes against the canonical artifact.
-- E2E: `tests/e2e/test_web_app.py` verifies Pyodide loads, the default likelihood-only calculation
-  completes, uploaded synthetic studies recompute with current method provenance, an uploaded
-  synthetic prior enables prior-weighted mode, a missing prior fails closed, threshold changes
-  update the browser result, and failed recalculation clears prior metrics, chart output, and
-  result-provenance attributes before displaying the error.
+- Browser checks cover the four-stratum table without JavaScript, exact lookup selection, inclusive 45 and 52 mmHg tails, range and threshold highlighting, legacy lookup compatibility, input invalidation, client-side privacy, and Python-worker parity with twenty offline conditional reference cases.
 - Scientific claim: browser-facing outputs are a serialization of the authoritative Python model, not
   a separate JavaScript implementation.
 - Version gate: canonical parameter assets must contain exactly one current method revision and
@@ -198,7 +194,7 @@
 
 ## Artifact and release gates
 - `docs/data_release_contract.json` rejects prohibited tracked paths and exact or reconstructable
-  restricted-derived schemas, verifies that only Conway/bootstrap data are staged to Pages, and
+  restricted-derived schemas, verifies the public Pages data allowlist and pinned lookup bytes, and
   preserves exact hashes for the five canonical agreement artifacts and eight retained frozen
   downstream comparators. Alternate known output extensions and prohibited CSV/TSV/XLSX schemas
   are covered so a format change does not bypass the gate. Legacy binary `.xls` is unsupported and
@@ -223,8 +219,7 @@
   It accepts in-memory data only, writes nothing, and does not alter this legacy profile or public
   artifacts.
 - Restricted-derived prior or exact-count regeneration is allowed only under `.pytest_tmp/`,
-  `.tmp/`, or an explicitly approved external private workspace. The browser defaults to
-  likelihood-only and does not stage or fetch such a prior.
+  `.tmp/`, or an explicitly approved external private workspace. The browser stages the public agreement kernels and the synthetic lookup.
 - Retained rounded/aggregate downstream files remain frozen historical comparators, not
   release-approved outputs. No PaCO2-dependent result was regenerated, promoted, or unfrozen in
   this governance wave.
@@ -233,3 +228,23 @@
 - Final tag, removal of provisional copy, manuscript unfreeze, submission-readiness claims, and
   final downstream promotion require TCCO2-007 independent biostatistical review, the locked
   analysis specification, and completed restricted-data authority and provenance review.
+
+### TCCO2-008
+
+Run `make future-setting-recovery` for the independent Gaussian likelihood checks, transformed-unit posterior contrasts, fixed-seed generative study, forward/inverse comparison with independently integrated truth, and fixed index selection. The run directory includes scientific_checks.json and recovery.json. Run `make future-setting-fit` for the per-stratum diagnostics, predictive checks, Monte Carlo and quadrature records, and candidate tables. The [acceptance protocol](../models/future_setting/acceptance.md) sets the thresholds.
+
+The November 15 candidate run `public-adjudicated-v2` passed for ICU (16 units), acute respiratory failure (14), and lung function (4). That run held the main fit pending review of Simon 2003. The three accepted fits had four chains, zero post-warmup divergences and zero maximum-treedepth hits. CmdStan reported five rejected proposals during warmup across these three accepted fits. The largest continuous endpoint Monte Carlo SE, including pointwise endpoint interval bounds, was 0.0243 mmHg. The largest threshold-probability Monte Carlo SE was 0.000225. Quadrature orders 32 and 64 agreed on every discrete quantile.
+
+After the [Simon adjudication](../models/future_setting/README.md#original-report-decisions) in `017bfe6`, run `public-main-simon-2003` fit the overall stratum at revision `5126cb7` with 75 units from 73 publications. For one paired observation in a new comparable setting, the predictive arterial-minus-transcutaneous median was −0.34 mmHg and the central 95% interval was −11.49 to +11.19 mmHg (width 22.68). The variance contributions were 26.47 mmHg² within settings, 5.21 mmHg² from between-setting bias and 0.081 mmHg² from uncertainty in the overall mean bias. The observed means, SDs and correlation of the study summaries fell within their respective 95% replicated intervals.
+
+The first four-chain attempt passed with 4,000 retained draws per chain. The largest rank-normalized R-hat was 1.00074, the smallest bulk ESS was 20,904 and the smallest tail ESS was 11,366. Nine nonfinite proposals were rejected before retained sampling. There were zero post-warmup divergences or maximum-treedepth hits. The maximum Monte Carlo SE was 0.02334 mmHg across the reported continuous endpoints and 0.000197 for threshold probability (rounded up). All 15 synthetic-prior conditional quantiles resolved to a support point. Quadrature orders 32 and 64 agreed to within 0.000001 mmHg for predictive endpoints and 0.000001 for threshold probabilities. The candidate tables and diagnostics are under `.pytest_tmp/future-setting/public-main-simon-2003/`.
+
+In `recovery-adjudicated-v2`, the largest absolute predictive endpoint error against the generating model was 0.418 mmHg. The fitted interval contained 95.26% of the independently integrated generating distribution. All 15 conditional quantiles matched their true support points. The largest absolute threshold-probability error was 0.0269. The fixed-seed rerun `recovery-main-simon-2003` reproduced both the scientific-check and recovery receipts byte for byte. These are results of one prespecified simulation. Private application, independent biostatistical review and release remain pending.
+
+### Future-setting Pages preview
+
+The comparison uses the two completed candidate runs above. Browser parity covers all 20 synthetic-prior cases across four source strata. The overall case at TcCO₂ of 45 mmHg gives a PaCO₂ median of 49, a central 95% interval from 41 to 57 mmHg, and P(PaCO₂ ≥45) of 0.6316. Additional native comparisons on five off-grid offsets per stratum, including ±47.875 mmHg, found maximum absolute log-density error below 0.000001 and CDF error below 0.000001. Quantiles obtained by inverting the compact CDF differed from the uncompressed predictive endpoints by less than 0.000007 mmHg. All four evaluators withheld a deliberately unresolved median. The stored grid bounds apply to arterial minus transcutaneous CO₂.
+
+Use `make verify` for the browser and scientific regression cases. Use `make visual-qa` for desktop and mobile-emulated Chromium renders and a cold-start measurement on the largest compressed kernel. Public release and independent biostatistical review are pending.
+
+The dense-prior previews for the opening view and the 47 mmHg synthetic example are written by `make visual-qa` under `.pytest_tmp/e2e/prediction-interval-preview/`. Browser checks cover equality, independently withheld tails, local version-1 summaries, prediction-band endpoints, threshold-invariant interpretations, setting-specific wording, and full-range inspection.

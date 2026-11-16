@@ -87,3 +87,5 @@ deployments outside repository-controlled refs are not asserted removed.
   manuscript unfreeze, and submission-readiness claims require independent
   biostatistical review, a locked analysis specification, and resolution of restricted-data
   provenance decisions.
+
+TCCO2-008 candidate fit receipts and the interpretation bridge are generated under ignored scratch storage using the [offline workflow](../docs/FUTURE_SETTING.md). The existing promotion contract applies to the five agreement files above.

@@ -268,6 +268,84 @@ def test_public_history_scans_deleted_ancestor_and_tag_only_blobs(tmp_path: Path
     assert "artifacts/inference_demo.md" in paths
 
 
+def test_private_lookup_in_ancestor_requires_exact_release_path_and_hash(tmp_path):
+    repo = tmp_path / "lookup-history"
+    repo.mkdir()
+    _git_in_repo(repo, "init", "-q", "--initial-branch", "main")
+    _git_in_repo(repo, "config", "user.email", "test@example.invalid")
+    _git_in_repo(repo, "config", "user.name", "Release Contract Test")
+    canonical = "models/pages/conditional-lookup.json"
+    renamed = "archived-review.backup"
+    content = json.dumps(
+        dict(
+            version="conditional_lookup_v2",
+            source="trinetx",
+            groups={},
+            prior_uncertainty="fixed_empirical",
+        )
+    ).encode()
+    (repo / canonical).parent.mkdir(parents=True)
+    for relative in [canonical, renamed]:
+        (repo / relative).write_bytes(content)
+    _git_in_repo(repo, "add", ".")
+    _git_in_repo(repo, "commit", "-qm", "Illustrative private lookup and renamed copy")
+    _git_in_repo(repo, "rm", "-q", canonical, renamed)
+    _git_in_repo(repo, "commit", "-qm", "Remove both copies")
+
+    contract = _contract()
+
+    def violations():
+        return {
+            v.relative_path for v in _HISTORY_CHECK_MODULE.public_history_violations(repo, contract)
+        }
+
+    assert violations() == {canonical, renamed}
+    contract["pages_data_allowlist"].append("web/assets/data/conditional-lookup.json")
+    contract["approved_conditional_lookup_sha256"] = "0" * 64
+    assert violations() == {canonical, renamed}
+    contract["approved_conditional_lookup_sha256"] = hashlib.sha256(content).hexdigest()
+    assert violations() == {renamed}
+    contract["pages_data_allowlist"].remove("web/assets/data/conditional-lookup.json")
+    assert violations() == {canonical, renamed}
+
+
+def test_detached_checkout_scans_candidate_ancestry_without_unrelated_scratch_refs(tmp_path):
+    repo = tmp_path
+    _git_in_repo(repo, "init", "-q", "--initial-branch", "main")
+    _git_in_repo(repo, "config", "user.email", "test@example.invalid")
+    _git_in_repo(repo, "config", "user.name", "Release Contract Test")
+    _git_in_repo(repo, "commit", "-qm", "Public base", "--allow-empty")
+    _git_in_repo(repo, "switch", "-q", "--detach")
+    path = "candidate-review.json"
+    (repo / path).write_text(
+        json.dumps(dict(version="conditional_lookup_v2", source="trinetx", groups={}))
+    )
+    _git_in_repo(repo, "add", path)
+    _git_in_repo(repo, "commit", "-qm", "Illustrative lookup on candidate ancestry")
+    _git_in_repo(repo, "rm", "-q", path)
+    _git_in_repo(repo, "commit", "-qm", "Remove lookup before review")
+    _git_in_repo(repo, "update-ref", "refs/scratch/candidate", "HEAD")
+
+    contract = _contract()
+    violations = _HISTORY_CHECK_MODULE.public_history_violations(repo, contract)
+    assert [(v.relative_path, v.rule_id) for v in violations] == [
+        (path, "unapproved_conditional_lookup")
+    ]
+    _git_in_repo(repo, "switch", "-q", "main")
+    assert _HISTORY_CHECK_MODULE.public_history_violations(repo, contract) == []
+
+
+def test_current_tracked_files_respect_lookup_approval():
+    contract = _contract()
+    assert [
+        name
+        for name in _tracked_existing_files()
+        if _HISTORY_CHECK_MODULE.conditional_lookup_violation(
+            name, (ROOT / name).read_bytes(), contract
+        )
+    ] == []
+
+
 def test_history_hash_allowlist_is_exact_path_and_content() -> None:
     contract = _contract()
     safe_path = "artifacts/manuscript_confusion_matrix.md"

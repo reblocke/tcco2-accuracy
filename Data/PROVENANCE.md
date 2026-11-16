@@ -81,3 +81,5 @@ uv run python scripts/build_paco2_prior_bins.py \
   removed.
 - Human-readable governance reference: see
   [`docs/DATA_GOVERNANCE.md`](../docs/DATA_GOVERNANCE.md).
+
+The [future-setting ledger](../models/future_setting/source_ledger.csv) derives from the checksummed Figshare v2 source objects and cited original reports. It records each selected analysis unit, clinical membership, source variance, overlap ruling and corrections. [Decision notes and primary-source links](../models/future_setting/README.md) describe the overlay and the unresolved overall fit.

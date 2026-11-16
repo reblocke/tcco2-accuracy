@@ -41,9 +41,9 @@ App behavior:
 - User-entered values and uploaded CSV/XLSX files remain in the browser.
 - Generated staged assets under web/assets/py/ and web/assets/data/ come from make stage-web and must not be edited by hand.
 - The in-memory downstream workflow is intentionally absent from the Pages Python staging allowlist and cannot be called by the browser app.
-- Default inference is likelihood-only. Prior-weighted inference requires an explicitly uploaded binned prior; no repository PaCO2 prior is staged or fetched.
-- Canonical browser parameters must contain exactly one current agreement-method revision and provisional status; stale or mixed assets fail closed.
-- Grouped parameters fail closed when a requested mapped group is missing; browser output metadata records requested_group and parameter_group_used.
+- The homepage opens with signed disagreement by setting, accepts observed TcCO2 and offers a labeled synthetic conditional lookup, a local lookup and an advanced prior-upload calculator. A public TriNetX lookup requires whole-file release review.
+- The static comparison and calculator share the accepted candidate method and kernel checksums.
+- Grouped parameters fail closed when a requested mapped group is missing; the public calculator uses the matched predictive kernel.
 
 Current tracked public/reference data:
 - Data/conway_studies.csv is the operational canonical promotion and browser-staging source; Data/conway_studies.xlsx is its human-editable review mirror. They must remain semantically equal.
@@ -83,3 +83,5 @@ Agent cautions:
 - Validate CITATION.cff after citation edits.
 - Run make stage-web and browser/app tests after app or browser metadata changes.
 - Prefer E2E feature verification and retain isolated tests only for meaningful gaps in its assertions; follow the test-first rules in AGENTS.md. make e2e saves a result report and replayable traces under .pytest_tmp/e2e/.
+
+- [Offline future-setting model and commands](docs/FUTURE_SETTING.md): posterior predictive disagreement and fixed empirical-prior inverse inference.

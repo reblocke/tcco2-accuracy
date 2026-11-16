@@ -208,9 +208,7 @@ retention, publication, and external review decisions are outside this code cont
 - Restricted workflows require in-memory `paco2_data` or an explicitly supplied private `.dta`
   path. Package and workflow loaders do not auto-discover repository-local extracts. Historical
   local filenames may still be passed explicitly for compatibility.
-- The static browser app defaults to likelihood-only inference and stages no PaCO2 prior. It can run
-  without the restricted `.dta`; prior-weighted inference requires an explicit user-supplied binned
-  prior that remains client-side.
+- The static browser opens with the signed disagreement density and accepts observed TcCO₂ for conditional prediction. It displays exact conditional lookup rows for an explicitly selected synthetic example, local lookup, or whole-file approved release. The advanced calculator takes a local binned prior. All inputs stay in the browser.
 - Exact counts and normalized weights derived from the restricted source are both private-only
   unless release is explicitly approved; a weight vector may reconstruct the exact source histogram
   even when count columns are absent. Generate them only under `.pytest_tmp/`, `.tmp/`, or an
@@ -241,3 +239,15 @@ retention, publication, and external review decisions are outside this code cont
 - Public branch and tag history is rewritten and continuously checked against
   `docs/data_release_contract.json`. Independently retained clones, caches, and historical
   deployments outside repository-controlled refs may still contain removed material.
+
+## TCCO2-008 future-setting inference
+
+The offline analysis targets one paired measurement in a new setting drawn from the declared Conway source stratum. Let D = PaCO₂ − TcCO₂ in mmHg. Setting mean bias and natural log within-setting variance have a joint Gaussian distribution. Study-summary sampling covariance enters the likelihood. For independent summaries, the likelihood covariance is the sum of the between-setting covariance and the summary sampling covariance. The joint parameter posterior, new-setting variation, and individual disagreement determine the marginal predictive density.
+
+For each posterior draw, integrate the conditional normal distribution of disagreement over future log variance. Average these distributions over posterior draws. The 2.5th and 97.5th percentiles of the resulting CDF define the central 95% predictive interval. Pointwise posterior intervals for each population endpoint describe its estimation uncertainty. The historical bridge labels published and corrected point reference limits and outer confidence envelopes separately. A confidence envelope serves an interchangeability assessment. Formal tolerance coverage has separate content and confidence requirements.
+
+Given TcCO₂ = t, assign each candidate arterial value a mass proportional to its fixed empirical prior weight times the marginal predictive density at a−t. Normalize over the entire support. The model assumes that the transported disagreement distribution, including the mixture of settings, is independent of arterial level within each stratum. Cohort selection and empirical prior uncertainty remain limitations. Summary-level posterior prediction assesses study means, log variances and their relationship. Individual disagreement tails require paired validation data.
+
+The supplemental variance table reports E[exp(μℓ+τℓ²/2)], E[τb²] and Var(μb) under the same posterior. These measure expected within-setting variance, between-setting variation in mean disagreement, and uncertainty in overall bias, respectively. Their sum is the predictive variance in mmHg². Historical hybrid bootstrap draws belong to the legacy comparator. Resampling noisy summaries and perturbing them again adds sampling variance twice under the proposed superpopulation model.
+
+See the [source ledger and model](../models/future_setting/README.md), [computation protocol](../models/future_setting/acceptance.md), and [offline commands](FUTURE_SETTING.md).

@@ -17,41 +17,28 @@ Tests live under `tests/core/`, `tests/contracts/`, `tests/workflows/`, and
 
 ## Static App
 The app under `web/` is static HTML/CSS/JS. It uses:
-- `web/assets/js/app.js` for UI state, uploads, worker messages, and Plotly rendering.
+- `web/assets/js/lookup.js` for exact conditional row selection and the variance display.
+- `web/assets/js/app.js` for UI state, uploads, worker messages, and SVG rendering.
 - `web/pyodide_worker.js` for Pyodide initialization and Python execution.
-- `web/assets/data/` for generated staged canonical CSV assets.
+- `web/assets/data/` for generated staged public models and comparison data.
 - `web/assets/py/` for generated staged Python source copied from an explicit allowlist.
 
-The posterior chart uses a posterior-focused x-axis. The default likelihood-only path derives its
-display and numeric summaries without a PaCO2 prior. In prior-weighted mode, a user-supplied prior
-and the Python-computed likelihood drive the full calculation; JavaScript only renders the
-serialized curves.
-
-## Browser Contract
-`tcco2_accuracy.browser_contract` exposes JSON-like functions for the browser:
-- `compute_ui_payload(payload)` computes a serializable posterior result.
-- `build_bootstrap_payload(payload)` computes serializable bootstrap draws for custom study inputs.
-
-The contract accepts CSV text or record lists and returns plain dictionaries,
-lists, strings, and numbers. It delegates validation, parameter routing,
-bootstrap generation, prior weighting, and posterior summaries to existing
-package modules.
+The homepage initially plots the signed density from the verified setting kernel. Both calculators use the same distribution chart renderer. In the advanced calculator, the agreement chart shows signed disagreement and the zero reference. Its conditional chart presents the empirical posterior masses computed by `tcco2_accuracy.pages_prediction.conditional` in the worker. Its compressed, setting-specific kernel and uploaded prior provide all numerical inputs. The previous bootstrap contract is retained for offline clients.
 
 ## Staging
 `scripts/stage_web_python.py` copies only the browser-required Python allowlist
 and default data assets into `web/`. It writes `web/assets/py/manifest.json`,
-which the worker uses to mount the staged package into Pyodide. Generated
+which records the bundle checksum and staged assets. The page pins the upload script by subresource integrity and names the worker by its content hash. The worker URL carries the page’s expected Python bundle checksum. Generated
 `web/assets/py/` and `web/assets/data/` files are ignored by git and should not
 be edited by hand.
 
 Staged assets:
-- `Data/conway_studies.csv`
-- `artifacts/bootstrap_params.csv`
+- `models/pages/summary.json` and the four public NPZ disagreement kernels
 - Python source files required by the browser contract
 
 ## Data Strategy
-The browser default path uses repo-shipped agreement assets only and performs likelihood-only
-inference. It does not require the restricted in-silico `.dta`, stage a PaCO2 prior, or fetch one.
+The browser default path uses repo-shipped agreement assets only and displays signed future-setting
+disagreement. It does not require the restricted in-silico `.dta`, stage a PaCO2 prior, or fetch one.
 Prior weighting is upload-only and remains client-side. Offline workflows may use an explicitly
 authorized `.dta` only with outputs under `.pytest_tmp/`, `.tmp/`, or an explicitly approved
 external private workspace. Normalized restricted-derived weights are governed like exact counts

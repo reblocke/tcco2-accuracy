@@ -19,14 +19,14 @@ permission, or retention fields remain visibly `HUMAN REVIEW REQUIRED`.
 
 ## Current tracked public/reference assets
 
-- `Data/conway_studies.csv` is the operational canonical promotion and browser-staging source;
+- `Data/conway_studies.csv` is the operational canonical promotion source;
   `Data/conway_studies.xlsx` is its human-editable review mirror. They contain public
   literature-derived reference summaries and must remain semantically equal.
-- `artifacts/bootstrap_params.csv` is the canonical corrected-provisional browser parameter asset.
+- `artifacts/bootstrap_params.csv` is the canonical corrected-provisional legacy parameter asset.
   It must contain exactly one current agreement-method revision and provisional status.
 - The other four corrected-provisional canonical agreement artifacts are listed in
   `artifacts/STATUS.md` and hash-locked by the release contract.
-- Pages stages only `conway_studies.csv`, `bootstrap_params.csv`, and the browser Python allowlist.
+- Pages stages the four literature-derived predictive kernels, their comparison summary, and the browser Python allowlist.
   It does not stage or fetch a PaCO2 prior.
 
 ## Restricted or private-only material
@@ -48,9 +48,7 @@ permission, or retention fields remain visibly `HUMAN REVIEW REQUIRED`.
 
 ## Browser and workflow rules
 
-- Browser inference defaults to likelihood-only with canonical agreement parameters.
-- Prior-weighted inference requires an explicit binned-prior upload. The upload remains client-side;
-  the app has no backend, telemetry, persistence, or patient-value URL state.
+- The observed-TcCO₂ lookup stages an explicitly labeled example from a synthetic prior. Private lookup files and uploaded binned priors are read locally. Only the synthetic lookup includes distribution arrays. A posterior plotted on its full support together with the known likelihood can reveal the underlying prior. A public TriNetX lookup requires approval of the complete aggregate file for Pages, a pinned SHA-256 and a matching allowlist entry. The tracked tree and public branch/tag history admit that file only at the approved source path with the approved bytes. The history check also recognizes renamed TriNetX lookup documents. Reading and setting selection stay in browser memory.
 - Browser and Pages assets are staged with `make stage-web`; never hand-edit generated files under
   `web/assets/`.
 - Canonical agreement artifacts are rebuilt only with the locked `public-agreement` command in
@@ -79,8 +77,8 @@ uv run python scripts/rebuild_artifacts.py --profile full \
 ## Public-reference history remediation and retained outputs
 
 The current branch tip removes exact-count and reconstructable restricted-derived public-tree
-outputs. Public branch and tag history is also scanned against the same contract; non-allowlisted
-historical blobs fail CI and Pages before deployment. `artifacts/STATUS.md` accurately enumerates
+outputs. CI and Pages check public branch and tag history and the ancestry of the checked-out commit.
+This includes detached pull request candidates whose earlier commits have no branch on the host repository. `artifacts/STATUS.md` accurately enumerates
 removed files and the rounded/aggregate downstream files retained as frozen historical comparators.
 Retention is not release approval: those files are not corrected-method results, submission-ready
 evidence, or suitable for clinical use. Their hashes are locked so accidental regeneration fails the

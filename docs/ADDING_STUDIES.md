@@ -42,9 +42,7 @@ The RData/count exporter's permissive options may relax other source checks, but
 missing or blank study identifiers or non-integer observed `n_pairs`/`n_participants` values.
 
 ## PaCO2 priors
-Updating the Conway study table does not change a PaCO2 prior. The repository and Pages app do not
-ship one: browser inference defaults to likelihood-only, and prior-weighted mode requires an
-explicit client-side binned-prior upload. Exact counts and normalized weights derived from the
+Updating the Conway study table does not change a PaCO2 prior. The Pages example uses precomputed summaries from an invented prior. An investigator can supply a local lookup or binned prior in the browser. Exact counts and normalized weights derived from the
 restricted source are both restricted-derived; weight-only bins may reconstruct the exact source
 distribution and are not automatically public-safe.
 

@@ -1,0 +1,162 @@
+[
+  {
+    "target_stratum": "all",
+    "tcco2": "35",
+    "lower": "33.0",
+    "median": "33.0",
+    "upper": "49.0",
+    "probability_ge": "0.08513317624211038"
+  },
+  {
+    "target_stratum": "all",
+    "tcco2": "40",
+    "lower": "33.0",
+    "median": "41.0",
+    "upper": "49.0",
+    "probability_ge": "0.22563405356108962"
+  },
+  {
+    "target_stratum": "all",
+    "tcco2": "45",
+    "lower": "41.0",
+    "median": "49.0",
+    "upper": "57.0",
+    "probability_ge": "0.6315566858230414"
+  },
+  {
+    "target_stratum": "all",
+    "tcco2": "50",
+    "lower": "41.0",
+    "median": "49.0",
+    "upper": "57.0",
+    "probability_ge": "0.9234175821213823"
+  },
+  {
+    "target_stratum": "all",
+    "tcco2": "55",
+    "lower": "49.0",
+    "median": "49.0",
+    "upper": "65.0",
+    "probability_ge": "0.9769830091082616"
+  },
+  {
+    "target_stratum": "icu",
+    "tcco2": "35",
+    "lower": "34.0",
+    "median": "34.0",
+    "upper": "50.0",
+    "probability_ge": "0.06917402653444987"
+  },
+  {
+    "target_stratum": "icu",
+    "tcco2": "40",
+    "lower": "34.0",
+    "median": "42.0",
+    "upper": "50.0",
+    "probability_ge": "0.2002192279420394"
+  },
+  {
+    "target_stratum": "icu",
+    "tcco2": "45",
+    "lower": "34.0",
+    "median": "50.0",
+    "upper": "58.0",
+    "probability_ge": "0.5328916386501643"
+  },
+  {
+    "target_stratum": "icu",
+    "tcco2": "50",
+    "lower": "42.0",
+    "median": "50.0",
+    "upper": "58.0",
+    "probability_ge": "0.8807678801064808"
+  },
+  {
+    "target_stratum": "icu",
+    "tcco2": "55",
+    "lower": "42.0",
+    "median": "50.0",
+    "upper": "58.0",
+    "probability_ge": "0.9724916463203908"
+  },
+  {
+    "target_stratum": "ed_inp",
+    "tcco2": "35",
+    "lower": "32.0",
+    "median": "40.0",
+    "upper": "56.0",
+    "probability_ge": "0.24053798802699652"
+  },
+  {
+    "target_stratum": "ed_inp",
+    "tcco2": "40",
+    "lower": "32.0",
+    "median": "40.0",
+    "upper": "56.0",
+    "probability_ge": "0.4603040533301336"
+  },
+  {
+    "target_stratum": "ed_inp",
+    "tcco2": "45",
+    "lower": "40.0",
+    "median": "48.0",
+    "upper": "56.0",
+    "probability_ge": "0.8181897566618156"
+  },
+  {
+    "target_stratum": "ed_inp",
+    "tcco2": "50",
+    "lower": "40.0",
+    "median": "48.0",
+    "upper": "64.0",
+    "probability_ge": "0.9491910318182731"
+  },
+  {
+    "target_stratum": "ed_inp",
+    "tcco2": "55",
+    "lower": "48.0",
+    "median": "56.0",
+    "upper": "64.0",
+    "probability_ge": "0.9778138543657087"
+  },
+  {
+    "target_stratum": "pft",
+    "tcco2": "35",
+    "lower": "30.0",
+    "median": "38.0",
+    "upper": "46.0",
+    "probability_ge": "0.10417471890210854"
+  },
+  {
+    "target_stratum": "pft",
+    "tcco2": "40",
+    "lower": "38.0",
+    "median": "38.0",
+    "upper": "46.0",
+    "probability_ge": "0.343517102649136"
+  },
+  {
+    "target_stratum": "pft",
+    "tcco2": "45",
+    "lower": "38.0",
+    "median": "46.0",
+    "upper": "54.0",
+    "probability_ge": "0.9250615445495689"
+  },
+  {
+    "target_stratum": "pft",
+    "tcco2": "50",
+    "lower": "46.0",
+    "median": "46.0",
+    "upper": "54.0",
+    "probability_ge": "0.9824930427051661"
+  },
+  {
+    "target_stratum": "pft",
+    "tcco2": "55",
+    "lower": "46.0",
+    "median": "54.0",
+    "upper": "62.0",
+    "probability_ge": "0.9951324143856386"
+  }
+]

@@ -1,65 +1,41 @@
-# TcCO2 to PaCO2 Static Web App
+# Future-setting CO₂ calculator
 
-## What The App Does
-- Computes a PaCO2 median with a prediction interval conditional on an observed TcCO2.
-- Reports `P(PaCO2 >= threshold)` and the observed TcCO2 threshold classification.
-- Visualizes the PaCO2 distribution, threshold region, and PI/median markers; an uploaded-prior
-  analysis also shows direct-labeled prior and scaled-likelihood curves.
-- Supports custom study table and binned prior uploads in CSV; XLSX is parsed client-side when the browser SheetJS dependency is available.
-- Runs the Python package in a Pyodide worker. JavaScript does not implement the statistical model.
+The opening chart shows the fitted distribution of arterial minus transcutaneous CO₂ in the selected setting. The default is All settings. Enter observed TcCO₂ in mmHg and choose a PaCO₂ source for conditional inference. For an exact integer reading from 20 through 100, the lookup reports conditional PaCO₂ median, 95% prediction interval for a simultaneous arterial measurement, interval width and both probabilities of PaCO₂ at or above 45 and 52 mmHg. It compares the interval with the same population’s prior interval. Each result uses its matched stratum. Fractional readings show adjacent lookup keys. Values and file contents stay in browser memory.
 
-## Default Values
-- TcCO2 = 50 mmHg
-- Hypercapnia threshold = 45 mmHg
-- Prediction interval = 95% PI
-- Inference mode = likelihood-only
-- Setting = All
-- Bootstrap draws = 1000
-- Bootstrap mode = `cluster_plus_withinstudy`
-- Seed = 202401
+Highlight either cutoff to inspect its upper and lower tails. Changing the highlighted cutoff or the plotted range preserves the estimates. The dense example plots the posterior (solid) and prior (dashed) as probability densities in mmHg⁻¹. A light band spans the two labeled prediction limits in the upper plot. Shading under the smooth posterior curve marks values at or above the cutoff. Each displayed percentage sums posterior masses at qualifying grid values, including any outside the current plot. A separate panel on the same pressure axis shows the model likelihood relative to its maximum on the full fitted plotting grid. Zooming preserves that scale. Uploaded priors retain point masses at the supplied values. Hover, tap or focus the chart and use the arrow keys to inspect a value. The 52 mmHg cutoff can be selected for a COPD research question. Both cutoffs use the same setting-specific fit and prior.
 
-## Data Assets
-- `web/assets/data/conway_studies.csv` - generated staged canonical study table.
-- `web/assets/data/bootstrap_params.csv` - generated staged canonical bootstrap parameters.
-- `web/assets/py/tcco2_accuracy/` - generated staged Python package copied from the browser allowlist.
-- `web/llms.txt` and the metadata tags in `web/index.html` describe the deployed
-  static app for machine indexing.
+The public preview offers the synthetic example explicitly. Its four fitted posteriors come from the public agreement studies. Only the arterial prior is invented. The interpretation names the reference population and states the assumptions about its applicability and the agreement distribution across PaCO₂ levels. Uploaded distributions use their own population wording. A local JSON lookup opens through the same display. A real public lookup requires custodian approval of the entire file and its destination, including reconstructability review. The release contract currently records no such approval. Numerical verification does not establish individual-patient coverage.
 
-Run `make stage-web` after changing Python browser-facing code or default data
-assets. Generated staged assets are not tracked.
+The advanced calculator accepts arbitrary positive readings, a threshold and a locally supplied CSV/XLSX with group, paco2_bin and weight for all four groups. An optional count column takes precedence. The agreement table gives the published and corrected limits, both outer confidence envelopes and the new predictive interval for each source stratum.
 
-## Browser Behavior
-- Default calculations use the staged canonical bootstrap parameters for responsiveness.
-- Uploaded study tables or changed bootstrap settings recompute bootstrap parameters in the browser worker using the same Python model.
-- Prior-weighted inference requires an uploaded binned prior; selecting that mode without one fails
-  closed and clears any stale result.
-- No PaCO2 prior is staged or fetched. Normalized restricted-derived weights may reconstruct the
-  source distribution even without exact count columns, so the repository does not treat a
-  weight-only prior as automatically public-safe.
-- The posterior chart uses a posterior-focused x-axis for readability; calculations still use the full posterior and prior support.
-- In prior-weighted mode, the likelihood curve is Python-computed and normalized to sum to 1 over the histogram bins for visual comparison only.
-- Browser copy uses threshold-classification and posterior-mass terms rather than clinical correctness language.
-- The browser app does not read local filesystem paths, store values, send user inputs to a backend, or encode patient values in URLs.
-- Uploaded priors remain client-side. Governance of tracked and staged assets is defined in
-  `docs/data_release_contract.json`.
+The estimator uses the accepted overall run after Simon adjudication and the three accepted subgroup fits from the previous public run. Staging uses the reviewed summary and the four per-stratum kernels in `models/pages/`. Each kernel contains log densities under quadrature orders 64 and 32, a CDF, and fine-order log densities averaged within contiguous chain batches. The exporter retains all draws in the marginal densities. It checks cubic interpolation at the intermediate quarter-mmHg grid points before storing the half-mmHg knots. The browser verifies the selected binary's checksum before computing. The 95% agreement summaries come directly from the accepted fit.
 
-## Local Run
-```bash
-uv sync --locked
-make serve
+In the advanced upload calculator, if any positive-mass offset falls outside −48 to +48 mmHg, the browser withholds the whole conditional result. This is the numerical extent of the browser asset. For the full posterior, use the accepted run directory for the requested setting and your local prior file:
+
+```sh
+uv run python scripts/future_setting_prior.py .pytest_tmp/future-setting/public-main-simon-2003 prior.csv all 45 --threshold 45
 ```
 
-Open http://127.0.0.1:8000.
+Use `public-adjudicated-v2` for `icu`, `ed_inp`, and `pft`. Both evaluators require resolved discrete quantiles and adequate Monte Carlo and quadrature precision. Priors are processed locally. The dense synthetic lookup uses 281 quarter-mmHg centers per setting. The Gaussian used to assign bin masses has the mean and SD of that setting’s original five-point fixture (SD √76.8 mmHg). Its grid spans ±35 mmHg about the mean. The exporter integrates each centered bin and normalizes the retained masses. All reported summaries use this fixed discrete distribution. The likelihood grid is evaluated separately from the accepted posterior. The original five-point fixture remains the advanced-upload regression case. Local version-2 synthetic files retain their discrete display. TriNetX lookup files admit only summaries. Local version-1 summaries display their interval and ≥45 probability; ≥52 is unavailable. The legacy custom-study and bootstrap workflows are available in the offline Python package.
 
-## Verification
-```bash
-make test
-make e2e
-make visual-qa
-make verify
-```
+Run `make serve` for a local preview, `make verify` for contract and browser tests, and `make visual-qa` for desktop and mobile screenshots and measured load times. To regenerate the four public assets from their accepted run receipts, run `uv run python scripts/export_pages_predictions.py` followed by `make stage-web`. Independent biostatistical review and release are separate from numerical verification.
 
-`make e2e` runs Playwright against the staged static app and verifies the Pyodide contract executes in Chromium.
-`make visual-qa` writes desktop and mobile screenshots to `.pytest_tmp/visual-qa/`
-for chart-label review. It is an explicit local/reviewer aid and is not part of
-`make verify`.
+## Variance and precision
+
+For arterial pressure A given a reading t, let θ denote the agreement hyperparameters and S the future setting’s bias and log variance. The three variance contributions in mmHg² are
+
+1. The posterior expectation of Var(A | t, S, θ).
+2. The posterior expectation over θ of Var(E[A | t, S, θ] | t, θ).
+3. Var(E[A | t, θ] | t).
+
+The evidence for t reweights both S and θ. All three terms condition on the same fixed empirical prior. The patient-level posterior variance is also computed directly from the discrete posterior. Its central quantile width has no unique additive decomposition. In the separate disagreement table, the corresponding forward terms are expected within-setting variance, expected squared between-setting bias SD and posterior variance of the overall mean bias. Historical sampling uncertainty enters through the fitted posterior.
+
+Interval release requires both quadrature orders to select the same three support points and posterior cumulative mass to resolve each point under a two-MCSE margin. Each threshold probability has its own MCSE limit of 0.00025 and absolute quadrature-error limit of 0.0001. Variance results have separate gates. Each component’s numerical integration difference and chain-aware MCSE must be ≤0.05 mmHg² and ≤0.5 percentage points of total variance. The components must recover the directly calculated total. A held quantity has a null field. A point-mass prior gives zero width and zero variance.
+
+The private evaluator uses 12- and 24-node tensor Gaussian quadrature over both latent setting coordinates for the variance calculation. The synthetic export reuses the latent-setting integrals across the 81 readings, preserving contiguous chain batches. It checks both tensor orders, two resolutions for bilinear interpolation in bias and log SD, and uncompressed tensor integration at 45 mmHg in each stratum. Every lookup reading uses the full support and all retained posterior draws. The browser selects the exact row.
+
+Regenerate the fitted synthetic example with `uv run python scripts/export_synthetic_lookup.py` from the checkout containing the accepted public runs. Verify the example against the offline references before updating its whole-file SHA-256 in the release contract. Only exact whole-number lookup keys are served.
+
+## Changes from the deployed legacy calculator
+
+The previous Pages calculator at `eb724da` showed posterior bars, prior and likelihood curves, interval markers, and mass on either side of one user-selected threshold. The first future-setting preview retained simple bars only in Advanced and a ≥45 estimate in the lookup. The current preview restores the chart layers, labeled interval, range and value inspection, and shows both inclusive probabilities. The old binary result compared observed TcCO₂ with the cutoff. The current probabilities concern arterial CO₂. The previous study override, bootstrap, seed, draw count and histogram controls applied to the legacy estimator. The advanced calculator retains fractional inputs, custom thresholds and local prior uploads. The four-stratum agreement comparison, prior-width comparison and variance components accompany the new fits.

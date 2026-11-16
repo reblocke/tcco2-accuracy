@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.1.0",
+  "contract_version": "1.2.0",
   "scope": {
     "applies_to": "current tracked tree, deployed Pages assets, and public branch/tag history",
     "history_rewritten": true,
@@ -32,9 +32,16 @@
     ".tmp/",
     "explicit path outside the repository"
   ],
+  "conditional_lookup_public_source": "models/pages/conditional-lookup.json",
+  "approved_conditional_lookup_sha256": null,
+  "synthetic_conditional_lookup_sha256": "90ab00b7f1338b593a0aaa6571358d3370d13b1738cffea5f15fc8e55262e7b3",
   "pages_data_allowlist": [
-    "web/assets/data/bootstrap_params.csv",
-    "web/assets/data/conway_studies.csv"
+    "web/assets/data/summary.json",
+    "web/assets/data/synthetic-lookup.json",
+    "web/assets/data/main.npz",
+    "web/assets/data/icu.npz",
+    "web/assets/data/arf.npz",
+    "web/assets/data/lft.npz"
   ],
   "canonical_agreement_artifacts": {
     "artifacts/meta_loa_check.md": "07cadb67fb354f88b64d7aa8c033fca19fa4a1f3073e8900c7049748a1bb415a",

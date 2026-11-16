@@ -25,7 +25,29 @@ def test_stage_web_python_enforces_public_data_allowlist_and_clears_stale_priors
 
     assert set(manifest["data"]) == expected_data
     assert not (web_dir / "assets" / "data" / "paco2_public_prior.csv").exists()
-    assert (web_dir / "assets" / "data" / "bootstrap_params.csv").read_bytes() == (
-        ROOT / "artifacts" / "bootstrap_params.csv"
+    assert (web_dir / "assets" / "data" / "main.npz").read_bytes() == (
+        ROOT / "models/pages" / "main.npz"
     ).read_bytes()
     assert not (web_dir / "assets" / "data" / "paco2_prior_bins.csv").exists()
+
+
+def test_stage_rejects_substituted_lookup_even_with_valid_schema(tmp_path):
+    import shutil
+
+    import pytest
+
+    repo = tmp_path / "checkout"
+    repo.mkdir()
+    (repo / "src").symlink_to(ROOT / "src", target_is_directory=True)
+    (repo / "docs").mkdir()
+    (repo / "web").mkdir()
+    shutil.copy(ROOT / "web/index.html", repo / "web")
+    shutil.copy(ROOT / "docs/data_release_contract.json", repo / "docs")
+    shutil.copytree(ROOT / "models/pages", repo / "models/pages")
+    file = repo / "models/pages/synthetic-lookup.json"
+    doc = json.loads(file.read_text())
+    doc["groups"]["all"]["rows"][25]["interval"] = None
+    file.write_text(json.dumps(doc))
+    with pytest.raises(ValueError, match="whole-file"):
+        stage_web_python(repo)
+    assert not (repo / "web/assets/data/synthetic-lookup.json").exists()
