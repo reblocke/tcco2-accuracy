@@ -97,6 +97,25 @@ def test_local_spreadsheet_equality_and_no_prior_fetch(page, web_server, tmp_pat
     expect(page.locator("#results")).to_be_hidden()
     page.click("#calculate")
     expect(page.locator("#probability")).to_have_text("0.0000")
+    # Both uploaded pressures fall between adjacent fitted likelihood grid points.
+    narrow = tmp_path / "narrow.csv"
+    pd.DataFrame(
+        [
+            (group, pressure, 0.5)
+            for group in ("all", "icu", "ed_inp", "pft")
+            for pressure in (44.1, 44.2)
+        ],
+        columns=["group", "paco2_bin", "weight"],
+    ).to_csv(narrow, index=False)
+    page.locator("#prior-file").set_input_files(narrow)
+    page.fill("#tcco2", "47")
+    page.click("#calculate")
+    expect(page.locator("#bounds")).to_have_text("44.1 to 44.2 mmHg")
+    path = page.locator("#plot .likelihood-line")
+    expect(path).to_be_visible()
+    axis = page.locator("#plot .axis-line").first
+    geometry = "(node) => [node.getBBox().x, node.getBBox().width]"
+    assert path.evaluate(geometry) == pytest.approx(axis.evaluate(geometry), abs=0.02)
     assets = {url.split("/")[-1] for _, url in traffic if "/assets/data/" in url}
     assert assets == {"main.npz"}
     assert all(method == "GET" for method, _ in traffic)

@@ -55,13 +55,13 @@ export function showDistribution(host, model) {
     : 1;
   const relative = conditional ? curve.density.map((v) => v / maximum) : [];
   function likelihoodAt(v) {
-    if (v < likelihoodX[0] || v > likelihoodX.at(-1))
-      return "outside verified grid";
+    if (!conditional || v < likelihoodX[0] || v > likelihoodX.at(-1))
+      return null;
     const i = nearest(likelihoodX, v);
-    if (v === likelihoodX[i]) return value(relative[i]);
+    if (v === likelihoodX[i]) return relative[i];
     const j = likelihoodX[i] < v ? i + 1 : i - 1;
     const fraction = (v - likelihoodX[i]) / (likelihoodX[j] - likelihoodX[i]);
-    return value(relative[i] + fraction * (relative[j] - relative[i]));
+    return relative[i] + fraction * (relative[j] - relative[i]);
   }
   const sameView =
     previous?.kind === kind && previous?.source === model.subtitle;
@@ -95,7 +95,7 @@ export function showDistribution(host, model) {
       summary
         ? "Select a threshold to see the probability above and below it."
         : dense
-          ? "Shading under the posterior curve shows the probability at or above the selected threshold."
+          ? "Shading marks values at or above the selected threshold. The percentages include all qualifying values."
           : "Select a threshold to highlight the arterial values at or above it.",
       "chart-explanation",
     );
@@ -334,17 +334,21 @@ export function showDistribution(host, model) {
         line(left, yy, right, yy, "grid-line");
         text(left - 7, yy + 4, String(level), "end");
       }
-      const d = [];
-      likelihoodX.forEach((v, i) => {
-        if (v >= lo && v <= hi)
-          d.push(
-            (d.length ? "L" : "M") +
-              sx(v).toFixed(2) +
-              "," +
-              (axis - relative[i] * (axis - panelTop)).toFixed(2),
-          );
-      });
-      shape(svg, "path", { d: d.join(" "), class: "likelihood-line" });
+      const start = Math.max(lo, likelihoodX[0]);
+      const end = Math.min(hi, likelihoodX.at(-1));
+      if (start < end) {
+        // Clip the polyline to the visible range, including ranges between two knots.
+        const visible = [
+          start,
+          ...likelihoodX.filter((v) => v > start && v < end),
+          end,
+        ];
+        const d = visible.map((v, i) => {
+          const yy = axis - likelihoodAt(v) * (axis - panelTop);
+          return (i ? "L" : "M") + sx(v).toFixed(2) + "," + yy.toFixed(2);
+        });
+        shape(svg, "path", { d: d.join(" "), class: "likelihood-line" });
+      }
       if (active >= lo && active <= hi)
         line(sx(active), panelTop, sx(active), axis, "cut-marker");
     }
@@ -426,6 +430,7 @@ export function showDistribution(host, model) {
     const inspect = (i) => {
       selectedIndex = Math.min(shown.at(-1), Math.max(shown[0], i));
       const v = x[selectedIndex];
+      const likelihood = likelihoodAt(v);
       cursor.style.display = "";
       cursor.setAttribute("x1", sx(v));
       cursor.setAttribute("x2", sx(v));
@@ -443,7 +448,9 @@ export function showDistribution(host, model) {
               ? value(4 * prior[selectedIndex]) + " per mmHg"
               : percent(prior[selectedIndex])) +
             " · Relative likelihood " +
-            likelihoodAt(v));
+            (likelihood === null
+              ? "outside verified grid"
+              : value(likelihood)));
     };
     svg.onpointermove = svg.onpointerdown = (e) => {
       const rect = svg.getBoundingClientRect();
