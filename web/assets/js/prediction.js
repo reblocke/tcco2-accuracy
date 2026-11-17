@@ -41,5 +41,6 @@ export function showInterpretation(host, result) {
   assumptions.textContent =
     "This estimate assumes the reference population’s arterial CO₂ distribution applies to this patient. " +
     "It also assumes that the difference between arterial and transcutaneous CO₂ follows the pattern seen in comparable studies across the range of PaCO₂ values.";
-  host.append(sentence, assumptions);
+  host.append(sentence);
+  if (!result.brief) host.append(assumptions);
 }

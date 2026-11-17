@@ -77,7 +77,9 @@
   "conditional_lookup_public_versions": ["conditional_lookup_v1", "conditional_lookup_v2", "conditional_lookup_v3"],
   "approved_conditional_lookup_sha256": "6de657bd14e5b0a2de471000b4abd692dc42eca9e601ac999c9114c67964bbaa",
   "synthetic_conditional_lookup_sha256": "ac6ea5b7d6b59954f0c937d7fadd1f423df9a490814daa02ee810185f40ffb06",
+  "approved_plot_sha256": "aee88627d99014e490d086e6b0c975b9ef3a52bd06658b8942a1c4482897522a",
   "pages_data_allowlist": [
+    "web/assets/data/prediction-plots.json",
     "web/assets/data/summary.json",
     "web/assets/data/synthetic-lookup.json",
     "web/assets/data/conditional-lookup.json",
