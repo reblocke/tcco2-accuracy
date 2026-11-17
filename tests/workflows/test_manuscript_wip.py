@@ -89,13 +89,19 @@ def test_two_mac_review_and_publish(tmp_path):
             for name in src.namelist():
                 content = src.read(name)
                 if name == "word/document.xml":
-                    content = content.replace(b"Research letter in preparation", new)
                     # Put a structured fraction between ordinary prose and keep the math native.
-                    marker = b"<w:t>Abstract</w:t></w:r>"
+                    marker = b"<w:body>"
                     assert marker in content
                     math = b'<m:oMath xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"><m:f><m:num><m:r><m:t>x</m:t></m:r></m:num><m:den><m:r><m:t>2</m:t></m:r></m:den></m:f></m:oMath>'
                     content = content.replace(
-                        marker, marker + math + b"<w:r><w:t> follows</w:t></w:r>", 1
+                        marker,
+                        marker
+                        + b"<w:p><w:r><w:t>"
+                        + new
+                        + b"</w:t></w:r>"
+                        + math
+                        + b"<w:r><w:t> follows</w:t></w:r></w:p>",
+                        1,
                     )
                 dst.writestr(name, content)
             dst.writestr("word/embeddings/private.bin", b"private source object")
@@ -113,7 +119,8 @@ def test_two_mac_review_and_publish(tmp_path):
         assert formula is not None and formula.text == "x"
         assert xml.find(".//{*}f/{*}den/{*}r/{*}t").text == "2"
         assert any(
-            "Abstract" in "".join(p.itertext()) and "follows" in "".join(p.itertext())
+            "Revised letter for review" in "".join(p.itertext())
+            and "follows" in "".join(p.itertext())
             for p in xml.iter("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}p")
         )
         assert not any("private" in name or "comments" in name for name in doc.namelist())
