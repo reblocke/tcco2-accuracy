@@ -76,13 +76,37 @@ function segment(xs, lo, hi, ...series) {
   return points;
 }
 
+export function reportLabel(pair, probability = false) {
+  if (!pair) return "Unresolved";
+  const [lo, hi] = pair;
+  const factor = probability ? 100 : 1;
+  const round = (v) => Number((v * factor).toLocaleString("en-US", {
+    maximumFractionDigits: 0,
+    useGrouping: false,
+  }));
+  const a = round(lo), b = round(hi);
+  if (probability && a === 0 && hi > 0 && hi < 0.01) return "<1%";
+  if (probability && b === 100 && lo < 1 && lo > 0.99) return ">99%";
+  return (a === b ? String(a) : a + "–" + b) + (probability ? "%" : "");
+}
+
+export function reportedWidth(report) {
+  const [lower, , upper] = report.quantiles;
+  return reportLabel([Math.max(0, upper[0] - lower[1]), upper[1] - lower[0]]);
+}
+
+export function hasInterval(q) {
+  return q?.[0] != null && q?.[2] != null;
+}
+
 export function showDistribution(host, model) {
   const previous = views.get(host);
   previous?.observer.disconnect();
   views.delete(host);
   host.replaceChildren();
   if (!model) return;
-  const { kind, q, x = [], density, mass, prior, dense, curve, tc } = model;
+  const q = hasInterval(model.q) ? model.q : null;
+  const { kind, x = [], density, mass, prior, dense, curve, tc } = model;
   const forward = kind === "agreement",
     summary = kind === "summary";
   const conditional = !forward && !summary;
@@ -115,6 +139,11 @@ export function showDistribution(host, model) {
   let zoom = null;
   const canZoom = !summary && x.length > 1;
   const thresholds = [...new Set([45, 52, active])];
+  const tailLabel = (k, p, below = false) => {
+    if (!model.report) return percent(below ? 1 - p : p);
+    const pair = model.report.probabilities[thresholds.indexOf(k)];
+    return reportLabel(below && pair ? [1 - pair[1], 1 - pair[0]] : pair, true);
+  };
   const probs = new Map(
     thresholds.map((k, i) => [
       k,
@@ -166,7 +195,7 @@ export function showDistribution(host, model) {
           ? model.legacy && k === 52
             ? "Unavailable"
             : "Unresolved"
-          : percent(p),
+          : tailLabel(k, p),
         "tail-value",
       );
       estimate.id = host.id + "-tail-" + k;
@@ -244,7 +273,7 @@ export function showDistribution(host, model) {
           ? model.legacy && active === 52
             ? "This lookup provides only the ≥45 mmHg probability."
             : "The selected probability is unresolved at this reading."
-          : percent(1 - p) + " below " + active + " mmHg";
+          : tailLabel(active, p, true) + " below " + active + " mmHg";
     }
     rangeButton.hidden = (!canZoom && !conditional) || (!q && !conditional && !zoom);
     rangeButton.textContent = zoom
@@ -465,12 +494,12 @@ export function showDistribution(host, model) {
         line(sx(v), top, sx(v), bottom, "interval-marker");
       }
       line(clampX(sx(l)), 19, clampX(sx(u)), 19, "interval-rule");
-      if (onAxis(m)) {
+      if (m != null && onAxis(m)) {
         line(sx(m), top, sx(m), bottom, "median-marker");
         shape(svg, "circle", { cx: sx(m), cy: 19, r: 3, class: "median-dot" });
       }
       const mm =
-        model.formatEndpoint ?? (forward ? (v) => v.toFixed(1) : value);
+        model.endpointLabel ?? model.formatEndpoint ?? (forward ? (v) => v.toFixed(1) : value);
       const span = sx(u) - sx(l);
       const center = (clampX(sx(l)) + clampX(sx(u))) / 2;
       const label = text(
@@ -485,19 +514,19 @@ export function showDistribution(host, model) {
       const labelX = Math.max(margin, Math.min(width - margin, center));
       label.setAttribute("x", labelX);
       if (span > 90 && onAxis(l) && onAxis(u)) {
-        for (const v of [l, u])
-          text(sx(v), 33, mm(v), "middle", "endpoint-label");
+        for (const [v, index] of [[l, 0], [u, 2]])
+          text(sx(v), 33, mm(v, index), "middle", "endpoint-label");
       } else {
         const limits = text(labelX, 33, "");
-        shape(limits, "tspan", { class: "endpoint-label" }, mm(l));
+        shape(limits, "tspan", { class: "endpoint-label" }, mm(l, 0));
         shape(limits, "tspan", {}, " to ");
-        shape(limits, "tspan", { class: "endpoint-label" }, mm(u));
+        shape(limits, "tspan", { class: "endpoint-label" }, mm(u, 2));
       }
       if (
-        onAxis(m) &&
+        m != null && onAxis(m) &&
         (Math.min(sx(m) - sx(l), sx(u) - sx(m)) > 37 || span === 0)
       )
-        text(sx(m), 43, "Median " + mm(m), "middle", "marker-label");
+        text(sx(m), 43, "Median " + mm(m, 1), "middle", "marker-label");
     }
     if (!forward && active >= lo && active <= hi) {
       line(sx(active), top, sx(active), bottom, "cut-marker");
@@ -538,12 +567,12 @@ export function showDistribution(host, model) {
     if (model.display && full && !zoom && x.length > 1)
       info.push("Full range of observed PaCO₂ values.");
     if (zoom && q && !visibleInterval) {
-      const mm = model.formatEndpoint ?? value;
+      const mm = model.endpointLabel ?? model.formatEndpoint ?? value;
       info.push(
         "The 95% prediction interval of " +
-          mm(q[0]) +
+          mm(q[0], 0) +
           " to " +
-          mm(q[2]) +
+          mm(q[2], 2) +
           " mmHg is outside the zoomed range.",
       );
     }

@@ -1,4 +1,4 @@
-import { showDistribution } from "./distribution.js";
+import { showDistribution, reportLabel, hasInterval, reportedWidth } from "./distribution.js";
 import { agreementIntervalTitle, showInterpretation } from "./prediction.js";
 const el = (id) => document.getElementById(id);
 const fits = JSON.parse(el("fit-summary").textContent);
@@ -127,7 +127,12 @@ function render() {
   const row = group.rows[tc - 20];
   const { interval, variance } = row;
   const legacy = lookup.version === "conditional_lookup_v1";
+  const endpoint = (v, index) => row.report
+    ? reportLabel(row.report.quantiles[index ?? interval.indexOf(v)])
+    : mm(v);
   showDistribution(chart, {
+    report: row.report,
+    endpointLabel: endpoint,
     kind: row.mass ? "posterior" : "summary",
     title: "PaCO₂ given TcCO₂ " + tc + " mmHg",
     formatEndpoint: mm,
@@ -148,20 +153,22 @@ function render() {
     " (width " +
     mm(hi - lo) +
     " mmHg).";
-  if (interval) {
+  if (hasInterval(interval)) {
     const [l, median, u] = interval;
-    el("lookup-bounds").textContent = bounds(l, u);
+    const limits = endpoint(l, 0) + " to " + endpoint(u, 2) + " mmHg";
+    el("lookup-bounds").textContent = limits;
     el("lookup-estimates").textContent =
-      "Median " + mm(median) + " mmHg · Width " + mm(u - l) + " mmHg";
+      (median == null ? "Median unresolved" : "Median " + endpoint(median, 1) + " mmHg") +
+      " · Width " + (row.report ? reportedWidth(row.report) : mm(u - l)) + " mmHg";
     el("lookup-values").hidden = false;
     showInterpretation(interpretation, {
       source: lookup.source,
       setting: target,
       reading: mm(tc),
-      bounds: bounds(l, u),
+      bounds: limits,
     });
     const change = hi - lo - (u - l);
-    comparison +=
+    if (!row.report) comparison +=
       change === 0
         ? " The width is unchanged."
         : " With this reading the interval is " +
@@ -170,7 +177,7 @@ function render() {
           (change > 0 ? "narrower." : "wider.");
   } else {
     el("lookup-held").textContent =
-      "The fitted simulations do not resolve the three interval summary points at this reading.";
+      "Prediction interval unresolved." + (interval?.[1] != null ? " Median " + endpoint(interval[1], 1) + " mmHg." : "");
     el("lookup-held").hidden = false;
   }
   el("prior-comparison").textContent = comparison;
@@ -211,8 +218,9 @@ function validate(doc, expectSource) {
       "conditional_lookup_v1",
       "conditional_lookup_v2",
       "conditional_lookup_dense_v1",
+      "conditional_lookup_dense_v2",
     ].includes(doc.version) ||
-    (doc.version === "conditional_lookup_dense_v1" &&
+    (doc.version.startsWith("conditional_lookup_dense_") &&
       doc.source !== "synthetic") ||
     doc.method !== fits.main.method ||
     doc.prior_uncertainty !== "fixed_empirical" ||
@@ -222,7 +230,8 @@ function validate(doc, expectSource) {
   )
     fail();
   const legacy = doc.version === "conditional_lookup_v1";
-  const dense = doc.version === "conditional_lookup_dense_v1";
+  const amended = doc.version === "conditional_lookup_dense_v2";
+  const dense = amended || doc.version === "conditional_lookup_dense_v1";
   const chart = !legacy && doc.source === "synthetic";
   for (const [target, key] of Object.entries(groups)) {
     const g = doc.groups[target];
@@ -274,6 +283,7 @@ function validate(doc, expectSource) {
           "interval",
           "variance",
           ...(legacy ? [] : ["tails"]),
+          ...(amended ? ["report"] : []),
           ...(dense ? ["mass"] : chart ? ["mass", "likelihood"] : []),
         ])
       )
@@ -301,7 +311,20 @@ function validate(doc, expectSource) {
       )
         fail();
       const { interval: q, variance: v } = row;
-      if (
+      if (amended) {
+        if (!keys(row.report,["quantiles","probabilities"])) fail();
+        for (const [vals, name, n, max] of [[q,"quantiles",3,.5],[row.tails,"probabilities",2,.002]]) {
+          const pairs = row.report[name];
+          if (!Array.isArray(vals) || vals.length!==n || !Array.isArray(pairs) || pairs.length!==n) fail();
+          vals.forEach((v,i) => {
+            const b=pairs[i];
+            if (v===null && b===null) return;
+            if (!Number.isFinite(v) || !nums(b,2) || !(b[0]<=v && v<=b[1]) || b[1]-b[0]>max+1e-12) fail();
+            if (name==="probabilities" ? b[0]<0 || b[1]>1 : ![v,...b].every(k=>g.support.includes(k))) fail();
+          });
+        }
+        if (q.some((v,i)=>v!=null && q.slice(i+1).some(y=>y!=null && y<v))) fail();
+      } else if (
         q !== null &&
         (!nums(q, legacy ? 4 : 3) ||
           q[0] <= 0 ||

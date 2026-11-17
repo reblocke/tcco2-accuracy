@@ -32,7 +32,7 @@ def _synthetic_private_preview():
     directory = ROOT / ".pytest_tmp/e2e/private-preview"
     directory.mkdir(parents=True, exist_ok=True)
     reference = json.loads((ROOT / "models/pages/synthetic-lookup.json").read_text())
-    if reference["source"] != "synthetic" or reference["version"] != "conditional_lookup_dense_v1":
+    if reference["source"] != "synthetic" or reference["version"] != "conditional_lookup_dense_v2":
         raise ValueError("Private visual QA requires the public synthetic fixture")
     group = reference["groups"]["all"]
     row = group["rows"][47 - 20]
@@ -123,8 +123,8 @@ def main() -> None:
                 view = page.locator(".predict .workspace")
                 view.screenshot(path=str(previews / f"{device}-opening.png"))
                 page.locator("#lookup-demo").click()
-                page.locator("#lookup-bounds").get_by_text("38.75 to 56.25 mmHg").wait_for()
-                assert chart.locator(".tail-value").all_text_contents() == ["71.61%", "13.43%"]
+                page.locator("#lookup-bounds").get_by_text("39 to 56 mmHg").wait_for()
+                assert chart.locator(".tail-value").all_text_contents() == ["72%", "13%"]
                 if device == "mobile":
                     chart.get_by_role("button", name="Highlight ≥52 mmHg").click()
                 page.mouse.move(0, 0)
@@ -148,12 +148,12 @@ def main() -> None:
                 start = time.perf_counter()
                 page.click("#calculate")
                 page.wait_for_function(
-                    "document.querySelector('#estimate').textContent === '48.0 mmHg' || document.querySelector('#error').textContent !== ''",
+                    "document.querySelector('#estimate').textContent === '48 mmHg' || document.querySelector('#error').textContent !== ''",
                     timeout=90000,
                 )
                 assert not page.locator("#error").inner_text(), page.locator("#error").inner_text()
                 latency = time.perf_counter() - start
-                assert page.locator("#probability").inner_text() == "0.8182"
+                assert page.locator("#probability").inner_text() == "82%"
                 assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
                 page.locator(".calc").screenshot(path=str(OUTPUT_DIR / f"{device}-conditional.png"))
                 cdp = browser.new_browser_cdp_session()

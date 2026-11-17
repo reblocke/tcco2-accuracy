@@ -20,7 +20,7 @@ def test_distribution_zoom_keeps_inference_and_resets(page):
         page.locator("#lookup-demo").click()
         chart = page.locator("#lookup-chart")
         svg = chart.locator("svg")
-        expect(chart.locator(".tail-value")).to_have_text(["71.61%", "13.43%"])
+        expect(chart.locator(".tail-value")).to_have_text(["72%", "13%"])
         bounds = page.locator("#lookup-bounds").inner_text()
         explanation = page.locator("#lookup-interpretation").inner_text()
         initial_ticks = pressure_ticks(svg)
@@ -38,7 +38,7 @@ def test_distribution_zoom_keeps_inference_and_resets(page):
         expect(chart.locator("figcaption")).to_contain_text("of the posterior")
         chart.get_by_role("button", name="Highlight ≥52 mmHg").click()
         assert pressure_ticks(svg) == zoomed
-        expect(chart.locator(".tail-value")).to_have_text(["71.61%", "13.43%"])
+        expect(chart.locator(".tail-value")).to_have_text(["72%", "13%"])
         expect(page.locator("#lookup-bounds")).to_have_text(bounds)
         assert page.locator("#lookup-interpretation").inner_text() == explanation
         chart.get_by_role("button", name="Reset zoom").click()

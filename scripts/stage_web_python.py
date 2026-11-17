@@ -38,6 +38,7 @@ BROWSER_PYTHON_FILES = (
     "core/_posterior.py",
     "core/bland_altman.py",
     "core/constants.py",
+    "core/conditional_reporting.py",
     "core/future_setting.py",
     "core/inference.py",
     "core/paco2.py",

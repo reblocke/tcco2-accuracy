@@ -7,22 +7,27 @@
       ],
       "works-in-progress/letter.docx": [
         "1560e910b6a98dcc583e34ba1a018eac02dafd6ab0eae9ffe248c0bfcaaad8b2",
-        "3b458671faa5d2844373a73a06cd33ce93fc70115ac321b434ee649b19ac09cf"
+        "3b458671faa5d2844373a73a06cd33ce93fc70115ac321b434ee649b19ac09cf",
+        "b1de7593763fd844840750e4b38fd459ccbcc7d3f5142bf976716c7d8deddb96"
       ],
       "works-in-progress/paired-prediction.png": [
-        "8ccbfd7a7292fe05768fd174d997310cc294494de69cdaeffe0a1a17092a5854"
+        "8ccbfd7a7292fe05768fd174d997310cc294494de69cdaeffe0a1a17092a5854",
+        "254d58fa135876c17b3aadbbc9d937bd45bf702c86b8d6b4cbb2e85bda014782"
       ],
       "works-in-progress/supplement.docx": [
         "ebdbde34a35b3853bc30d39fd8c073dc014921dab6209ebb00c585f48a1c55fb",
-        "50f13e881539e9083b52f4a4b2a1e8b0ca203a25e23958ae1ae80266cb5cf17f"
+        "50f13e881539e9083b52f4a4b2a1e8b0ca203a25e23958ae1ae80266cb5cf17f",
+        "1243cb05d677dd6fe8482c4e27c66111eaf28c395ebe6ec22a66200da29ffd72"
       ],
       "works-in-progress/README.md": [
         "dc2c681bc16699469fe862ec14577d4c5ea23d425c8319c2c1730e14e50a1b26",
         "80880102f62fe47bf33d6515e389212ab90e2b88715592b6d5a650009855dd83",
-        "0649e42033993eed189345de538267016eaf09d8ea644f09a068006059538d31"
+        "0649e42033993eed189345de538267016eaf09d8ea644f09a068006059538d31",
+        "25490c066dd8014c1678d6571729898adbe2e15d149cc2af726f43d452ff2d13"
       ],
       "works-in-progress/cohort-and-prediction.md": [
-        "750367908e22df59a9b0b552b229f4f6d05a60c90a0c98495040d7e8da830c91"
+        "750367908e22df59a9b0b552b229f4f6d05a60c90a0c98495040d7e8da830c91",
+        "fb9e6265639ce8129880c9e41f7827f9a4eefb452f9013584296c78c7b02ed34"
       ],
       "works-in-progress/classification.md": [
         "26ea78933012495119ce103938b2022ac9cd0b1cd5fef69b0043141507e6fd30"
@@ -71,7 +76,7 @@
   "conditional_lookup_public_source": "models/pages/conditional-lookup.json",
   "conditional_lookup_public_versions": ["conditional_lookup_v1", "conditional_lookup_v2"],
   "approved_conditional_lookup_sha256": null,
-  "synthetic_conditional_lookup_sha256": "90ab00b7f1338b593a0aaa6571358d3370d13b1738cffea5f15fc8e55262e7b3",
+  "synthetic_conditional_lookup_sha256": "ac6ea5b7d6b59954f0c937d7fadd1f423df9a490814daa02ee810185f40ffb06",
   "pages_data_allowlist": [
     "web/assets/data/summary.json",
     "web/assets/data/synthetic-lookup.json",

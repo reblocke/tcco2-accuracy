@@ -11,3 +11,11 @@ Retain four chains, rank-normalized R-hat <1.01, bulk and tail ESS ≥400 and ze
 ## Acceptance cases
 
 Check a point mass at each inclusive threshold, a nearby two-point ambiguity inside half a mmHg, a wide ambiguity, an independently held median, a rounding boundary, and a threshold failing the quadrature gate alone. Check signed offsets and normalization after likelihood averaging. Replay every integer reading 20–100 in all four strata. Compare the direct prefix, largest-fit screen, direct spot checks and the 48 split-prefix checks with their respective receipts. Check synthetic browser output against its matching offline fit. The PFT example at 47 rounds to median 45, interval 37–52 and probabilities 58% and 4%. At 100 its lower limit rounds to 74 mmHg.
+
+## Implementation evidence
+
+The private full-grid cache reuses all saved draws from each setting's largest archived fit. Degree-20 local Hermite expansions accelerate evaluation of the quadrature-weighted Gaussian mixture. The cache matched direct evaluation on a 2,048-draw sample across the complete set of signed offsets in each setting, with maximum absolute density error below 6 × 10⁻¹⁶ per mmHg. Every final row reproduced the saved threshold and quantile-cut probabilities within 2 × 10⁻¹⁰. The saved audit supplies the numerical brackets, including its conservative prefix bounds and 48 disjoint-prefix checks. The public synthetic export uses direct native Gaussian summation and retains its original same-fit variance calculations.
+
+The amended grid qualifies all 324 intervals, 324 medians and 648 threshold probabilities. Raw support values still determine probabilities and quantiles. Display rounding applies afterward. Displayed widths use the difference of unrounded endpoints, with bounds propagated from both endpoint brackets.
+
+The Word review copies show additions in bold and deletions in strikethrough. The preceding Word originals remain the last imported Mac sources, as recorded in the source inventory. The new review copy is a repository revision derived from that import.

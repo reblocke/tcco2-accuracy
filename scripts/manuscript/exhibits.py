@@ -30,7 +30,7 @@ def table(headers, rows):
     )
 
 
-def render(private, dest):
+def render(private, dest, *, grid=None):
     dest.mkdir(exist_ok=True)
     data = json.loads((private / "cohort.json").read_text())
     strategy = json.loads((private / "strategy.json").read_text())
@@ -58,10 +58,10 @@ def render(private, dest):
         for c, style in [(45, "--"), (52, ":")]:
             ax.axvline(c, color="#252525", ls=style)
         ax.set_xticks([0, 25, 50, 75, 100], ["0", "25", "50", "75", "100+"])
-        d = pd.read_csv(private / (key + "-predictions.csv")).set_index("tc_mmhg")
+        d = pd.read_csv((grid or private) / (key + "-predictions.csv")).set_index("tc_mmhg")
         if list(d.index) != list(range(20, 101)):
             raise ValueError(f"Incomplete or unordered prediction grid for {key}")
-        lower, median, upper, p, q = d.to_numpy().T
+        lower, median, upper, p, q = d.iloc[:, :5].to_numpy().T
         t = d.index.to_numpy()
         tails = np.stack([p, q])
         if np.any((tails < 0) | (tails > 1)) or np.any(q > p):
@@ -74,8 +74,19 @@ def render(private, dest):
         right.plot(t, q * 100, ".--", ms=2, color="#743e28", label="≥52")
         left.set_ylabel(name + "\nPaCO₂ (mmHg)")
         right.set_ylim(-3, 103)
-        quality.append([name, *[int(d[col].count()) for col in ("median", "p_ge45", "p_ge52")]])
+        quality.append(
+            [
+                name,
+                int(np.sum(np.isfinite(lower) & np.isfinite(upper))),
+                int(d.p_ge45.count()),
+                int(d.p_ge52.count()),
+            ]
+        )
         for tc in READINGS:
+            if grid is not None:
+                lo, mid, hi, p45, p52 = d.loc[tc].iloc[5:]
+                examples.append([name, tc, mid, f"{lo}–{hi}", p45, p52])
+                continue
             lo, mid, hi, p45, p52 = d.loc[tc]
             examples.append(
                 [
