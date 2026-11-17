@@ -69,10 +69,7 @@
     "explicit path outside the repository"
   ],
   "conditional_lookup_public_source": "models/pages/conditional-lookup.json",
-  "conditional_lookup_public_versions": [
-    "conditional_lookup_v1",
-    "conditional_lookup_v2"
-  ],
+  "conditional_lookup_public_versions": ["conditional_lookup_v1", "conditional_lookup_v2"],
   "approved_conditional_lookup_sha256": null,
   "synthetic_conditional_lookup_sha256": "90ab00b7f1338b593a0aaa6571358d3370d13b1738cffea5f15fc8e55262e7b3",
   "pages_data_allowlist": [
@@ -144,80 +141,40 @@
     "tests/fixtures/paco2_distribution_summary.xlsx",
     "scripts/run_all_workflows.py"
   ],
-  "structured_schema_extensions": [
-    ".csv",
-    ".tsv",
-    ".xlsx"
-  ],
-  "prohibited_tracked_extensions": [
-    ".xls"
-  ],
+  "structured_schema_extensions": [".csv", ".tsv", ".xlsx"],
+  "prohibited_tracked_extensions": [".xls"],
   "prohibited_structured_schemas": [
     {
       "id": "restricted_encounter_denominator",
-      "roots": [
-        ""
-      ],
-      "required_columns": [
-        "n_encounters"
-      ]
+      "roots": [""],
+      "required_columns": ["n_encounters"]
     },
     {
       "id": "exact_paco2_bin_counts",
-      "roots": [
-        ""
-      ],
-      "required_columns": [
-        "paco2_bin",
-        "count"
-      ]
+      "roots": [""],
+      "required_columns": ["paco2_bin", "count"]
     },
     {
       "id": "paco2_group_count_summary",
-      "roots": [
-        ""
-      ],
-      "required_columns": [
-        "group",
-        "count"
-      ],
-      "required_column_prefixes": [
-        "paco2_"
-      ]
+      "roots": [""],
+      "required_columns": ["group", "count"],
+      "required_column_prefixes": ["paco2_"]
     },
     {
       "id": "paco2_subgroup_count_summary",
-      "roots": [
-        ""
-      ],
-      "required_columns": [
-        "subgroup",
-        "count"
-      ],
-      "required_column_prefixes": [
-        "paco2_"
-      ]
+      "roots": [""],
+      "required_columns": ["subgroup", "count"],
+      "required_column_prefixes": ["paco2_"]
     },
     {
       "id": "reconstructable_prior_weights",
-      "roots": [
-        ""
-      ],
-      "required_columns": [
-        "paco2_bin",
-        "weight"
-      ]
+      "roots": [""],
+      "required_columns": ["paco2_bin", "weight"]
     },
     {
       "id": "exact_restricted_prevalence_triplet",
-      "roots": [
-        ""
-      ],
-      "required_columns": [
-        "prevalence_q025",
-        "prevalence_q500",
-        "prevalence_q975"
-      ]
+      "roots": [""],
+      "required_columns": ["prevalence_q025", "prevalence_q500", "prevalence_q975"]
     }
   ],
   "prohibited_text_patterns": [
@@ -227,15 +184,9 @@
     "\\|\\s*(?:Subgroup|Group)\\s*\\|\\s*Count\\s*\\|\\s*PaCO2\\b",
     "\\bempirical count/weight\\b"
   ],
-  "prohibited_text_extensions": [
-    ".md",
-    ".txt",
-    ".rst"
-  ],
+  "prohibited_text_extensions": [".md", ".txt", ".rst"],
   "synthetic_fixture_schema_exemptions": {
-    "tests/fixtures/synthetic_paco2_prior.csv": [
-      "reconstructable_prior_weights"
-    ]
+    "tests/fixtures/synthetic_paco2_prior.csv": ["reconstructable_prior_weights"]
   },
   "synthetic_fixture_artifacts": {
     "tests/fixtures/synthetic_paco2_prior.csv": "08fcfa76380157cb8f613d19559dea29289d71d70cd5e661893b7a6248419e46"
