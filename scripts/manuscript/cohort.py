@@ -1,6 +1,5 @@
 """Run on the private host against the fingerprinted original cohort and staged labs."""
 
-import hashlib
 import json
 import os
 import sys
@@ -9,7 +8,7 @@ from pathlib import Path
 import duckdb
 import numpy as np
 import pandas as pd
-from private_inputs import digest, private_destination
+from private_inputs import digest, private_destination, verified_stage_inputs
 
 from tcco2_accuracy.core._posterior import weighted_quantile
 
@@ -88,16 +87,7 @@ def first_day_weights(db):
 def build(original, stage, archive, out):
     private_destination(out)
 
-    cohort = original.parent / "cohort-keys.parquet"
-    labs = stage / "arterial-candidates.parquet"
-    policy = json.loads((stage / "stage-receipt.json").read_text())["policy"]
-    for p, expected in [
-        (cohort, policy["source_files_sha256"][cohort.name]),
-        (labs, policy["staged_candidate_sha256"]),
-        (archive, policy["archived_keyed_member_sha256"]),
-    ]:
-        with p.open("rb") as f:
-            assert hashlib.file_digest(f, "sha256").hexdigest() == expected
+    cohort, labs = verified_stage_inputs(original, stage, archive)
     flags = {
         "all": "true",
         "icu": "is_inp=1 AND cc_time=1 AND is_emer=0 AND is_amb=0",
@@ -132,7 +122,8 @@ def build(original, stage, archive, out):
         *fields,
     ]
     demo = pd.read_stata(archive, columns=cols, convert_categoricals=False)
-    assert demo.pat_enc_hash.is_unique
+    if demo.pat_enc_hash.isna().any() or not demo.pat_enc_hash.is_unique:
+        raise ValueError("Missing or duplicated encounter key in the archive")
     history = []
     for name, sel in [
         ("available PaCO2", demo.paco2.notna()),
@@ -180,7 +171,8 @@ def build(original, stage, archive, out):
             d = db.execute(
                 "select d.*,w.contribution from weighted w left join demographics d on d.pat_enc_hash=w.patient_id||'-'||w.encounter_id"
             ).fetchdf()
-            assert d.pat_enc_hash.notna().all()
+            if d.pat_enc_hash.isna().any():
+                raise ValueError("Eligible encounter missing from the demographic archive")
             c = {}
             for col in ["age_at_encounter", *fields]:
                 ok = d[col].notna()
@@ -190,7 +182,8 @@ def build(original, stage, archive, out):
                     ix = np.argsort(x)
                     val = weighted_quantile(x[ix], v[ix] / v.sum(), [0.25, 0.5, 0.75]).tolist()
                 else:
-                    assert np.isin(x, [0, 1]).all()
+                    if not np.isin(x, [0, 1]).all():
+                        raise ValueError(f"Unexpected recorded value for binary variable {col}")
                     val = float(np.average(x, weights=v))
                 c[col] = dict(value=val, known_fraction=float(v.sum() / d.contribution.sum()))
             report[group] = dict(

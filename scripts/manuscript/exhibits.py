@@ -59,10 +59,13 @@ def render(private, dest):
             ax.axvline(c, color="#252525", ls=style)
         ax.set_xticks([0, 25, 50, 75, 100], ["0", "25", "50", "75", "100+"])
         d = pd.read_csv(private / (key + "-predictions.csv")).set_index("tc_mmhg")
-        assert list(d.index) == list(range(20, 101))
+        if list(d.index) != list(range(20, 101)):
+            raise ValueError(f"Incomplete or unordered prediction grid for {key}")
         lower, median, upper, p, q = d.to_numpy().T
         t = d.index.to_numpy()
-        assert np.all(p[np.isfinite(p)] >= 0) and np.all(q[np.isfinite(q)] <= 1)
+        tails = np.stack([p, q])
+        if np.any((tails < 0) | (tails > 1)) or np.any(q > p):
+            raise ValueError(f"Invalid threshold probabilities for {key}")
         left.fill_between(t, lower, upper, color="#cadae0")
         left.plot(t, median, ".-", markersize=2, color="#173e53")
         left.plot(t, lower, ".", ms=1.8, color="#476273")

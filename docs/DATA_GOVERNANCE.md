@@ -90,4 +90,4 @@ asserted removed.
 
 ## Manuscript review package
 
-The approved public distribution exhibit is a rasterized, grouped manuscript figure. The Word letter, supplement and rounded derived summaries live in the named GitHub WIP package. Figure and document revisions are checked by path and digest. Private arterial weights, patient records and full posterior curves remain on the mini. Manuscript inclusion does not change the Pages allowlist.
+The approved public distribution exhibit is a rasterized, grouped manuscript figure. The Word letter, supplement and rounded derived summaries live in the named GitHub WIP package. Every WIP asset, including prose, tables and the source inventory, is checked by exact path and reviewed digest in the current package and public history. Private arterial weights, patient records and full posterior curves remain on the mini. Manuscript inclusion does not change the Pages allowlist.

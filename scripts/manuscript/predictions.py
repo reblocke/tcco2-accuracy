@@ -1,7 +1,6 @@
 """Evaluate full-support inverse predictions privately from canonical chain draws."""
 
 import ctypes
-import hashlib
 import json
 import math
 import os
@@ -11,12 +10,13 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from private_inputs import private_destination, read_prior, require_digest
+from private_inputs import model_receipts, private_destination, read_prior, require_digest
 from scipy.special import logsumexp
 
 from tcco2_accuracy.core._posterior import weighted_quantile
 from tcco2_accuracy.core.future_setting import LEVELS, PredictiveKernel
 from tcco2_accuracy.pages_prediction import THRESHOLDS, evidence_masks, resolved_summaries
+from tcco2_accuracy.workflows.conditional_lookup import READINGS
 
 
 def inverse(theta, a, w, library):
@@ -25,8 +25,8 @@ def inverse(theta, a, w, library):
     vec = np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags="C_CONTIGUOUS")
     native.argtypes = [ctypes.c_int, ctypes.c_int, *([vec] * 5)]
     native.restype = ctypes.c_int
-    offsets, idx = np.unique(a[None, :] - np.arange(20, 101)[:, None], return_inverse=True)
-    idx = idx.reshape(81, -1)
+    offsets, idx = np.unique(a[None, :] - np.array(READINGS)[:, None], return_inverse=True)
+    idx = idx.reshape(len(READINGS), -1)
     size = math.isqrt(theta.shape[1])
     blocks = [chain[i : i + size] for chain in theta for i in range(0, len(chain), size)]
     lengths = np.array([len(b) for b in blocks])
@@ -59,7 +59,7 @@ def inverse(theta, a, w, library):
         )
     rows = []
     checks = []
-    for tc, ix in enumerate(idx, 20):
+    for tc, ix in zip(READINGS, idx, strict=True):
         joint = np.log(w) + np.stack(marginals)[:, ix]
         logz = logsumexp(joint, axis=1)
         coarse, mass = np.exp(joint - logz[:, None])
@@ -86,33 +86,33 @@ def inverse(theta, a, w, library):
 
 def run(out, original, manifest):
     private_destination(out)
-    grid = next(original.glob("all-grid-review.*/verified-receipt.json")).parent
-    receipt = json.loads((grid / "verified-receipt.json").read_text())
+    fits, grid, receipt = model_receipts(original, manifest)
     table = grid / "all-settings-review.csv"
-    assert hashlib.sha256(table.read_bytes()).hexdigest() == receipt["grid_sha256"]
+    require_digest(table, receipt["grid_sha256"])
     require_digest(grid / "mixture.dylib", receipt["scripts"]["mixture.dylib"])
-    accepted = pd.read_csv(table)
-    diag = json.loads((grid / "precision.json").read_text())
+    accepted = pd.read_csv(table, float_precision="round_trip")
+    if accepted.tc_mmhg.tolist() != list(READINGS):
+        raise ValueError(
+            "All-settings reference must contain the complete ordered 20–100 mmHg grid"
+        )
+    precision = grid / "precision.json"
+    require_digest(precision, "1e27376f915691291594c5a0aad0dde549ab2741e53950a28b610c3994ca2757")
+    diag = json.loads(precision.read_bytes())
     median = []
     for row in accepted.itertuples():
         if pd.isna(row.lower95_mmhg):
             median.append(np.nan)
             continue
         q = diag[str(row.tc_mmhg)]["endpoints"][1]
-        assert (
+        if not (
             q["q"] == q["coarse"]
             and q["cdf_before"] + 2 * q["se_before"] < 0.5 <= q["cdf_at"] - 2 * q["se_at"]
-        )
+        ):
+            raise ValueError(f"Unresolved reference median at TcCO₂ {row.tc_mmhg}")
         median.append(q["q"])
     accepted.insert(2, "median", median)
-    accepted.to_csv(out / "all-predictions.csv", index=False)
-    np.testing.assert_allclose(
-        accepted.loc[accepted.tc_mmhg == 47].iloc[0, 1:],
-        [35, 44, 53.2, 0.4695596108483035, 0.051765875591940874],
-    )
-    assert accepted.lower95_mmhg.count() == 69 and len(accepted) == 81
     main_draws = next(original.glob("precision-64000/public-model/*/main/*/posterior.npz"))
-    assert hashlib.sha256(main_draws.read_bytes()).hexdigest() == receipt["posterior_sha256"]
+    require_digest(main_draws, receipt["posterior_sha256"])
     a, w = read_prior(out, "all")
     main_rows, main_checks = inverse(np.load(main_draws)["theta"], a, w, grid / "mixture.dylib")
     np.testing.assert_allclose(
@@ -122,11 +122,11 @@ def run(out, original, manifest):
         rtol=0,
         equal_nan=True,
     )
+    accepted.to_csv(out / "all-predictions.csv", index=False)
     (out / "all-precision.json").write_text(json.dumps(main_checks, allow_nan=False))
-    fits = json.loads(manifest.read_text())["strata"]
     for target, group in [("icu", "icu"), ("ed_inp", "arf"), ("pft", "lft")]:
         path = out / (group + ".npz")
-        assert hashlib.sha256(path.read_bytes()).hexdigest() == fits[group]["posterior_sha256"]
+        require_digest(path, fits[group]["posterior_sha256"])
         a, w = read_prior(out, target)
         result, checks = inverse(np.load(path)["theta"], a, w, grid / "mixture.dylib")
         (out / (target + "-precision.json")).write_text(json.dumps(checks, allow_nan=False))

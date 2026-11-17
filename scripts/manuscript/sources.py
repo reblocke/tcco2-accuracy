@@ -9,6 +9,7 @@ from xml.etree import ElementTree as ET
 from zipfile import ZipFile
 
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+MATH = "{http://schemas.openxmlformats.org/officeDocument/2006/math}"
 ROLES = {"letter": "letter.docx", "supplement": "supplement.docx"}
 
 
@@ -25,6 +26,28 @@ def files(roots):
                 yield "supplement", p
 
 
+def equation(node):
+    """Copy the native mathematical structure and its visible tokens without Word metadata."""
+    if not node.tag.startswith(MATH):
+        raise ValueError(
+            "Native equation contains unsupported embedded content. Check the source equation in Word."
+        )
+    clean = ET.Element(
+        node.tag,
+        {
+            k: v
+            for k, v in node.attrib.items()
+            if k.startswith(MATH) or k == "{http://www.w3.org/XML/1998/namespace}space"
+        },
+    )
+    if node.tag == MATH + "t":
+        clean.text = node.text
+    for child in node:
+        if child.tag != W + "rPr":
+            clean.append(equation(child))
+    return clean
+
+
 def elements(data):
     with ZipFile(io.BytesIO(data)) as z:
         doc = ET.fromstring(z.read("word/document.xml"))
@@ -38,7 +61,7 @@ def elements(data):
                     W + "object",
                     W + "txbxContent",
                 } or (
-                    child.tag == W + "r"
+                    child.tag in {W + "r", MATH + "r"}
                     and any(
                         child.find(W + "rPr/" + W + k) is not None for k in ("vanish", "webHidden")
                     )
@@ -50,18 +73,25 @@ def elements(data):
             if e.get("TargetMode") != "External"
         }
 
+        # Replace each equation in its original position, including equations in table cells.
+        equations = {}
+        for parent in body.iter():
+            for index, child in enumerate(list(parent)):
+                if child.tag == MATH + "oMath":
+                    xml = ET.tostring(equation(child), encoding="unicode")
+                    token = "OMML" + hashlib.sha256(xml.encode()).hexdigest()
+                    equations[token] = xml
+                    run = ET.Element(W + "r")
+                    ET.SubElement(run, W + "t").text = token
+                    parent.remove(child)
+                    parent.insert(index, run)
+
         def paragraph(p):
-            # Only visible Word text. Skip field instructions, deleted/hidden text and objects.
-            text = []
-            for run in p.iter(W + "r"):
-                if any(run.find(W + "rPr/" + W + k) is not None for k in ("vanish", "webHidden")):
-                    continue
-                text.extend(t.text or "" for t in run.findall(W + "t"))
-            return "".join(text)
+            return "".join(t.text or "" for run in p.iter(W + "r") for t in run.findall(W + "t"))
 
         result = []
         for item in body:
-            if item.tag == W + "p":
+            if item.tag in (W + "p", MATH + "oMathPara", W + "r"):
                 s = paragraph(item)
                 if s.strip():
                     result.append(s)
@@ -82,7 +112,7 @@ def elements(data):
                         for row in item.findall(W + "tr")
                     ]
                 )
-        return result
+        return {"blocks": result, "equations": equations}
 
 
 def main():

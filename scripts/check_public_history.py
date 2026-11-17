@@ -208,9 +208,7 @@ def _blob_rule_ids(relative_path: str, content: bytes, contract: dict[str, Any])
     rules: list[str] = []
     if relative_path.startswith("works-in-progress/"):
         package = contract["manuscript_wip"]
-        if relative_path not in package["text"] and content_hash not in package["reviewed"].get(
-            relative_path, []
-        ):
+        if content_hash not in package["reviewed"].get(relative_path, []):
             rules.append("unreviewed_manuscript_asset")
     if conditional_lookup_violation(relative_path, content, contract):
         rules.append("unapproved_conditional_lookup")

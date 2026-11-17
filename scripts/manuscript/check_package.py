@@ -86,7 +86,7 @@ def inspect_word(data, figures):
 def check(root):
     config = json.loads((root / CONTRACT).read_text())["manuscript_wip"]
     figures = {sha((root / p).read_bytes()) for p in config["reviewed"] if p.endswith(".png")}
-    allowed = set(config["text"]) | set(config["reviewed"])
+    allowed = set(config["reviewed"])
     found = {
         p.relative_to(root).as_posix()
         for p in (root / "works-in-progress").rglob("*")

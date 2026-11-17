@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
-from private_inputs import private_destination, read_prior, require_digest
+from private_inputs import model_receipts, private_destination, read_prior, require_digest
 
 from tcco2_accuracy.core.future_setting import PredictiveKernel
 
@@ -46,8 +46,7 @@ def metrics(pos, neg):
 
 def run(out, original, manifest):
     private_destination(out)
-    fits = json.loads(manifest.read_text())["strata"]
-    all_receipt = next(original.glob("all-grid-review.*/verified-receipt.json"))
+    fits, _, all_receipt = model_receipts(original, manifest)
     summaries = {}
     for group, model in [("all", "main"), ("icu", "icu"), ("ed_inp", "arf"), ("pft", "lft")]:
         path = (
@@ -57,9 +56,7 @@ def run(out, original, manifest):
         )
         require_digest(
             path,
-            json.loads(all_receipt.read_text())["posterior_sha256"]
-            if model == "main"
-            else fits[model]["posterior_sha256"],
+            all_receipt["posterior_sha256"] if model == "main" else fits[model]["posterior_sha256"],
         )
         theta = np.load(path)["theta"]
         # Uniformly spaced posterior draws from all four chains for secondary estimates.

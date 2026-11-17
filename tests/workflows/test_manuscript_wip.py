@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from xml.etree import ElementTree as ET
 from zipfile import ZipFile
 
 import pytest
@@ -89,6 +90,13 @@ def test_two_mac_review_and_publish(tmp_path):
                 content = src.read(name)
                 if name == "word/document.xml":
                     content = content.replace(b"Research letter in preparation", new)
+                    # Put a structured fraction between ordinary prose and keep the math native.
+                    marker = b"<w:t>Abstract</w:t></w:r>"
+                    assert marker in content
+                    math = b'<m:oMath xmlns:m="http://schemas.openxmlformats.org/officeDocument/2006/math"><m:f><m:num><m:r><m:t>x</m:t></m:r></m:num><m:den><m:r><m:t>2</m:t></m:r></m:den></m:f></m:oMath>'
+                    content = content.replace(
+                        marker, marker + math + b"<w:r><w:t> follows</w:t></w:r>", 1
+                    )
                 dst.writestr(name, content)
             dst.writestr("word/embeddings/private.bin", b"private source object")
 
@@ -98,7 +106,16 @@ def test_two_mac_review_and_publish(tmp_path):
     assert len(token) == 64
     revised = next((checkout / ".pytest_tmp").rglob("letter.docx"))
     with ZipFile(revised) as doc:
-        assert b"Revised letter for review" in doc.read("word/document.xml")
+        document = doc.read("word/document.xml")
+        assert b"Revised letter for review" in document
+        xml = ET.fromstring(document)
+        formula = xml.find(".//{*}f/{*}num/{*}r/{*}t")
+        assert formula is not None and formula.text == "x"
+        assert xml.find(".//{*}f/{*}den/{*}r/{*}t").text == "2"
+        assert any(
+            "Abstract" in "".join(p.itertext()) and "follows" in "".join(p.itertext())
+            for p in xml.iter("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}p")
+        )
         assert not any("private" in name or "comments" in name for name in doc.namelist())
         assert len([n for n in doc.namelist() if n.startswith("word/media/")]) == 2
     # Only the reviewed bytes can be published.
@@ -114,6 +131,15 @@ def test_two_mac_review_and_publish(tmp_path):
     revise(roots[0] / "Letter.docx", b"Independently revised on Air")
     assert "divergent" in run(ok=False).stderr
     shutil.copy(roots[1] / "Letter.docx", roots[0] / "Letter.docx")
+    assert "Review visible" in run().stdout
+    # Merge the mini import. A later independent Air edit starts from the old Word baseline.
+    imported_branch = "manuscript/import-" + token[:16]
+    command("git", "fetch", "origin", imported_branch)
+    command("git", "push", "origin", "FETCH_HEAD:main")
+    revise(roots[0] / "Letter.docx", b"Change based on the stale Air copy")
+    assert "stale" in run(ok=False).stderr.lower()
+    # Reconcile in Word and put the common result on the up-to-date mini as well.
+    shutil.copy(roots[0] / "Letter.docx", roots[1] / "Letter.docx")
     assert "Review visible" in run().stdout
     roots[1].rename(mini / "unavailable")
     assert "mini source unchecked" in run(ok=False).stderr

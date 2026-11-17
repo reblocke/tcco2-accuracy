@@ -2,8 +2,10 @@
 
 import argparse
 import hashlib
+import html
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -25,26 +27,38 @@ SSH = [
 ]
 
 
-def choose(old, current):
+def choose(old, current, public_hashes):
     changes = {}
     for role in ROLES:
-        known = {digest for host in current for kind, _, digest in old[host] if kind == role}
+        accepted = {old.get("imported", {}).get(role), public_hashes.get(role)} - {None}
+        known = {h for host in current for k, _, h in old[host] if k == role}
         new = set()
+        from_current = set()
         for host, rows in current.items():
+            previous = [(n, h) for k, n, h in old[host] if k == role]
             for kind, name, digest in rows:
-                if kind != role or digest == old.get("imported", {}).get(role):
+                if kind != role or digest in accepted:
                     continue
-                previous = {h for k, n, h in old[host] if k == role and n == name}
-                if (previous and digest not in previous) or (not previous and digest not in known):
-                    new.add(digest)
+                same_name = {h for n, h in previous if n == name}
+                if digest in same_name or (not same_name and digest in known):
+                    continue
+                new.add(digest)
+                # A dated successor may have a new name. Check the previous heads on that Mac.
+                bases = same_name or {h for _, h in previous}
+                if not known or bases & accepted:
+                    from_current.add(digest)
+        versions = [
+            (host, name, h[:12])
+            for host, rows in current.items()
+            for k, name, h in rows
+            if k == role and h in new
+        ]
         if len(new) > 1:
-            versions = [
-                (host, name, h[:12])
-                for host, rows in current.items()
-                for k, name, h in rows
-                if k == role and h in new
-            ]
             raise ValueError(f"Compare divergent {role} revisions in Word: {versions}")
+        if new and not from_current:
+            raise ValueError(
+                f"Edited {role} came from a stale Mac copy: {versions}. Reconcile it against current main in Word and place the result on the Mac holding the current revision."
+            )
         if new:
             changes[role] = new.pop()
     return changes
@@ -88,7 +102,15 @@ def main():
     )
     old = json.loads((ROOT / name).read_text() if initial else cmd("git", "show", f"{base}:{name}"))
     current = {host: read(host) for host in ("Air", "mini")}
-    changes = choose(old, current)
+    public_hashes = {
+        role: sha(
+            (ROOT / WIP / file).read_bytes()
+            if initial
+            else subprocess.check_output(["git", "show", f"{base}:{WIP}/{file}"], cwd=ROOT)
+        )
+        for role, file in ROLES.items()
+    }
+    changes = choose(old, current, public_hashes)
     if not changes:
         print("Both Macs checked. No new Word revisions.")
         return
@@ -106,14 +128,25 @@ def main():
     ).hexdigest()
     review = ROOT / ".pytest_tmp" / "manuscript-import" / signature
     review.mkdir(parents=True, exist_ok=True)
+    inventory = {**current, "imported": {**old.get("imported", {}), **changes}}
+    inventory_bytes = (json.dumps(inventory, indent=2) + "\n").encode()
+    (review / "source-revisions.json").write_bytes(inventory_bytes)
     # Produce inert HTML for conversion. Source text cannot introduce a link or image.
-    import html
+    for role, source_document in snapshot.items():
+        items = source_document["blocks"]
+        equations = source_document["equations"]
 
-    for role, items in snapshot.items():
+        def visible(text):
+            return re.sub(
+                r"OMML[0-9a-f]{64}",
+                lambda m: "<code>" + m[0] + "</code>" if m[0] in equations else m[0],
+                html.escape(text),
+            )
+
         parts = []
         for item in items:
             if isinstance(item, str):
-                parts.append("<p>" + html.escape(item) + "</p>")
+                parts.append("<p>" + visible(item) + "</p>")
             elif isinstance(item, dict):
                 figure = approved_figures.get(item["image"])
                 parts.append(
@@ -125,7 +158,7 @@ def main():
                 parts.append(
                     "<table>"
                     + "".join(
-                        "<tr>" + "".join("<td>" + html.escape(s) + "</td>" for s in row) + "</tr>"
+                        "<tr>" + "".join("<td>" + visible(s) + "</td>" for s in row) + "</tr>"
                         for row in item
                     )
                     + "</table>"
@@ -134,7 +167,23 @@ def main():
         source.write_text("\n".join(parts))
         dest = review / ROLES[role]
         if not dest.exists():
-            cmd("pandoc", str(source), "-o", str(dest))
+            if equations:
+
+                def restore_math(node):
+                    if node.get("t") == "Code" and node["c"][1] in equations:
+                        return {"t": "RawInline", "c": ["openxml", equations[node["c"][1]]]}
+                    return node
+
+                document = json.loads(
+                    cmd("pandoc", str(source), "-t", "json"), object_hook=restore_math
+                )
+                subprocess.run(
+                    ["pandoc", "-f", "json", "-o", str(dest)],
+                    input=json.dumps(document).encode(),
+                    check=True,
+                )
+            else:
+                cmd("pandoc", str(source), "-o", str(dest))
             strip_empty_pandoc_parts(dest)
     # Bind approval to the exact reviewed bytes and the base/source revisions.
     files = [review / ROLES[role] for role in sorted(changes)]
@@ -143,7 +192,7 @@ def main():
     ).hexdigest()
     if args.publish_reviewed != token:
         print(
-            f"Review visible text and tables against current main in {review}. Only approved manuscript figures are carried forward. After review run make manuscript-wip WIP_ARGS='--publish-reviewed {token}'."
+            f"Review visible text, tables and source-revisions.json against current main in {review}. Only approved manuscript figures are carried forward. After review run make manuscript-wip WIP_ARGS='--publish-reviewed {token}'."
         )
         return
     branch = "manuscript/import-" + token[:16]
@@ -161,9 +210,11 @@ def main():
                 (wt / path).write_bytes(data)
                 if sha(data) not in reviewed[path]:
                     reviewed[path].append(sha(data))
+            (wt / name).write_bytes(inventory_bytes)
+            inventory_hash = sha((wt / name).read_bytes())
+            if inventory_hash not in reviewed[name]:
+                reviewed[name].append(inventory_hash)
             (wt / CONTRACT).write_text(json.dumps(contract, indent=2, ensure_ascii=False) + "\n")
-            current["imported"] = {**old.get("imported", {}), **changes}
-            (wt / name).write_text(json.dumps(current, indent=2) + "\n")
             cmd(sys.executable, "scripts/manuscript/check_package.py", cwd=wt)
             cmd("git", "add", "--", WIP, str(CONTRACT), cwd=wt)
             cmd("git", "commit", "-m", "Update reviewed manuscript drafts", cwd=wt)
