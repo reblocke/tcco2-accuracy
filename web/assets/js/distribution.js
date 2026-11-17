@@ -106,6 +106,7 @@ export function showDistribution(host, model) {
   host.replaceChildren();
   if (!model) return;
   const q = hasInterval(model.q) ? model.q : null;
+  const median = model.q?.[1];
   const { kind, x = [], density, mass, prior, dense, curve, tc } = model;
   const forward = kind === "agreement",
     summary = kind === "summary";
@@ -487,6 +488,14 @@ export function showDistribution(host, model) {
       if (active >= lo && active <= hi)
         line(sx(active), panelTop, sx(active), axis, "cut-marker");
     }
+    if (median != null && onAxis(median)) {
+      line(sx(median), top, sx(median), bottom, "median-marker");
+      shape(svg, "circle", { cx: sx(median), cy: 19, r: 3, class: "median-dot" });
+      if (!visibleInterval) {
+        const mm = model.endpointLabel ?? model.formatEndpoint ?? value;
+        text(sx(median), 43, "Median " + mm(median, 1), "middle", "marker-label");
+      }
+    }
     if (visibleInterval) {
       const [l, m, u] = q;
       for (const v of [l, u].filter(onAxis)) {
@@ -494,10 +503,6 @@ export function showDistribution(host, model) {
         line(sx(v), top, sx(v), bottom, "interval-marker");
       }
       line(clampX(sx(l)), 19, clampX(sx(u)), 19, "interval-rule");
-      if (m != null && onAxis(m)) {
-        line(sx(m), top, sx(m), bottom, "median-marker");
-        shape(svg, "circle", { cx: sx(m), cy: 19, r: 3, class: "median-dot" });
-      }
       const mm =
         model.endpointLabel ?? model.formatEndpoint ?? (forward ? (v) => v.toFixed(1) : value);
       const span = sx(u) - sx(l);

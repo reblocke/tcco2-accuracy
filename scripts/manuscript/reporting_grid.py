@@ -45,11 +45,11 @@ def build(run, dest, *, curves):
         grid = load(screen / "precision.json")
         rows = []
         data = []
-        if curves:
-            with np.load(dest / "cache" / (setting + ".npz")) as arr:
-                if str(arr["posterior"]) != receipt["posterior_sha256"]:
-                    raise ValueError("Curve posterior mismatch")
-                x, density = arr["x"], arr["density"]
+        # Every renderable export must agree with the independently cached likelihood.
+        with np.load(dest / "cache" / (setting + ".npz")) as arr:
+            if str(arr["posterior"]) != receipt["posterior_sha256"]:
+                raise ValueError("Curve posterior mismatch")
+            x, density = arr["x"], arr["density"]
         for t, r, c in zip(range(20, 101), grid, load(cert), strict=True):
             if t != r["tc"] or t != c["t"]:
                 raise ValueError("Unordered reading")
@@ -76,18 +76,16 @@ def build(run, dest, *, curves):
                     *[display_range(v, percent=True) for v in bounds],
                 ]
             )
+            ix = np.searchsorted(x, a - t)
+            np.testing.assert_array_equal(x[ix], a - t)
+            like = density[ix]
+            joint = np.log(w) + np.log(like)
+            mass = np.exp(joint - logsumexp(joint))
+            np.testing.assert_array_equal(a[np.searchsorted(mass.cumsum(), [0.025, 0.5, 0.975])], q)
+            np.testing.assert_allclose(
+                evidence_masks(a, q, [45, 52]) @ mass, r["ratios"], atol=2e-10, rtol=0
+            )
             if curves:
-                ix = np.searchsorted(x, a - t)
-                np.testing.assert_array_equal(x[ix], a - t)
-                like = density[ix]
-                joint = np.log(w) + np.log(like)
-                mass = np.exp(joint - logsumexp(joint))
-                np.testing.assert_array_equal(
-                    a[np.searchsorted(mass.cumsum(), [0.025, 0.5, 0.975])], q
-                )
-                np.testing.assert_allclose(
-                    evidence_masks(a, q, [45, 52]) @ mass, r["ratios"], atol=2e-10, rtol=0
-                )
                 rows.append(
                     dict(
                         interval=q,
@@ -144,6 +142,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("run", type=Path)
     parser.add_argument("output", type=Path)
-    parser.add_argument("--curves", action="store_true")
+    parser.add_argument(
+        "--curves",
+        action="store_true",
+        help="Also write the private chart and viewer; all exports verify the cached likelihood",
+    )
     args = parser.parse_args()
     build(args.run.resolve(), args.output.resolve(), curves=args.curves)

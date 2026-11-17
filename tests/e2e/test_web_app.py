@@ -416,5 +416,7 @@ def test_amended_independent_holds_and_rounding(page, web_server, tmp_path):
     expect(page.locator("#lookup-held")).to_contain_text("Median")
     expect(page.locator("#lookup-interpretation")).to_be_empty()
     expect(page.locator("#lookup-chart .prediction-band")).to_have_count(0)
+    expect(page.locator("#lookup-chart .median-marker")).to_have_count(1)
+    expect(page.locator("#lookup-chart .marker-label")).to_contain_text("Median")
     expect(page.locator("#lookup-chart .tail-value").nth(1)).to_have_text("Unresolved")
     assert page.locator("#lookup-chart .tail-value").nth(0).inner_text() != "Unresolved"
