@@ -18,10 +18,14 @@ software and is not intended for clinical decision-making.
 equations have been corrected under method revision
 `agreement_natural_log_tau2_direct_v1`. Browser and agreement-parameter outputs are
 provisional pending independent biostatistical review. PaCO2-dependent manuscript and
-downstream outputs remain frozen at the legacy method revision; see
+downstream outputs under `artifacts/` remain frozen at the legacy method revision; see
 [`artifacts/STATUS.md`](artifacts/STATUS.md).
 
 The [offline future-setting analysis](docs/FUTURE_SETTING.md) fits a joint Bayesian model to adjudicated public study summaries and produces candidate predictions and a synthetic-prior demonstration.
+
+## Works in progress
+
+The current Word letter, supplement, prediction figures and review checklist are available in the [manuscript working package](works-in-progress/README.md).
 
 ## Choose a Route
 

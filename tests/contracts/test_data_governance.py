@@ -504,3 +504,25 @@ def _git_in_repo(repo: Path, *args: str) -> subprocess.CompletedProcess[str]:
         capture_output=True,
         check=True,
     )
+
+
+def test_public_manuscript_text_requires_the_reviewed_bytes(tmp_path):
+    import shutil
+    import subprocess
+    import sys
+
+    shutil.copytree(ROOT / "works-in-progress", tmp_path / "works-in-progress")
+    (tmp_path / "docs").mkdir()
+    shutil.copy(CONTRACT_PATH, tmp_path / "docs")
+    target = "works-in-progress/cohort-and-prediction.md"
+    (tmp_path / "scripts/manuscript").mkdir(parents=True)
+    script = tmp_path / "scripts/manuscript/check_package.py"
+    shutil.copy(ROOT / "scripts/manuscript/check_package.py", script)
+    # Synthetic proxy for an inadvertent export at an otherwise approved text path.
+    altered = b"| paco2_bin | weight | posterior_mass |\n|---|---|---|\n| 40 | 1 | 1 |\n"
+    (tmp_path / target).write_bytes(altered)
+    check = subprocess.run([sys.executable, str(script)], capture_output=True, text=True)
+    assert check.returncode != 0 and target in check.stderr
+    assert "unreviewed_manuscript_asset" in _HISTORY_CHECK_MODULE._blob_rule_ids(
+        target, altered, _contract()
+    )
