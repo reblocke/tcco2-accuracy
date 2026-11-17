@@ -136,6 +136,12 @@ def test_two_mac_review_and_publish(tmp_path):
     imported_branch = "manuscript/import-" + token[:16]
     command("git", "fetch", "origin", imported_branch)
     command("git", "push", "origin", "FETCH_HEAD:main")
+    # Merely retaining today's accepted file on the mini cannot prove the base of Save As.
+    dated = roots[1] / "Dated Letter.docx"
+    revise(dated, b"New name based on an archived version")
+    outcome = run(ok=False)
+    assert outcome.returncode and "Dated Letter.docx" in outcome.stderr and "Word" in outcome.stderr
+    dated.rename(mini / "Archived dated draft.docx")
     revise(roots[0] / "Letter.docx", b"Change based on the stale Air copy")
     assert "stale" in run(ok=False).stderr.lower()
     # Reconcile in Word and put the common result on the up-to-date mini as well.

@@ -43,9 +43,8 @@ def choose(old, current, public_hashes):
                 if digest in same_name or (not same_name and digest in known):
                     continue
                 new.add(digest)
-                # A dated successor may have a new name. Check the previous heads on that Mac.
-                bases = same_name or {h for _, h in previous}
-                if not known or bases & accepted:
+                # A different filename on the same Mac says nothing about this file's base.
+                if same_name and same_name <= accepted:
                     from_current.add(digest)
         versions = [
             (host, name, h[:12])
@@ -57,7 +56,7 @@ def choose(old, current, public_hashes):
             raise ValueError(f"Compare divergent {role} revisions in Word: {versions}")
         if new and not from_current:
             raise ValueError(
-                f"Edited {role} came from a stale Mac copy: {versions}. Reconcile it against current main in Word and place the result on the Mac holding the current revision."
+                f"Unverified predecessor for {role} (stale, renamed or ambiguous copy): {versions}. Compare with current main in Word, save the reconciliation under the current source filename on its Mac, and archive superseded copies outside the import folders."
             )
         if new:
             changes[role] = new.pop()
