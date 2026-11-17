@@ -71,3 +71,7 @@ temp.log
 *.docx
 *.ppt
 *.pptx
+
+# Only reviewed manuscript assets use these stable public Word paths.
+!/works-in-progress/letter.docx
+!/works-in-progress/supplement.docx

@@ -34,7 +34,7 @@ visual-qa:
 serve: stage-web
 	cd web && python3 -m http.server 8000
 
-verify: history-contract stage-web fmt-check lint test e2e
+verify: history-contract manuscript-check stage-web fmt-check lint test e2e
 
 .PHONY: future-setting-fit future-setting-recovery
 future-setting-fit:
@@ -42,3 +42,11 @@ future-setting-fit:
 
 future-setting-recovery:
 	$(UV) run --locked --offline --group fitting python scripts/future_setting.py recovery $(FUTURE_SETTING_ARGS)
+
+.PHONY: manuscript-wip
+manuscript-wip:
+	$(PYTHON) scripts/manuscript/wip.py $(WIP_ARGS)
+
+.PHONY: manuscript-check
+manuscript-check:
+	$(PYTHON) scripts/manuscript/check_package.py

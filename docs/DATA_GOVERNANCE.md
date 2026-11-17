@@ -87,3 +87,7 @@ machine contract.
 This verification covers repository-controlled public branch and tag refs. Independently retained
 clones, caches, package/download copies, and historical deployments outside those refs are not
 asserted removed.
+
+## Manuscript review package
+
+The approved public distribution exhibit is a rasterized, grouped manuscript figure. The Word letter, supplement and rounded derived summaries live in the named GitHub WIP package. Figure and document revisions are checked by path and digest. Private arterial weights, patient records and full posterior curves remain on the mini. Manuscript inclusion does not change the Pages allowlist.

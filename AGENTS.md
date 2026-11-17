@@ -47,6 +47,7 @@ Use the paper/docs to identify discrepancies in the Stata reference. If a discre
 - An implementation request covers local edits, applicable safe verification, and fixing regressions caused by the change. Resolve material scientific, scope, data-access, cost, or publication decisions before dependent work.
 - Keep changes small and directly tied to the request; do not make drive-by refactors.
 - Do not modify `Code/Legacy/` unless the user explicitly asks for legacy Stata reference changes.
+- Public manuscript review copies are limited to the named assets in `works-in-progress/` and `docs/data_release_contract.json`. Exact empirical weights and full posterior curves stay private.
 - Do not add `Drafts/`, editable poster decks, Word lock files, third-party article PDFs, or publisher-formatted full text to the public branch.
 - Current citable project outputs are abstracts only: CHEST 2025 `10.1016/j.chest.2025.07.3877` and ATS 2025 `10.1164/ajrccm.2025.211.Abstracts.A2683`.
 - Do not add full manuscript Markdown until a submitted preprint, accepted author manuscript, or explicit public manuscript source is supplied.
