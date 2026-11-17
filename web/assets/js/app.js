@@ -1,4 +1,4 @@
-import { showDistribution } from "./distribution.js";
+import { showDistribution, reportLabel, hasInterval } from "./distribution.js";
 import {
   agreementIntervalTitle,
   arterialIntervalTitle,
@@ -51,13 +51,16 @@ function render(q, result) {
   $("result-title").textContent = inverse
     ? "Conditional arterial CO₂"
     : "Arterial minus transcutaneous CO₂";
-  $("estimate").textContent = q ? fmt(q[1]) + " mmHg" : "Unresolved";
-  $("bounds").textContent = q
-    ? fmt(q[0]) + " to " + fmt(q[2]) + " mmHg"
+  const endpoint = (v, index) => result?.report
+    ? reportLabel(result.report.quantiles[index ?? q.indexOf(v)])
+    : fmt(v);
+  $("estimate").textContent = q?.[1] != null ? endpoint(q[1], 1) + " mmHg" : "Unresolved";
+  $("bounds").textContent = hasInterval(q)
+    ? endpoint(q[0], 0) + " to " + endpoint(q[2], 2) + " mmHg"
     : "Unresolved";
   $("prob-card").hidden = !inverse;
   if (inverse) {
-    if (q)
+    if (hasInterval(q))
       showInterpretation($("upload-interpretation"), {
         source: "upload",
         reading: $("tcco2").value,
@@ -65,10 +68,12 @@ function render(q, result) {
       });
     $("prob-label").textContent =
       "P(PaCO₂ ≥ " + $("threshold").value + " mmHg)";
+    const thresholdIndex = [45, 52].includes($("threshold").valueAsNumber)
+      ? [45, 52].indexOf($("threshold").valueAsNumber) : 2;
     $("probability").textContent =
       result.probability === null
         ? "Unresolved"
-        : result.probability.toFixed(4);
+        : reportLabel(result.report.probabilities[thresholdIndex], true);
   }
   $("results").hidden = false;
   const fit = fits[groups[$("subgroup").value][0]];
@@ -79,6 +84,7 @@ function render(q, result) {
           kind: "posterior",
           title: "PaCO₂ given TcCO₂ " + $("tcco2").value + " mmHg",
           formatEndpoint: fmt,
+          endpointLabel: endpoint,
           q,
           x: result.support,
           ...result,

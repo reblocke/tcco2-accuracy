@@ -1,6 +1,5 @@
 """Evaluate full-support inverse predictions privately from canonical chain draws."""
 
-import ctypes
 import json
 import math
 import os
@@ -10,50 +9,28 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from direct_density import direct_batch_density
 from private_inputs import model_receipts, private_destination, read_prior, require_digest
 from scipy.special import logsumexp
 
 from tcco2_accuracy.core._posterior import weighted_quantile
-from tcco2_accuracy.core.future_setting import LEVELS, PredictiveKernel
+from tcco2_accuracy.core.future_setting import LEVELS
 from tcco2_accuracy.pages_prediction import THRESHOLDS, evidence_masks, resolved_summaries
 from tcco2_accuracy.workflows.conditional_lookup import READINGS
 
 
 def inverse(theta, a, w, library):
-    # Native evaluator has the same unnormalized normal components as draw_logpdf.
-    native = ctypes.CDLL(str(library)).mixture
-    vec = np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags="C_CONTIGUOUS")
-    native.argtypes = [ctypes.c_int, ctypes.c_int, *([vec] * 5)]
-    native.restype = ctypes.c_int
+    density = direct_batch_density(library)
     offsets, idx = np.unique(a[None, :] - np.array(READINGS)[:, None], return_inverse=True)
     idx = idx.reshape(len(READINGS), -1)
     size = math.isqrt(theta.shape[1])
     blocks = [chain[i : i + size] for chain in theta for i in range(0, len(chain), size)]
     lengths = np.array([len(b) for b in blocks])
 
-    def batch(b):
-        k = PredictiveKernel(b[None, :, :], order=order)
-        v = np.empty(len(offsets))
-        if native(
-            k.mean.size,
-            len(v),
-            k.mean.ravel(),
-            (1 / k.sd).ravel(),
-            k.log_factor.ravel(),
-            offsets,
-            v,
-        ):
-            raise MemoryError()
-        tiny = v < np.finfo(float).tiny * k.mean.size
-        v[~tiny] = np.log(v[~tiny]) - np.log(len(b))
-        for j in np.flatnonzero(tiny):
-            v[j] = logsumexp(k.draw_logpdf(offsets[j])) - np.log(len(b))
-        return v
-
     marginals = []
     for order in (32, 64):
         with ThreadPoolExecutor(max_workers=5) as pool:
-            likelihood = np.stack(list(pool.map(batch, blocks)))
+            likelihood = np.stack(list(pool.map(lambda b: density(b, order, offsets), blocks)))
         marginals.append(
             logsumexp(likelihood + np.log(lengths[:, None]), axis=0) - np.log(lengths.sum())
         )

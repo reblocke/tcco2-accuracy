@@ -17,7 +17,7 @@ export function showInterpretation(host, result) {
   if (source === "trinetx")
     population =
       "For a patient like those who undergo arterial blood gas testing " +
-      settings[setting] +
+      (result.settingText ?? settings[setting]) +
       " in TriNetX";
   else if (source === "upload")
     population =

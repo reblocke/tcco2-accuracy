@@ -34,7 +34,7 @@ visual-qa:
 serve: stage-web
 	cd web && python3 -m http.server 8000
 
-verify: history-contract manuscript-check stage-web fmt-check lint test e2e
+verify: history-contract manuscript-check stage-web fmt-check lint conditional-reporting-check test e2e
 
 .PHONY: future-setting-fit future-setting-recovery
 future-setting-fit:
@@ -50,3 +50,7 @@ manuscript-wip:
 .PHONY: manuscript-check
 manuscript-check:
 	$(PYTHON) scripts/manuscript/check_package.py
+
+.PHONY: conditional-reporting-check
+conditional-reporting-check:
+	$(PYTHON) scripts/check_conditional_reporting.py

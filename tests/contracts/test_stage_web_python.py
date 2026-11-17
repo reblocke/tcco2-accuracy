@@ -52,7 +52,8 @@ def test_stage_rejects_substituted_lookup_even_with_valid_schema(checkout):
     repo = checkout
     file = repo / "models/pages/synthetic-lookup.json"
     doc = json.loads(file.read_text())
-    doc["groups"]["all"]["rows"][25]["interval"] = None
+    doc["groups"]["all"]["rows"][25]["interval"] = [None] * 3
+    doc["groups"]["all"]["rows"][25]["report"]["quantiles"] = [None] * 3
     file.write_text(json.dumps(doc))
     with pytest.raises(ValueError, match="whole-file"):
         stage_web_python(repo)

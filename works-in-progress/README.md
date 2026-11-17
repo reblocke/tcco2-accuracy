@@ -8,9 +8,11 @@ The research letter estimates paired arterial CO₂ given observed transcutaneou
 | --- | --- |
 | [Cohort and prediction tables](cohort-and-prediction.md) | Who contributed and how do intervals and probabilities change with the reading and setting? |
 | [Arterial distribution figure](arterial-distribution.png) | How do first-day arterial distributions differ across ABG-tested populations? |
-| [Paired prediction figure](paired-prediction.png) | How does arterial uncertainty change as observed TcCO₂ rises? Gaps mark unresolved estimates. |
+| [Paired prediction figure](paired-prediction.png) | How does arterial uncertainty change as observed TcCO₂ rises? ~~Gaps mark unresolved estimates.~~ **All 81 readings per setting qualified under the amended reporting criteria.** |
 | [Agreement comparison](agreement.md) | How do published limits, corrected legacy limits and the new target differ? |
 | [Classification and ABG referral](classification.md) | How many patients would receive an ABG or a false classification under each strategy? |
+
+**In the Word review copies, bold text marks additions and strikethrough marks deletions. The revised figure and tables use the complete grid of saved results.**
 
 ## Review and remaining work
 
@@ -18,7 +20,7 @@ The research letter estimates paired arterial CO₂ given observed transcutaneou
 - [x] Generate the distribution figure from grouped probabilities on the mini. The exact empirical support, weights, patient records and full posterior density curves stay there.
 - [x] Evaluate both inclusive thresholds and the 95% paired prediction interval on the integer 20–100 mmHg grid. An independent calculation on the mini checked all 324 rows, including the precision holds. The table gives six example readings and counts of resolved values. The 52 mmHg outcome refers to the full selected population.
 - [x] Recalculate threshold classification and the reflex-ABG strategy with agreement-parameter uncertainty. The historical outputs under `artifacts/` retain their legacy status.
-- [ ] Independent biostatistical review of the study ledger, overlap, uncertainty, transport assumptions, operating characteristics and unresolved grid points.
+- [ ] Independent biostatistical review of the study ledger, overlap, uncertainty, transport assumptions, operating characteristics and ~~unresolved grid points~~ **the post hoc numerical reporting amendment**.
 - [ ] Coauthors to confirm the byline, affiliations, institutional protocol and data-access wording, funding and disclosures. Check journal length and figure requirements after choosing the destination.
 - [ ] Submission and manuscript release. This GitHub package is a working draft. Clinical coverage requires an independent paired validation sample.
 

@@ -225,3 +225,7 @@ The dense public demonstration replaces the five-mass example with a fixed synth
 The primary manuscript estimand is the paired arterial value conditional on an observed transcutaneous reading in the original ABG-tested population. Use one unit of weight per patient, split over eligible results on the first testing day in each target. Compute All independently over the full available period. Each named setting uses its own first eligible day. Match ambulatory encounters to LFT, noncritical ED or inpatient encounters to ARF and non-ED, nonambulatory inpatient encounters with critical-care billing to ICU. Patients can appear in several setting populations. ED encounters with critical-care billing remain eligible for All.
 
 Report both inclusive arterial thresholds. For the secondary forward calculation, use arterial ≥45 as the reference and TcCO₂ 40 through 50 inclusive as the reflex zone. Keep the empirical prior fixed. The manuscript review release covers a grouped distribution image and the named review exhibits. Exact empirical masses and full posterior curves stay on the mini. [Working letter and tables](../works-in-progress/README.md)
+
+## November 17, 2026 · Conditional PaCO₂ reporting
+
+The manuscript, synthetic demonstration and uploaded-prior calculator use the post hoc [conditional reporting amendment](CONDITIONAL_REPORTING.md). Reviewers can reproduce the earlier exact-support decisions from the preceding revision. The original agreement, variance and classification criteria continue to apply to their respective targets.

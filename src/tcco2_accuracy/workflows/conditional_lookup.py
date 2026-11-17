@@ -149,7 +149,10 @@ def validate_lookup(doc):
             and all(type(x) in (int, float) and np.isfinite(x) for x in xs)
         )
 
-    dense = isinstance(doc, dict) and doc.get("version") == "conditional_lookup_dense_v1"
+    amended = isinstance(doc, dict) and doc.get("version") == "conditional_lookup_dense_v2"
+    dense = amended or (
+        isinstance(doc, dict) and doc.get("version") == "conditional_lookup_dense_v1"
+    )
     if (
         not isinstance(doc, dict)
         or set(doc) != {"version", "method", "source", "prior_uncertainty", "groups"}
@@ -208,12 +211,48 @@ def validate_lookup(doc):
             ):
                 raise ValueError("Invalid dense demonstration grid")
         for row in group["rows"]:
-            if set(row) != {"interval", "variance"} | (set() if legacy else {"tails"}) | (
-                ({"mass"} if dense else {"mass", "likelihood"}) if chart else set()
-            ):
+            if set(row) != {"interval", "variance"} | ({"report"} if amended else set()) | (
+                set() if legacy else {"tails"}
+            ) | (({"mass"} if dense else {"mass", "likelihood"}) if chart else set()):
                 raise ValueError("Unexpected lookup fields")
             q, v = row["interval"], row["variance"]
-            if q is not None and (
+            if amended:
+                report = row["report"]
+                if not isinstance(report, dict) or set(report) != {"quantiles", "probabilities"}:
+                    raise ValueError("Invalid reporting brackets")
+                for key, values, count, limit in (
+                    ("quantiles", q, 3, 0.5),
+                    ("probabilities", row["tails"], 2, 0.002),
+                ):
+                    if (
+                        not isinstance(values, list)
+                        or len(values) != count
+                        or not isinstance(report[key], list)
+                        or len(report[key]) != count
+                    ):
+                        raise ValueError("Invalid reporting dimensions")
+                    for value, pair in zip(values, report[key], strict=True):
+                        if value is None and pair is None:
+                            continue
+                        if (
+                            not numbers([value], 1)
+                            or not numbers(pair, 2)
+                            or not pair[0] <= value <= pair[1]
+                            or pair[1] - pair[0] > limit + 1e-12
+                        ):
+                            raise ValueError("Invalid reporting bracket")
+                        if key == "probabilities" and not 0 <= pair[0] <= pair[1] <= 1:
+                            raise ValueError("Invalid probability bracket")
+                        if key == "quantiles" and (value not in a or any(v not in a for v in pair)):
+                            raise ValueError("Unknown arterial support point")
+                if any(
+                    x > y
+                    for i, x in enumerate(q)
+                    for y in q[i + 1 :]
+                    if x is not None and y is not None
+                ):
+                    raise ValueError("Unordered quantiles")
+            elif q is not None and (
                 not numbers(q, 4 if legacy else 3)
                 or not 0 < q[0] <= q[1] <= q[2]
                 or (legacy and not 0 <= q[3] <= 1)

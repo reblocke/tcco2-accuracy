@@ -5,11 +5,14 @@ import zipfile
 from pathlib import Path
 from urllib.parse import urlsplit
 
+import numpy as np
 import pytest
 from playwright.sync_api import expect
 
 from scripts.stage_web_python import stage_web_python
 from scripts.visual_qa import _serve_web
+from tcco2_accuracy.core.conditional_reporting import display_range
+from tcco2_accuracy.pages_prediction import GROUPS, conditional
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -49,16 +52,26 @@ def test_all_settings_against_offline(page, web_server):
         (ROOT / "tests/fixtures/future_setting_synthetic_reference.json").read_text()
     )
     for r in cases:
+        with np.load(ROOT / "models/pages" / (GROUPS[r["target_stratum"]] + ".npz")) as kernel:
+            reference = conditional(
+                kernel,
+                r["target_stratum"],
+                (ROOT / "tests/fixtures/synthetic_paco2_prior.csv").read_text(),
+                float(r["tcco2"]),
+                45,
+            )
         page.select_option("#subgroup", r["target_stratum"])
         page.fill("#tcco2", r["tcco2"])
         page.click("#calculate")
         expect(page.locator("#estimate")).to_have_text(
-            f"{float(r['median']):.1f} mmHg", timeout=90000
+            f"{float(r['median']):g} mmHg", timeout=90000
         )
         expect(page.locator("#bounds")).to_have_text(
-            f"{float(r['lower']):.1f} to {float(r['upper']):.1f} mmHg"
+            f"{float(r['lower']):g} to {float(r['upper']):g} mmHg"
         )
-        expect(page.locator("#probability")).to_have_text(f"{float(r['probability_ge']):.4f}")
+        expect(page.locator("#probability")).to_have_text(
+            display_range(reference["report"]["probabilities"][0], percent=True)
+        )
         interpretation = page.locator("#upload-interpretation")
         expect(interpretation).to_contain_text(
             "the population represented by the uploaded PaCO₂ distribution"
@@ -133,8 +146,8 @@ def test_local_spreadsheet_equality_and_no_prior_fetch(page, web_server, tmp_pat
     )
     page.locator("#prior-file").set_input_files(sheet)
     page.click("#calculate")
-    expect(page.locator("#probability")).to_have_text("1.0000", timeout=90000)
-    expect(page.locator("#plot .tail-value")).to_have_text(["100.00%", "0.00%"])
+    expect(page.locator("#probability")).to_have_text("100%", timeout=90000)
+    expect(page.locator("#plot .tail-value")).to_have_text(["100%", "0%"])
     expect(page.locator("#plot .posterior-bar")).to_have_count(1)
     assert page.locator("#plot .likelihood-line").get_attribute("d").count("L") >= 20
     page.locator("#plot").get_by_role("button", name="Highlight ≥52 mmHg").click()
@@ -145,7 +158,7 @@ def test_local_spreadsheet_equality_and_no_prior_fetch(page, web_server, tmp_pat
     page.fill("#threshold", "45.01")
     expect(page.locator("#results")).to_be_hidden()
     page.click("#calculate")
-    expect(page.locator("#probability")).to_have_text("0.0000")
+    expect(page.locator("#probability")).to_have_text("0%")
     # Both uploaded pressures fall between adjacent fitted likelihood grid points.
     narrow = tmp_path / "narrow.csv"
     pd.DataFrame(
@@ -159,7 +172,7 @@ def test_local_spreadsheet_equality_and_no_prior_fetch(page, web_server, tmp_pat
     page.locator("#prior-file").set_input_files(narrow)
     page.fill("#tcco2", "47")
     page.click("#calculate")
-    expect(page.locator("#bounds")).to_have_text("44.1 to 44.2 mmHg")
+    expect(page.locator("#bounds")).to_have_text("44 to 44 mmHg")
     path = page.locator("#plot .likelihood-line")
     expect(path).to_be_visible()
     axis = page.locator("#plot .axis-line").first
@@ -185,9 +198,9 @@ def test_conditional_lookup_first_and_no_rounding(page, web_server, tmp_path):
         page.select_option("#lookup-setting", setting)
         page.fill("#lookup-tc", "45")
         row = data["groups"][setting]["rows"][25]
-        if row["interval"]:
+        if all(row["interval"][j] is not None for j in (0, 2)):
             expect(page.locator("#lookup-bounds")).to_have_text(
-                f"{row['interval'][0]:g} to {row['interval'][2]:g} mmHg"
+                f"{display_range(row['report']['quantiles'][0])} to {display_range(row['report']['quantiles'][2])} mmHg"
             )
         else:
             expect(page.locator("#lookup-held")).to_be_visible()
@@ -229,11 +242,15 @@ def test_staged_demo_all_readings_and_offline_references(page, web_server):
     for target, g in payload["groups"].items():
         for row, (bounds, metrics, tails, parts) in zip(g["rows"], display[target], strict=True):
             q = row["interval"]
-            assert bounds == (f"{q[0]:g} to {q[2]:g} mmHg" if q else None)
-            if q:
-                assert f"Median {q[1]:g} mmHg" in metrics
+            lo, median, hi = [display_range(v) for v in row["report"]["quantiles"]]
+            assert bounds == (
+                f"{lo} to {hi} mmHg" if q[0] is not None and q[2] is not None else None
+            )
+            if bounds and q[1] is not None:
+                assert f"Median {median} mmHg" in metrics
             assert tails == [
-                f"{100 * p:.2f}%" if p is not None else "Unresolved" for p in row["tails"]
+                display_range(b, percent=True) if b else "Unresolved"
+                for b in row["report"]["probabilities"]
             ]
             assert [float(p.split()[0]) for p in parts] == [
                 round(x, 2) for x in row["variance"] or []
@@ -253,13 +270,13 @@ def test_distribution_inspection_and_summary_compatibility(page, web_server, tmp
     assert chart.locator(".density-line").get_attribute("d") != curve
     page.select_option("#lookup-setting", "all")
     page.click("#lookup-demo")
-    expect(chart.locator(".tail-value")).to_have_text(["71.61%", "13.43%"])
-    expect(page.locator("#lookup-bounds")).to_have_text("38.75 to 56.25 mmHg")
+    expect(chart.locator(".tail-value")).to_have_text(["72%", "13%"])
+    expect(page.locator("#lookup-bounds")).to_have_text("39 to 56 mmHg")
     expect(page.locator("#lookup-values small")).to_have_text("95% Prediction Interval for PaCO₂")
     interpretation = page.locator("#lookup-interpretation")
     expect(interpretation.locator("p").first).to_have_text(
         "In this example, given an observed TcCO₂ of 47 mmHg, the 95% prediction interval "
-        "for a PaCO₂ measured at the same time is 38.75 to 56.25 mmHg."
+        "for a PaCO₂ measured at the same time is 39 to 56 mmHg."
     )
     original = interpretation.inner_text()
     expect(chart.locator(".range-label")).to_have_text("95% Prediction Interval")
@@ -282,7 +299,7 @@ def test_distribution_inspection_and_summary_compatibility(page, web_server, tmp
         }""")
         assert max(map(abs, band_edges[:2])) < 0.01
         assert band_edges[2]
-        expect(chart.locator(".endpoint-label")).to_have_text(["38.75", "56.25"])
+        expect(chart.locator(".endpoint-label")).to_have_text(["39", "56"])
         return band.bounding_box()
 
     initial_band = check_band()
@@ -293,14 +310,14 @@ def test_distribution_inspection_and_summary_compatibility(page, web_server, tmp
     assert chart.locator(".tail-area").get_attribute("d") != area
     assert band.bounding_box() == initial_band
     assert interpretation.inner_text() == original
-    expect(chart).to_contain_text("86.57% below 52")
+    expect(chart).to_contain_text("87% below 52")
     assert chart.locator(".posterior-line").get_attribute("d").count("L") > 60
     assert chart.locator(".likelihood-line").get_attribute("d").count("L") > 35
     expect(chart.locator(".tail-area")).to_be_visible()
     chart.get_by_role("button", name="Full range").click()
     check_band()
     assert chart.locator(".posterior-line").get_attribute("d").count("L") == 280
-    expect(chart.locator(".tail-value")).to_have_text(["71.61%", "13.43%"])
+    expect(chart.locator(".tail-value")).to_have_text(["72%", "13%"])
     expect(chart.locator(".median-marker")).to_have_count(1)
     chart.locator("svg").focus()
     page.keyboard.press("ArrowRight")
@@ -323,7 +340,7 @@ def test_distribution_inspection_and_summary_compatibility(page, web_server, tmp
         g["rows"] = [
             dict(
                 interval=[*r["interval"], r["tails"][0]]
-                if r["interval"] and r["tails"][0] is not None
+                if None not in r["interval"] and r["tails"][0] is not None
                 else None,
                 variance=r["variance"],
             )
@@ -376,3 +393,30 @@ def test_distribution_inspection_and_summary_compatibility(page, web_server, tmp
     expect(page.locator("#lookup-held")).to_be_visible()
     expect(interpretation).to_be_empty()
     expect(band).to_have_count(0)
+
+
+def test_amended_independent_holds_and_rounding(page, web_server, tmp_path):
+    doc = json.loads((ROOT / "models/pages/synthetic-lookup.json").read_text())
+    rows = doc["groups"]["all"]["rows"]
+    rows[27]["interval"][1] = None
+    rows[27]["report"]["quantiles"][1] = None
+    rows[28]["interval"][0] = None
+    rows[28]["report"]["quantiles"][0] = None
+    rows[28]["tails"][1] = None
+    rows[28]["report"]["probabilities"][1] = None
+    path = tmp_path / "independent.json"
+    path.write_text(json.dumps(doc))
+    page.goto(web_server)
+    page.locator("#lookup-file").set_input_files(path)
+    expect(page.locator("#lookup-bounds")).to_have_text("39 to 56 mmHg")
+    expect(page.locator("#lookup-estimates")).to_contain_text("Median unresolved")
+    expect(page.locator("#lookup-chart .median-marker")).to_have_count(0)
+    expect(page.locator("#lookup-chart .prediction-band")).to_have_count(1)
+    page.fill("#lookup-tc", "48")
+    expect(page.locator("#lookup-held")).to_contain_text("Median")
+    expect(page.locator("#lookup-interpretation")).to_be_empty()
+    expect(page.locator("#lookup-chart .prediction-band")).to_have_count(0)
+    expect(page.locator("#lookup-chart .median-marker")).to_have_count(1)
+    expect(page.locator("#lookup-chart .marker-label")).to_contain_text("Median")
+    expect(page.locator("#lookup-chart .tail-value").nth(1)).to_have_text("Unresolved")
+    assert page.locator("#lookup-chart .tail-value").nth(0).inner_text() != "Unresolved"

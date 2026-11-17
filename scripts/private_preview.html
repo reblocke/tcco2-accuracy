@@ -35,6 +35,12 @@
   </details>
   <p id="chart-status" role="status"></p>
   <section id="private-result" aria-label="Paired arterial prediction" hidden>
+    <div id="private-grid" hidden>
+      <label for="private-setting">Setting</label>
+      <select id="private-setting"><option value="all">All eligible settings</option><option value="icu">ICU proxy</option><option value="ed_inp">ED / inpatient</option><option value="pft">Ambulatory</option></select>
+      <label for="private-reading">Observed TcCO₂ (mmHg)</label>
+      <input id="private-reading" type="number" min="20" max="100" step="1" value="47">
+    </div>
     <div id="private-summary" aria-live="polite">
       <p id="private-context" class="note"></p>
       <small>95% Prediction Interval for PaCO₂</small>
@@ -53,14 +59,16 @@
 
 const byId = (id) => document.getElementById(id);
 const settingNames = {
-  all: "All eligible settings", icu: "Intensive care",
-  ed_inp: "Emergency department / inpatient", pft: "Ambulatory / pulmonary function testing",
+  all: "All eligible settings", icu: "ICU billing proxy",
+  ed_inp: "Emergency department / inpatient", pft: "Ambulatory",
 };
 const fmt = new Intl.NumberFormat("en-US", {maximumSignificantDigits: 12}).format;
-let revision = 0;
+let revision = 0, grid = null;
 
 function closeChart() {
   revision++;
+  grid = null;
+  byId("private-grid").hidden = true;
   byId("private-result").hidden = true;
   showDistribution(byId("private-chart"), null);
   showInterpretation(byId("private-interpretation"), null);
@@ -77,6 +85,54 @@ byId("close-chart").addEventListener("click", () => {
   byId("chart-file").focus();
 });
 
+function renderRow(data) {
+    byId("private-summary").hidden = false;
+    showInterpretation(byId("private-interpretation"), null);
+    const q = data.interval;
+    const endpoint = (v, index) => data.report ? reportLabel(data.report.quantiles[index ?? q.indexOf(v)]) : fmt(v);
+    const bounds = hasInterval(q) ? endpoint(q[0],0) + " to " + endpoint(q[2],2) + " mmHg" : "Unresolved";
+    byId("private-bounds").textContent = bounds;
+    byId("private-context").textContent = (data.source === "trinetx" ? "TriNetX" : "Synthetic example") +
+      " · " + settingNames[data.target];
+    if (data.index_policy === "equal_patient_weight_split_across_eligible_draws_on_first_testing_day") {
+      byId("private-context").textContent += ". Each patient contributes equal weight, split among their recorded arterial results on their first testing day.";
+    }
+    byId("private-median").textContent = data.report ? (q?.[1] != null ? "Median " + endpoint(q[1],1) + " mmHg" : "Median unresolved") + (hasInterval(q) ? " · Width " + reportedWidth(data.report) + " mmHg" : "") : q
+      ? "Median " + fmt(q[1]) + " mmHg · Width " + fmt(q[2] - q[0]) + " mmHg"
+      : "The fit does not resolve the interval at this reading.";
+    byId("private-result").hidden = false;
+    showDistribution(byId("private-chart"), {
+      kind: "posterior", title: "PaCO₂ given TcCO₂ " + data.tcco2 + " mmHg",
+      x: data.support, prior: data.prior, mass: data.mass, q, report: data.report, endpointLabel: endpoint, tails: data.tails,
+      tc: data.tcco2, display: data.display, formatEndpoint: fmt,
+      curve: { x: data.support.map(v => v - data.tcco2), density: data.likelihood },
+    });
+    if (hasInterval(q)) showInterpretation(byId("private-interpretation"), {
+      source: data.source, setting: data.target,
+      settingText: data.version.endsWith("_v2") && data.target==="pft" ? "in ambulatory encounters" : undefined,
+      reading: fmt(data.tcco2), bounds,
+    });
+}
+
+function renderGrid() {
+  if (!grid) return;
+  const tc = byId("private-reading").valueAsNumber;
+  const target = byId("private-setting").value;
+  const group = grid.groups[target];
+  byId("private-result").hidden = false;
+  const valid = Number.isInteger(tc) && tc >= 20 && tc <= 100;
+  byId("private-summary").hidden = !valid;
+  if (!valid) {
+    showDistribution(byId("private-chart"), null);
+    showInterpretation(byId("private-interpretation"), null);
+    byId("chart-status").textContent = "Enter a whole-number reading from 20 to 100 mmHg.";
+    return;
+  }
+  byId("chart-status").textContent = "";
+  renderRow({...grid, ...group, ...group.rows[tc-20], target, tcco2: tc});
+}
+byId("private-reading").addEventListener("input",renderGrid);
+byId("private-setting").addEventListener("change",renderGrid);
 byId("chart-file").addEventListener("change", async (event) => {
   closeChart();
   const request = revision;
@@ -94,32 +150,18 @@ byId("chart-file").addEventListener("change", async (event) => {
     // This hash pins the complete Python-generated document, including the resolved
     // summaries and exact masses. JavaScript only formats and plots those values.
     const data = JSON.parse(new TextDecoder().decode(bytes));
-    if (data.version !== "conditional_lookup_private_chart_v1" ||
+    if (!["conditional_lookup_private_chart_v1","conditional_lookup_private_chart_v2"].includes(data.version) ||
         data.method !== "future_setting_joint_v1" || data.prior_uncertainty !== "fixed_empirical" ||
-        !Object.hasOwn(settingNames, data.target) || !["trinetx", "synthetic"].includes(data.source) ||
-        data.tcco2 !== 47) throw new Error();
+        !["trinetx", "synthetic"].includes(data.source) ||
+        (data.version.endsWith("_v1") && (!Object.hasOwn(settingNames,data.target) || data.tcco2!==47))) throw new Error();
 
-    const q = data.interval;
-    const bounds = q ? fmt(q[0]) + " to " + fmt(q[2]) + " mmHg" : "Unresolved";
-    byId("private-bounds").textContent = bounds;
-    byId("private-context").textContent = (data.source === "trinetx" ? "TriNetX" : "Synthetic example") +
-      " · " + settingNames[data.target];
-    if (data.index_policy === "equal_patient_weight_split_across_eligible_draws_on_first_testing_day") {
-      byId("private-context").textContent += ". Each patient contributes equal weight, split among their recorded arterial results on their first testing day.";
-    }
-    byId("private-median").textContent = q
-      ? "Median " + fmt(q[1]) + " mmHg · Width " + fmt(q[2] - q[0]) + " mmHg"
-      : "The fit does not resolve the interval at this reading.";
-    byId("private-result").hidden = false;
-    showDistribution(byId("private-chart"), {
-      kind: "posterior", title: "PaCO₂ given TcCO₂ " + data.tcco2 + " mmHg",
-      x: data.support, prior: data.prior, mass: data.mass, q, tails: data.tails,
-      tc: data.tcco2, display: data.display, formatEndpoint: fmt,
-      curve: { x: data.support.map(v => v - data.tcco2), density: data.likelihood },
-    });
-    if (q) showInterpretation(byId("private-interpretation"), {
-      source: data.source, setting: data.target, reading: fmt(data.tcco2), bounds,
-    });
+    if (data.version === "conditional_lookup_private_chart_v2") {
+      grid = data;
+      byId("private-grid").hidden = false;
+      byId("private-setting").value = "all";
+      byId("private-reading").value = "47";
+      renderGrid();
+    } else renderRow(data);
     byId("file-panel").open = false;
     byId("file-summary").textContent = "Change chart file";
     byId("chart-status").textContent = "";
