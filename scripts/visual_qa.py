@@ -116,6 +116,9 @@ def main() -> None:
                 )
                 start = time.perf_counter()
                 page.goto(url, wait_until="domcontentloaded")
+                assert page.locator("#lookup-tc").input_value() == ""
+                page.fill("#lookup-tc", "47")
+                page.locator("#lookup-chart .posterior-line").wait_for()
                 chart = page.locator("#lookup-chart")
                 page.locator("#lookup-bounds").get_by_text("35 to 53 mmHg").wait_for()
                 assert chart.locator(".tail-value").all_text_contents() == ["47%", "5%"]
@@ -126,6 +129,7 @@ def main() -> None:
                 gray = page.add_style_tag(content=".workspace {filter: grayscale(1)}")
                 view.screenshot(path=str(previews / f"{device}-opening-grayscale.png"))
                 gray.evaluate("style => style.remove()")
+                page.goto(url + "/research.html")
                 page.locator("#lookup-demo").click()
                 page.locator("#lookup-bounds").get_by_text("39 to 56 mmHg").wait_for()
                 assert chart.locator(".tail-value").all_text_contents() == ["72%", "13%"]

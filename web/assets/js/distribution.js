@@ -135,7 +135,7 @@ export function showDistribution(host, model) {
   const sameView =
     previous?.kind === kind && previous?.source === model.subtitle;
   let active = model.active ?? (sameView ? previous.active : 45);
-  const openingRange = conditional ? posteriorRange(x, mass) : null;
+  const openingRange = conditional ? (model.view ?? posteriorRange(x, mass)) : null;
   let full = !conditional && sameView && previous.full;
   let zoom = null;
   const canZoom = !summary && x.length > 1;
@@ -171,6 +171,7 @@ export function showDistribution(host, model) {
       "p",
       summary
         ? "Select a threshold to see the probability above and below it."
+        : model.view ? "Select a threshold to shade arterial values at or above it."
         : model.display && x.length === 1
           ? "The prior and posterior both put all probability on the single observed arterial value."
           : model.display
@@ -221,8 +222,8 @@ export function showDistribution(host, model) {
     const series = forward
       ? [["density", "Predictive density"]]
       : [
-          ["mass", "Posterior"],
-          ["prior", "Prior"],
+          ["mass", model.view ? "After the TcCO₂ reading (posterior)" : "Posterior"],
+          ["prior", model.view ? "Before the TcCO₂ reading (prior)" : "Prior"],
         ];
     for (const [cls, text] of series) html(legend, "span", text, cls);
   } else {
@@ -458,7 +459,7 @@ export function showDistribution(host, model) {
       text(
         left,
         bottom + 27,
-        model.display
+        model.view ? "Relative likelihood of the reading" : model.display
           ? "Relative likelihood at observed values"
           : "Relative likelihood",
         "start",
@@ -471,7 +472,7 @@ export function showDistribution(host, model) {
         text(left - 7, yy + 4, String(level), "end");
       }
       const sy = (v) => axis - v * (axis - panelTop);
-      if (model.display) {
+      if (model.display && !model.view) {
         const points = shown.map(
           (i) =>
             "M" + sx(x[i]).toFixed(2) + "," + sy(relative[i]).toFixed(2) + "v0",
@@ -563,13 +564,13 @@ export function showDistribution(host, model) {
       });
     }
     const info = [];
-    if (conditional) {
+    if (conditional && !model.view) {
       const coverage = (weights) => percent(shown.reduce((s, i) => s + weights[i], 0));
       info.push("The view from " + value(lo) + " to " + value(hi) +
         " mmHg contains " + coverage(mass) + " of the posterior and " +
         coverage(prior) + " of the prior.");
     }
-    if (model.display && full && !zoom && x.length > 1)
+    if (!model.view && model.display && full && !zoom && x.length > 1)
       info.push("Full range of observed PaCO₂ values.");
     if (zoom && q && !visibleInterval) {
       const mm = model.endpointLabel ?? model.formatEndpoint ?? value;
@@ -612,7 +613,7 @@ export function showDistribution(host, model) {
       if (!shown.length) return;
       selectedIndex = Math.min(shown.at(-1), Math.max(shown[0], i));
       const v = x[selectedIndex];
-      const likelihood = model.display
+      const likelihood = model.display && !model.view
         ? relative[selectedIndex]
         : likelihoodAt(v);
       cursor.style.display = "";
@@ -623,6 +624,7 @@ export function showDistribution(host, model) {
         " mmHg · " +
         (forward
           ? "Density " + value(density[selectedIndex]) + " per mmHg"
+          : model.view ? "Posterior " + value(posteriorDensity[selectedIndex]) + " · Prior " + value(priorDensity[selectedIndex]) + " per mmHg · Relative likelihood " + (likelihood == null ? "outside verified grid" : value(likelihood))
           : (model.display
               ? "Observed value · Posterior mass "
               : "Posterior ") +

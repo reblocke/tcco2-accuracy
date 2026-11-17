@@ -177,3 +177,5 @@ The Pages synthetic conditional lookup contains 81 integer readings per setting,
 ## Working manuscript exhibits
 
 The [manuscript tables](works-in-progress/cohort-and-prediction.md) give separate patient, encounter and draw denominators. Prediction intervals and paired medians are in mmHg. Both threshold probabilities include equality. Held denotes a numerical precision hold. The approved arterial distribution is a grouped raster figure. The supporting fixed empirical weights are private.
+
+The public calculator displays the approved summary lookup together with separate rounded fixed-grid drawing coordinates from `models/pages/prediction-plots.json`. The private source curves remain on the mini.

@@ -85,6 +85,7 @@ def stage_web_python(repo_root: Path, web_dir: Path | None = None) -> dict:
     staged_data: list[str] = []
 
     assets = DEFAULT_DATA_ASSETS.copy()
+    assets["prediction-plots.json"] = Path("models/pages/prediction-plots.json")
     contract = json.loads((repo_root / "docs/data_release_contract.json").read_text())
     release_hash = contract["approved_conditional_lookup_sha256"]
     if release_hash is not None:
@@ -123,6 +124,12 @@ def stage_web_python(repo_root: Path, web_dir: Path | None = None) -> dict:
         if hashlib.sha256(content).hexdigest() != expected:
             raise ValueError("Lookup differs from the whole-file release approval")
         verified_lookups[filename] = content
+    plot_bytes = (repo_root / assets["prediction-plots.json"]).read_bytes()
+    if hashlib.sha256(plot_bytes).hexdigest() != contract["approved_plot_sha256"]:
+        raise ValueError("Public plot checksum mismatch")
+    plot = json.loads(plot_bytes)
+    if plot["lookup_sha256"] != release_hash or plot["version"] != "trinetx_display_v1":
+        raise ValueError("Public plot and summary revisions differ")
     for asset_name, source_rel in assets.items():
         source = repo_root / source_rel
         if not source.exists():
@@ -169,7 +176,7 @@ def stage_web_python(repo_root: Path, web_dir: Path | None = None) -> dict:
             interval = f"{pair['lower']:+.1f} to {pair['upper']:+.1f}".replace("-", "−")
             cells.append(f'<td data-label="{heading}">{interval}</td>')
         rows.append(f'<tr><th scope="row">{label}</th>{"".join(cells)}</tr>')
-    page = (repo_root / "web/index.html").read_text()
+    page = (repo_root / "web/research.html").read_text()
     page = re.sub(
         r"<tbody>.*?</tbody>", "<tbody>\n" + "\n".join(rows) + "\n</tbody>", page, flags=re.S
     )
@@ -249,7 +256,11 @@ def stage_web_python(repo_root: Path, web_dir: Path | None = None) -> dict:
     )
     if count != 1:
         raise ValueError("Expected exactly one upload calculator entrypoint")
-    (web_dir / "index.html").write_text(page)
+    (web_dir / "research.html").write_text(page)
+    primary = (repo_root / "web/index.html").read_text()
+    hashes["prediction-plots.json"] = contract["approved_plot_sha256"]
+    primary = re.sub(r'(?<=id="lookup-hashes">).*?(?=</script>)', json.dumps(hashes), primary)
+    (web_dir / "index.html").write_text(primary)
     manifest_path = web_dir / "assets" / "py" / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
     (web_dir / ".nojekyll").write_text("")

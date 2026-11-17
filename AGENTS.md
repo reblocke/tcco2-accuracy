@@ -99,3 +99,5 @@ Use only the route needed for the current task.
 - `CITATION.cff` validates with CFF tooling after citation edits.
 - Static hygiene checks find no placeholder ORCID, stale "no DOI" wording, generic LLM appendix, tracked drafts, tracked third-party PDFs, `.Rhistory`, `data.Rdata`, local `.dta`, or tracked generated `web/assets/py` and `web/assets/data`.
 - The final report names changed files, verification commands, warnings, skips, and remaining risks.
+
+The public calculator displays the approved summary lookup together with separate rounded fixed-grid drawing coordinates from `models/pages/prediction-plots.json`. The private source curves remain on the mini.

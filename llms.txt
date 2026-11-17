@@ -85,3 +85,5 @@ Agent cautions:
 - Prefer E2E feature verification and retain isolated tests only for meaningful gaps in its assertions; follow the test-first rules in AGENTS.md. make e2e saves a result report and replayable traces under .pytest_tmp/e2e/.
 
 - [Offline future-setting model and commands](docs/FUTURE_SETTING.md): posterior predictive disagreement and fixed empirical-prior inverse inference.
+
+The public calculator displays the approved summary lookup together with separate rounded fixed-grid drawing coordinates from `models/pages/prediction-plots.json`. The private source curves remain on the mini.

@@ -170,6 +170,9 @@ def conditional_lookup_violation(
     """Check the reserved promotion path and recognize private lookup documents after a rename."""
 
     release_path = relative_path == contract["conditional_lookup_public_source"]
+    plot_path = relative_path == "models/pages/prediction-plots.json"
+    if plot_path and hashlib.sha256(content).hexdigest() != contract.get("approved_plot_sha256"):
+        return True
     if release_path and (
         "web/assets/data/conditional-lookup.json" not in contract["pages_data_allowlist"]
         or hashlib.sha256(content).hexdigest() != contract["approved_conditional_lookup_sha256"]
@@ -182,6 +185,10 @@ def conditional_lookup_violation(
         document = json.loads(content)
     except (UnicodeDecodeError, json.JSONDecodeError):
         return release_path
+    if isinstance(document, dict) and document.get("version") == "trinetx_display_v1":
+        return not plot_path
+    if plot_path:
+        return True
     if release_path:
         # Only a summary lookup can be promoted. The curve format carries the full prior.
         if (
