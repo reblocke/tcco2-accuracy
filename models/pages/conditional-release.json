@@ -1,0 +1,65 @@
+{
+  "lookup_sha256": "6de657bd14e5b0a2de471000b4abd692dc42eca9e601ac999c9114c67964bbaa",
+  "approval_date": "2026-11-17",
+  "authorization": "Investigator explicitly approved public summary lookup for all four settings.",
+  "index_policy": "equal_patient_weight_split_across_eligible_draws_on_first_testing_day",
+  "observation_window": "Original cohort, full available observation period",
+  "readings_mmhg": [
+    20,
+    100
+  ],
+  "readings_per_setting": 81,
+  "prior_uncertainty": "fixed_empirical",
+  "reporting_amendment": "docs/CONDITIONAL_REPORTING.md",
+  "verification": "All 324 rows rechecked against the private cached likelihood and audited numerical brackets before export.",
+  "fits": {
+    "all": {
+      "posterior": "2b129508b1e62f410969c642bc8d25fdcd6134e8efeb58fcfdba18c7f1b2ac1d",
+      "reference_posterior": "c63d40fb814d628d18ba6d6828ac53d4cd77a63cbc5cfc4370cdb7010dd7a80c",
+      "retained_per_chain": 16384000,
+      "chains": 4,
+      "seed": 88032,
+      "adapt_delta": 0.95,
+      "divergences": 0
+    },
+    "icu": {
+      "posterior": "a185f7d072bf732fba3c827372316fd134758bade51b05f0d59440f8ff2bf2aa",
+      "reference_posterior": "67a3859dc661f8b1b8fde96f920dd229326c42e5f3244756760f8843a165ac13",
+      "retained_per_chain": 8192000,
+      "chains": 4,
+      "seed": 88032,
+      "adapt_delta": 0.95,
+      "divergences": 0
+    },
+    "ed_inp": {
+      "posterior": "f497dd0569d41a82ff8fdbb722ed255fd323ca12a68ad7cbfa071b8f8238441d",
+      "reference_posterior": "ef363a22cbb3477418cf182d6827aa9acace05bdc46e024d7a7d930e2a228e59",
+      "retained_per_chain": 32768000,
+      "chains": 4,
+      "seed": 88032,
+      "adapt_delta": 0.95,
+      "divergences": 0
+    },
+    "pft": {
+      "posterior": "656a09d9a7f1fc996fd796326a70c4c4479d5e2f0c9edd4b66de4f89f659ab96",
+      "reference_posterior": "f3e98da54c71d69cbc2e77febbece2859a46a214c98320a5441b43f64e8cf0de",
+      "retained_per_chain": 65536000,
+      "chains": 4,
+      "seed": 88032,
+      "adapt_delta": 0.99,
+      "divergences": 0
+    }
+  },
+  "model_inputs": {
+    "models/future_setting/README.md": "0f741e05cd2b35cf359c92a340eec009e1b9940249eb5c6e4f8b3ecf5275604c",
+    "models/future_setting/acceptance.md": "82741117bc3a96164f8cfa50cbdd1abf10104ce725b1f74a596ca4172bd74c94",
+    "models/future_setting/model.stan": "017babe55f9f841513e5582f63c73b8497d724ba3b92c49ae5a41f4b4f497093",
+    "models/future_setting/source_ledger.csv": "13f4c9d12783c81d81b953074fda6389a85d26a90417dcadebb2bbdc451b6b36",
+    "models/future_setting/specification.json": "d5dbe0da7a946237e61675616ab2c1b19c605f01242006327dcc59ff33ca9c64",
+    "src/tcco2_accuracy/workflows/future_setting_data.py": "9d9922a42b53b76735aeb64c621a21df132077d0153a22685306e8a086753859",
+    "src/tcco2_accuracy/core/conway_meta.py": "dc0e58bfd175e9a12396f7baaec594b9feef0f1ef03953ff7cccfc4f8fc653a7",
+    "Data/conway_studies.csv": "892bba0aab5095c353258b8d945b9103d147f739bf05848a05c16ec3f2dd8d43",
+    "tests/fixtures/conway_table1.csv": "ae74e5ed99b774c8a32ea354ceecc9b2722e8e40c267f2f94fcc046bc54c75d4",
+    "tests/fixtures/synthetic_paco2_prior.csv": "08fcfa76380157cb8f613d19559dea29289d71d70cd5e661893b7a6248419e46"
+  }
+}

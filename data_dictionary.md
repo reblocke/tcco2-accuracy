@@ -15,7 +15,7 @@ The machine-readable companion is `data_dictionary.csv`.
 
 The Conway study table follows `docs/CONWAY_DATA_SCHEMA.md`. No restricted-derived PaCO2 prior is
 shipped or staged. Normalized weights can remain reconstructable when a denominator is known, so
-prior-weighted browser inference requires an explicit client-side upload.
+the default public calculator uses only approved precomputed prediction summaries. Advanced prior-weighted browser calculations use explicit client-side uploads.
 
 The RData/count exporter rejects missing or blank study identifiers and non-integer observed
 counts even when `--no-strict` or `--allow-missing-counts` is selected.
@@ -105,7 +105,7 @@ PaCO2 values and then aggregated. The production bin contract is
 
 ## Browser App Uploads
 
-Conditional inference uses a locally uploaded binned prior. The default agreement display uses public setting-specific predictions. The four NPZ kernels and comparison summary are documented in [the browser contract](docs/WEB_APP.md).
+The default conditional display uses the approved four-setting TriNetX summary lookup. Advanced conditional inference uses a locally uploaded binned prior. The separate agreement display uses public setting-specific predictions. The four NPZ kernels and comparison summary are documented in [the browser contract](docs/WEB_APP.md).
 
 ## Parameter Routing Fields
 
@@ -172,7 +172,7 @@ permission, and retention items remain `HUMAN REVIEW REQUIRED`.
 
 The public [TCCO2-008 source ledger](models/future_setting/source_ledger.csv) records original and fitted summary statistics, source membership and adjudication. Bias and limits use mmHg, variances use mmHg², and log variance uses the natural logarithm relative to 1 mmHg². The run manifest and quantity labels are described in the [offline workflow](docs/FUTURE_SETTING.md).
 
-The Pages synthetic conditional lookup contains 81 integer readings per setting, posterior endpoints, separate ≥45 and ≥52 probabilities, synthetic prior and posterior masses on a quarter-mmHg grid and a separate fitted likelihood curve, prior-only endpoints, and three conditional variance components in mmHg². The [lookup methods](docs/WEB_APP.md) define component order, precision holds and units. The corresponding TriNetX summary candidate and provenance receipt belong in the approved private workspace. The separate `private-chart.json` retains the target’s observed arterial values, empirical prior and posterior masses, interval and inclusive ≥45 and ≥52 probabilities for TcCO₂ 47 mmHg. This file is private even if the input contains only normalized weights.
+The Pages synthetic conditional lookup contains 81 integer readings per setting, posterior endpoints, separate ≥45 and ≥52 probabilities, synthetic prior and posterior masses on a quarter-mmHg grid and a separate fitted likelihood curve, prior-only endpoints, and three conditional variance components in mmHg². The [lookup methods](docs/WEB_APP.md) define component order, precision holds and units. The approved TriNetX summary lookup is `models/pages/conditional-lookup.json`, with public release metadata in `conditional-release.json`. It contains 81 rows per setting: three quantiles, two inclusive tail probabilities, their numerical brackets, prior-only interval endpoints, and original/extended posterior identities. Variance is null in this release. It contains no support arrays, weights, likelihood arrays or posterior curves. The release contract pins the complete file. The separate `private-chart.json` retains the target’s observed arterial values, empirical prior and posterior masses, interval and inclusive ≥45 and ≥52 probabilities for TcCO₂ 47 mmHg. This file is private even if the input contains only normalized weights.
 
 ## Working manuscript exhibits
 

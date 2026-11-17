@@ -60,8 +60,9 @@ Use the paper/docs to identify discrepancies in the Stata reference. If a discre
 - Do not edit generated `web/assets/py/` or `web/assets/data/` by hand; stage them from canonical sources.
 - Python remains the single numerical source of truth. JavaScript may manage UI state, uploads, worker calls, and plotting, but must not reimplement the statistical model.
 - Browser app changes must keep user-entered values client-side: no backend, telemetry, persistence, or PHI-bearing URLs unless explicitly approved.
-- The browser defaults to signed future-setting disagreement. Prior-weighted inference requires a user-supplied
-  client-side prior upload; do not stage or fetch a repository prior.
+- The browser defaults to the checksum-approved four-setting TriNetX summary lookup.
+  Exact empirical priors and full curves remain private on the mini. Stage only the approved
+  summary bytes; advanced prior uploads are processed client-side.
 - Keep `pyproject.toml` and `uv.lock` authoritative for dependencies.
 - Generated scratch outputs belong in `.pytest_tmp/` or `.tmp/` and should not be tracked.
 - The repository `artifacts/` destination accepts only the promotion contract in

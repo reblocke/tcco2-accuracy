@@ -117,11 +117,15 @@ def main() -> None:
                 start = time.perf_counter()
                 page.goto(url, wait_until="domcontentloaded")
                 chart = page.locator("#lookup-chart")
-                chart.locator(".density-line").wait_for()
+                page.locator("#lookup-bounds").get_by_text("35 to 53 mmHg").wait_for()
+                assert chart.locator(".tail-value").all_text_contents() == ["47%", "5%"]
                 assert page.locator("#lookup-tc").input_value() == "47"
                 initial = time.perf_counter() - start
                 view = page.locator(".predict .workspace")
                 view.screenshot(path=str(previews / f"{device}-opening.png"))
+                gray = page.add_style_tag(content=".workspace {filter: grayscale(1)}")
+                view.screenshot(path=str(previews / f"{device}-opening-grayscale.png"))
+                gray.evaluate("style => style.remove()")
                 page.locator("#lookup-demo").click()
                 page.locator("#lookup-bounds").get_by_text("39 to 56 mmHg").wait_for()
                 assert chart.locator(".tail-value").all_text_contents() == ["72%", "13%"]

@@ -315,7 +315,8 @@ def test_private_lookup_in_ancestor_requires_exact_release_path_and_hash(
         }
 
     assert violations() == {canonical, renamed}
-    contract["pages_data_allowlist"].append("web/assets/data/conditional-lookup.json")
+    if "web/assets/data/conditional-lookup.json" not in contract["pages_data_allowlist"]:
+        contract["pages_data_allowlist"].append("web/assets/data/conditional-lookup.json")
     contract["approved_conditional_lookup_sha256"] = "0" * 64
     assert violations() == {canonical, renamed}
     contract["approved_conditional_lookup_sha256"] = hashlib.sha256(content).hexdigest()

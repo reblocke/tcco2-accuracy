@@ -2,7 +2,7 @@
 
 Compare Conway's published limits, corrected legacy limits and the new future-setting predictive interval for overall, ICU, acute respiratory failure and lung-function studies.
 Method: future_setting_joint_v1. Public research candidates awaiting independent biostatistical review.
-Default input: observed TcCO2 in mmHg and optional measurement setting. The TriNetX lookup awaits an approved eligible cohort and release review.
+Default input: observed TcCO2 in mmHg and optional measurement setting. The approved summary lookup reports TriNetX-based predictions for All, ICU proxy, ED/inpatient and ambulatory populations across integer readings 20–100 mmHg. Exact prior and full curves remain on the mini. Release approval does not establish clinical validity.
 The synthetic example uses the four public fits and an invented fixed prior. Lookup rows report central 95% conditional PaCO2 intervals, both probabilities at or above 45 and 52 mmHg, and independently gated conditional variance components. Advanced local CSV/XLSX priors run in the Python worker.
 An offline private viewer can display a custodian-approved empirical prior and posterior at TcCO2 47 mmHg. Its distribution file stays in the approved private workspace. The Pages app uses no backend, telemetry or patient-value URLs. Legacy bootstrap and custom-study analysis are offline.
 Source and methods: https://github.com/reblocke/tcco2-accuracy

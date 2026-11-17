@@ -95,7 +95,7 @@ function render() {
   el("lookup-status").textContent = message;
   if (!message && !lookup) {
     el("lookup-status").textContent = released
-      ? "A reviewed TriNetX lookup is available."
+      ? "TriNetX predictions are available."
       : "The TriNetX lookup awaits an eligible index cohort and release review.";
   }
   const chart = el("lookup-chart");
@@ -182,7 +182,7 @@ function render() {
   }
   el("prior-comparison").textContent = comparison;
   el("prior-comparison").hidden = false;
-  budget(
+  if (lookup.version !== "conditional_lookup_v3") budget(
     "conditional-budget",
     "Sources of conditional PaCO₂ variance",
     variance,
@@ -217,11 +217,13 @@ function validate(doc, expectSource) {
     ![
       "conditional_lookup_v1",
       "conditional_lookup_v2",
+      "conditional_lookup_v3",
       "conditional_lookup_dense_v1",
       "conditional_lookup_dense_v2",
     ].includes(doc.version) ||
     (doc.version.startsWith("conditional_lookup_dense_") &&
       doc.source !== "synthetic") ||
+    (doc.version === "conditional_lookup_v3" && doc.source !== "trinetx") ||
     doc.method !== fits.main.method ||
     doc.prior_uncertainty !== "fixed_empirical" ||
     !["trinetx", "synthetic"].includes(doc.source) ||
@@ -230,8 +232,9 @@ function validate(doc, expectSource) {
   )
     fail();
   const legacy = doc.version === "conditional_lookup_v1";
-  const amended = doc.version === "conditional_lookup_dense_v2";
-  const dense = amended || doc.version === "conditional_lookup_dense_v1";
+  const summary = doc.version === "conditional_lookup_v3";
+  const amended = summary || doc.version === "conditional_lookup_dense_v2";
+  const dense = doc.version.startsWith("conditional_lookup_dense_");
   const chart = !legacy && doc.source === "synthetic";
   for (const [target, key] of Object.entries(groups)) {
     const g = doc.groups[target];
@@ -240,13 +243,15 @@ function validate(doc, expectSource) {
         "prior_interval",
         "rows",
         "posterior",
+        ...(summary ? ["reference_posterior"] : []),
         ...(chart ? ["support", "prior"] : []),
         ...(dense ? ["curve"] : []),
       ]) ||
       !nums(g.prior_interval, 2) ||
       g.prior_interval[0] <= 0 ||
       g.prior_interval[0] > g.prior_interval[1] ||
-      g.posterior !== fits[key].posterior ||
+      (summary ? g.reference_posterior : g.posterior) !== fits[key].posterior ||
+      !/^[a-f0-9]{64}$/.test(g.posterior) ||
       !Array.isArray(g.rows) ||
       g.rows.length !== 81
     )
@@ -320,7 +325,7 @@ function validate(doc, expectSource) {
             const b=pairs[i];
             if (v===null && b===null) return;
             if (!Number.isFinite(v) || !nums(b,2) || !(b[0]<=v && v<=b[1]) || b[1]-b[0]>max+1e-12) fail();
-            if (name==="probabilities" ? b[0]<0 || b[1]>1 : ![v,...b].every(k=>g.support.includes(k))) fail();
+            if (name==="probabilities" ? b[0]<0 || b[1]>1 : b[0]<=0 || (chart && ![v,...b].every(k=>g.support.includes(k)))) fail();
           });
         }
         if (q.some((v,i)=>v!=null && q.slice(i+1).some(y=>y!=null && y<v))) fail();
@@ -409,3 +414,4 @@ el("lookup-released").addEventListener("click", () => {
 el("lookup-setting").addEventListener("change", render);
 el("lookup-tc").addEventListener("input", render);
 render();
+if (hashes["conditional-lookup.json"]) load("trinetx");
