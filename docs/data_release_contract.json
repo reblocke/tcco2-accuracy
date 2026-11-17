@@ -1,5 +1,5 @@
 {
-  "contract_version": "1.3.0",
+  "contract_version": "1.4.0",
   "manuscript_wip": {
     "reviewed": {
       "works-in-progress/arterial-distribution.png": [
@@ -74,12 +74,13 @@
     "explicit path outside the repository"
   ],
   "conditional_lookup_public_source": "models/pages/conditional-lookup.json",
-  "conditional_lookup_public_versions": ["conditional_lookup_v1", "conditional_lookup_v2"],
-  "approved_conditional_lookup_sha256": null,
+  "conditional_lookup_public_versions": ["conditional_lookup_v1", "conditional_lookup_v2", "conditional_lookup_v3"],
+  "approved_conditional_lookup_sha256": "6de657bd14e5b0a2de471000b4abd692dc42eca9e601ac999c9114c67964bbaa",
   "synthetic_conditional_lookup_sha256": "ac6ea5b7d6b59954f0c937d7fadd1f423df9a490814daa02ee810185f40ffb06",
   "pages_data_allowlist": [
     "web/assets/data/summary.json",
     "web/assets/data/synthetic-lookup.json",
+    "web/assets/data/conditional-lookup.json",
     "web/assets/data/main.npz",
     "web/assets/data/icu.npz",
     "web/assets/data/arf.npz",

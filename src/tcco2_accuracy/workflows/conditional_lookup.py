@@ -149,14 +149,19 @@ def validate_lookup(doc):
             and all(type(x) in (int, float) and np.isfinite(x) for x in xs)
         )
 
-    amended = isinstance(doc, dict) and doc.get("version") == "conditional_lookup_dense_v2"
-    dense = amended or (
-        isinstance(doc, dict) and doc.get("version") == "conditional_lookup_dense_v1"
+    summary = isinstance(doc, dict) and doc.get("version") == "conditional_lookup_v3"
+    amended = summary or (
+        isinstance(doc, dict) and doc.get("version") == "conditional_lookup_dense_v2"
+    )
+    dense = isinstance(doc, dict) and doc.get("version") in (
+        "conditional_lookup_dense_v1",
+        "conditional_lookup_dense_v2",
     )
     if (
         not isinstance(doc, dict)
         or set(doc) != {"version", "method", "source", "prior_uncertainty", "groups"}
-        or (not dense and doc["version"] not in ("conditional_lookup_v1", VERSION))
+        or (not dense and not summary and doc["version"] not in ("conditional_lookup_v1", VERSION))
+        or (summary and doc["source"] != "trinetx")
         or (dense and doc["source"] != "synthetic")
         or doc["method"] != METHOD
         or doc["source"] not in ("synthetic", "trinetx")
@@ -170,6 +175,7 @@ def validate_lookup(doc):
         if (
             set(group)
             != {"prior_interval", "posterior", "rows"}
+            | ({"reference_posterior"} if summary else set())
             | ({"support", "prior"} if chart else set())
             | ({"curve"} if dense else set())
             or not isinstance(group["posterior"], str)
@@ -180,6 +186,11 @@ def validate_lookup(doc):
             or len(group["rows"]) != len(READINGS)
         ):
             raise ValueError("Invalid group summary or incomplete lookup grid")
+        if summary and (
+            not isinstance(group["reference_posterior"], str)
+            or not re.fullmatch("[a-f0-9]{64}", group["reference_posterior"])
+        ):
+            raise ValueError("Invalid reference posterior identity")
         if chart:
             a, w = group["support"], group["prior"]
             if (
@@ -243,7 +254,10 @@ def validate_lookup(doc):
                             raise ValueError("Invalid reporting bracket")
                         if key == "probabilities" and not 0 <= pair[0] <= pair[1] <= 1:
                             raise ValueError("Invalid probability bracket")
-                        if key == "quantiles" and (value not in a or any(v not in a for v in pair)):
+                        if key == "quantiles" and (
+                            pair[0] <= 0
+                            or (chart and (value not in a or any(v not in a for v in pair)))
+                        ):
                             raise ValueError("Unknown arterial support point")
                 if any(
                     x > y

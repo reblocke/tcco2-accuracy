@@ -229,3 +229,7 @@ Report both inclusive arterial thresholds. For the secondary forward calculation
 ## November 17, 2026 · Conditional PaCO₂ reporting
 
 The manuscript, synthetic demonstration and uploaded-prior calculator use the post hoc [conditional reporting amendment](CONDITIONAL_REPORTING.md). Reviewers can reproduce the earlier exact-support decisions from the preceding revision. The original agreement, variance and classification criteria continue to apply to their respective targets.
+
+## 2026-11-17 — Approved public TriNetX summary lookup
+
+The investigator explicitly authorized publication and deployment of summary predictions for all four settings. Pages defaults to the 324-row lookup derived from the verified saved private grid under the reporting amendment. The exact prior, patient records, full curves and raw numerical certificates remain on the mini. The output carries the actual extended posterior identities and separate original agreement-reference identities. Publication approval is distinct from independent biostatistical review and individual coverage validation. The exact approved bytes and Pages allowlist are recorded in `data_release_contract.json`, with provenance in `models/pages/conditional-release.json`.

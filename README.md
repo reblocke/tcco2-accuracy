@@ -133,7 +133,10 @@ browser setup step.
 
 Normalized restricted-derived weights are not automatically public-safe: they may reconstruct the
 exact source distribution even without a `count` column. The static app therefore stages no PaCO2
-prior. Its initial view shows the signed disagreement distribution and conditional lookup availability.
+prior. Its initial view uses the investigator-approved TriNetX summary lookup for All, ICU proxy,
+ED/inpatient and ambulatory populations at integer TcCO₂ readings from 20 to 100 mmHg.
+It reports the median, 95% PaCO₂ prediction interval and inclusive ≥45/≥52 probabilities.
+The exact prior and full curves remain on the mini. [Release record](models/pages/conditional-release.json).
 
 ## In-Memory Downstream Implementation
 

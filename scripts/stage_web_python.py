@@ -108,7 +108,10 @@ def stage_web_python(repo_root: Path, web_dir: Path | None = None) -> dict:
             raise ValueError("Pages requires an eligible summary lookup version for TriNetX")
         validate_lookup(doc)
         if doc["source"] != expected_source or any(
-            doc["groups"][target]["posterior"] != summary[group]["posterior"]
+            doc["groups"][target][
+                "reference_posterior" if doc["version"] == "conditional_lookup_v3" else "posterior"
+            ]
+            != summary[group]["posterior"]
             for target, group in GROUPS.items()
         ):
             raise ValueError("Lookup provenance or agreement posterior mismatch")

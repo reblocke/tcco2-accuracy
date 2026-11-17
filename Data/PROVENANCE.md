@@ -83,3 +83,7 @@ uv run python scripts/build_paco2_prior_bins.py \
   [`docs/DATA_GOVERNANCE.md`](../docs/DATA_GOVERNANCE.md).
 
 The [future-setting ledger](../models/future_setting/source_ledger.csv) derives from the checksummed Figshare v2 source objects and cited original reports. It records each selected analysis unit, clinical membership, source variance, overlap ruling and corrections. [Decision notes and primary-source links](../models/future_setting/README.md) describe the overlay and the unresolved overall fit.
+
+## Approved public prediction summaries — November 17, 2026
+
+The investigator explicitly approved publishing the four-setting summary lookup on GitHub Pages. `models/pages/conditional-release.json` records the export provenance and `docs/data_release_contract.json` pins the approved bytes. The underlying population is the original TriNetX cohort over its full observation period, with equal patient weight split across eligible draws on the first testing day independently within each setting. The export contains quantiles, inclusive threshold probabilities and numerical brackets, not the exact prior, records or full curves. Those remain on the mini. This authorization covers the summary file and destination; it does not change access terms for the underlying data.

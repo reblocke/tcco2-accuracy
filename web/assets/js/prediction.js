@@ -3,9 +3,9 @@ export const agreementIntervalTitle = arterialIntervalTitle + " − TcCO₂";
 
 const settings = {
   all: "across the eligible settings",
-  icu: "in intensive care",
+  icu: "in inpatient encounters with critical-care billing (the ICU proxy)",
   ed_inp: "in the emergency department or during an inpatient stay",
-  pft: "in ambulatory or pulmonary function testing settings",
+  pft: "in ambulatory encounters",
 };
 
 export function showInterpretation(host, result) {

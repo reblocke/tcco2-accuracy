@@ -60,6 +60,7 @@ def test_sparse_posterior_axis_includes_thresholds_and_uses_full_weights(page):
     stage_web_python(ROOT)
     with _serve_web() as url:
         page.goto(url)
+        expect(page.locator("#lookup-values")).to_be_visible()
         page.set_viewport_size({"width": 390, "height": 900})
         for center, limits in [(29, "25 to 55"), (81, "45 to 85")]:
             page.evaluate(

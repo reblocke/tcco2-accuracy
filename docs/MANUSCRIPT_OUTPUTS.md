@@ -78,3 +78,7 @@ Use the archived interval-precision run and its saved audit certificates. From i
 The largest saved fits had 16,384,000 retained draws per chain for All, 8,192,000 for ICU, 32,768,000 for ED/inpatient and 65,536,000 for ambulatory patients. The ambulatory sampler target was 0.99. All 48 disjoint-prefix bounding-cut checks passed. The largest endpoint bracket across settings was 0.3 mmHg. Each reported numerical bracket had one whole-unit display value.
 
 The reporting exporter checks each reading against the cached likelihood before producing manuscript exhibits, including when called without `--curves`. That option additionally writes the private chart and viewer.
+
+### Approved summary export
+
+On the mini, run `export_public_lookup.py RUN OUTPUT REPOSITORY` from `scripts/manuscript/` with the manuscript environment. It reruns the saved-grid reconciliation, checks the public model input fingerprints and explicitly selects summary fields. Only `conditional-lookup.json` and `conditional-release.json` are transferred for public promotion. Pin the lookup hash in the release contract before staging. The private chart, exact weights, caches and numerical certificates remain on the mini. No new sampling is required.

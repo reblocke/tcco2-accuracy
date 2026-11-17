@@ -1,6 +1,7 @@
 import hashlib
 import io
 import json
+import re
 import zipfile
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -38,6 +39,87 @@ def test_comparison_without_javascript(browser, web_server):
             label = f"{pair['lower']:+.1f} to {pair['upper']:+.1f}".replace("-", "−")
             expect(rows.nth(i).locator("td").nth(j)).to_have_text(label)
     ctx.close()
+
+
+@pytest.mark.parametrize("width", [1280, 390])
+def test_public_trinetx_full_grid_and_release_boundary(page, web_server, width):
+    """Release acceptance: real summaries, every reading, no private curves or input traffic."""
+    data = json.loads((ROOT / "models/pages/conditional-lookup.json").read_text())
+    assert data["version"] == "conditional_lookup_v3"
+    assert data["source"] == "trinetx"
+    traffic = []
+    page.on("request", lambda req: traffic.append((req.method, req.url)))
+    page.set_viewport_size({"width": width, "height": 900})
+    page.goto(web_server)
+    expect(page.locator("#lookup-bounds")).to_have_text("35 to 53 mmHg")
+    expect(page.locator("#lookup-chart .tail-value")).to_have_text(["47%", "5%"])
+    expect(page.locator("#lookup-interpretation")).to_contain_text("in TriNetX")
+    before = list(traffic)
+    display = page.evaluate("""() => {
+      const out = {};
+      const select = document.querySelector('#lookup-setting');
+      const tc = document.querySelector('#lookup-tc');
+      for (const option of select.options) {
+        select.value = option.value; select.dispatchEvent(new Event('change'));
+        out[option.value] = [];
+        for (let t = 20; t <= 100; t++) {
+          tc.value=t; tc.dispatchEvent(new Event('input'));
+          out[option.value].push({
+            bounds: document.querySelector('#lookup-bounds').textContent,
+            estimates: document.querySelector('#lookup-estimates').textContent,
+            tails: [...document.querySelectorAll('#lookup-chart .tail-value')].map(x=>x.textContent),
+            interpretation: document.querySelector('#lookup-interpretation').textContent,
+          });
+        }
+      }
+      return out;
+    }""")
+    for setting, g in data["groups"].items():
+        assert set(g) == {"prior_interval", "posterior", "reference_posterior", "rows"}
+        for t, row, seen in zip(range(20, 101), g["rows"], display[setting], strict=True):
+            assert set(row) == {"interval", "tails", "report", "variance"}
+            report = row["report"]
+            bounds = f"{display_range(report['quantiles'][0])} to {display_range(report['quantiles'][2])} mmHg"
+            assert seen["bounds"] == bounds
+            assert seen["estimates"].startswith(
+                f"Median {display_range(report['quantiles'][1])} mmHg"
+            )
+            assert seen["tails"] == [
+                display_range(p, percent=True) for p in report["probabilities"]
+            ]
+            assert bounds in seen["interpretation"] and f"{t} mmHg" in seen["interpretation"]
+    page.select_option("#lookup-setting", "all")
+    page.fill("#lookup-tc", "47")
+    interpretation = page.locator("#lookup-interpretation").inner_text()
+    page.get_by_role("button", name="Highlight ≥52 mmHg").click()
+    assert page.locator("#lookup-interpretation").inner_text() == interpretation
+    expect(
+        page.locator(
+            "#lookup-chart .posterior-line, #lookup-chart .prior-line, #lookup-chart .likelihood-line"
+        )
+    ).to_have_count(0)
+    expect(page.locator("#conditional-budget")).to_be_hidden()
+    assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+    assert traffic == before
+    assert all(method == "GET" for method, _ in traffic)
+    assert {url.split("/")[-1] for _, url in traffic if "/assets/data/" in url} == {
+        "conditional-lookup.json"
+    }
+    evidence = ROOT / ".pytest_tmp/e2e/trinetx-release"
+    evidence.mkdir(parents=True, exist_ok=True)
+    page.screenshot(path=str(evidence / f"public-{width}.png"), full_page=True)
+    (evidence / f"grid-{width}.json").write_text(json.dumps(display))
+    page.fill("#lookup-tc", "47.5")
+    expect(page.locator("#lookup-values")).to_be_hidden()
+    expect(page.locator("#lookup-interpretation")).to_be_empty()
+    page.route(
+        "**/assets/data/conditional-lookup.json",
+        lambda route: route.fulfill(body="{}", content_type="application/json"),
+    )
+    page.reload()
+    expect(page.locator("#lookup-status")).to_contain_text("could not be verified")
+    expect(page.locator("#lookup-values")).to_be_hidden()
+    expect(page.locator("#lookup-interpretation")).to_be_empty()
 
 
 def test_all_settings_against_offline(page, web_server):
@@ -179,7 +261,7 @@ def test_local_spreadsheet_equality_and_no_prior_fetch(page, web_server, tmp_pat
     geometry = "(node) => [node.getBBox().x, node.getBBox().width]"
     assert path.evaluate(geometry) == pytest.approx(axis.evaluate(geometry), abs=0.02)
     assets = {url.split("/")[-1] for _, url in traffic if "/assets/data/" in url}
-    assert assets == {"main.npz"}
+    assert assets == {"main.npz", "conditional-lookup.json"}
     assert all(method == "GET" for method, _ in traffic)
 
 
@@ -189,7 +271,7 @@ def test_conditional_lookup_first_and_no_rounding(page, web_server, tmp_path):
     page.on("request", lambda req: sent.append(req.url))
     page.goto(web_server)
     expect(page.locator("#lookup-setting")).to_have_value("all")
-    expect(page.locator("#lookup-status")).to_contain_text("TriNetX")
+    expect(page.locator("#lookup-interpretation")).to_contain_text("in TriNetX")
     data = json.loads((ROOT / "models/pages/synthetic-lookup.json").read_text())
     path = tmp_path / "synthetic.json"
     path.write_text(json.dumps(data))
@@ -261,6 +343,8 @@ def test_staged_demo_all_readings_and_offline_references(page, web_server):
 
 def test_distribution_inspection_and_summary_compatibility(page, web_server, tmp_path):
     page.goto(web_server)
+    expect(page.locator("#lookup-values")).to_be_visible()
+    page.click("#lookup-reset")
     chart = page.locator("#lookup-chart")
     expect(chart.get_by_role("heading")).to_have_text("95% Prediction Interval for PaCO₂ − TcCO₂")
     curve = chart.locator(".density-line").get_attribute("d")
@@ -363,10 +447,15 @@ def test_distribution_inspection_and_summary_compatibility(page, web_server, tmp
     def with_release(route):
         response = route.fetch()
         original_html = response.text()
-        marker = 'id="lookup-hashes">{'
-        html = original_html.replace(
-            marker,
-            marker + '"conditional-lookup.json":"' + hashlib.sha256(payload).hexdigest() + '",',
+        html = re.sub(
+            r'(<script type="application/json" id="lookup-hashes">).*?(</script>)',
+            lambda m: (
+                m[1]
+                + json.dumps({"conditional-lookup.json": hashlib.sha256(payload).hexdigest()})
+                + m[2]
+            ),
+            original_html,
+            flags=re.S,
         )
         route.fulfill(response=response, body=html)
 
@@ -376,11 +465,11 @@ def test_distribution_inspection_and_summary_compatibility(page, web_server, tmp
         lambda route: route.fulfill(body=payload, content_type="application/json"),
     )
     page.goto(web_server)
-    page.locator("#lookup-released").click()
+    expect(page.locator("#lookup-values")).to_be_visible()
     for group, setting in [
         ("all", "across the eligible settings"),
-        ("icu", "in intensive care"),
-        ("pft", "in ambulatory or pulmonary function testing settings"),
+        ("icu", "in inpatient encounters with critical-care billing (the ICU proxy)"),
+        ("pft", "in ambulatory encounters"),
         ("ed_inp", "in the emergency department or during an inpatient stay"),
     ]:
         page.select_option("#lookup-setting", group)
