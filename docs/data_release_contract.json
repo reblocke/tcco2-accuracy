@@ -36,7 +36,8 @@
         "0649e42033993eed189345de538267016eaf09d8ea644f09a068006059538d31",
         "25490c066dd8014c1678d6571729898adbe2e15d149cc2af726f43d452ff2d13",
         "5d77c4d4a5409e35b1599217519727ff3411e9ad329f155cb6f98e66fc430919",
-        "6498ae147a66ea3706ad2a000744cd79767a3678b7410218ae46bf65691cc7d4"
+        "6498ae147a66ea3706ad2a000744cd79767a3678b7410218ae46bf65691cc7d4",
+        "d8825e907af853ee859fdec8c163d5d58256635ff6eff165209c23a9ad434381"
       ],
       "works-in-progress/cohort-and-prediction.md": [
         "750367908e22df59a9b0b552b229f4f6d05a60c90a0c98495040d7e8da830c91",
@@ -51,6 +52,15 @@
       "works-in-progress/source-revisions.json": [
         "314d70c627ef8768406704b1a1efda4bcb72e89aa2e50ad8f97df998a88b03ae",
         "1146c1439891f82c8849ef4bfdc394c66a14b68d5743c8667d75c712e39be41e"
+      ],
+      "works-in-progress/classification-figure.png": [
+        "87fbc475e90ecd8ed481e6e9b55f77cfd05f4d50cc3dfc86015192a7cd7e92ce"
+      ],
+      "works-in-progress/classification-comparison.png": [
+        "5c1e95a2c2be6eba18f91c094de13cd77c8054e78ef1c043d70432b73cdae5ac"
+      ],
+      "works-in-progress/december-2025/2025-12-24-BWL-letter.docx": [
+        "49897ec66f30216191b9d3316c8e4469011a1e8658a849ca47308cec38ff3034"
       ]
     }
   },
