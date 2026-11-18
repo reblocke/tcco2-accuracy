@@ -1,8 +1,10 @@
 # Works in progress
 
-[Read the Word research letter](letter.docx) · [Open the methods and agreement supplement](supplement.docx)
+[Current Word letter with revisions](letter.docx) · [Current supplement](supplement.docx) · [December 30, 2025 Word draft](december-2025/2025-12-30-letter.docx)
 
 The research letter estimates paired arterial CO₂ given observed transcutaneous CO₂ in the population undergoing arterial blood gas testing. The December 30, 2025 letter is the legacy starting version. The Air and mini Word originals matched byte for byte at import and retain their comments. The working letter uses the December Word document as its layout and redline baseline. The two original figure positions contain the updated distribution and prediction exhibits. Supplementary Table 1 reports modeled classification and ABG referral. [Source inventory](source-revisions.json)
+
+The December comparison copy preserves the original wording and both figures as they appeared under the earlier model. Its citations appear as text, its figures are raster images, and author comments remain in the private original. The older classification figure shows how TcCO₂ would classify patients at each **arterial** CO₂ value. The current prediction figure starts with an **observed transcutaneous** CO₂ value. [December classification figure](december-2025/classification.png) · [December arterial distribution](december-2025/distribution.png)
 
 | Review material | Question |
 | --- | --- |
