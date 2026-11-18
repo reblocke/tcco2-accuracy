@@ -44,10 +44,9 @@ def metrics(pos, neg):
     }
 
 
-def run(out, original, manifest):
-    private_destination(out)
+def classification_draws(out, original, manifest):
+    """Yield the checked, evenly spaced posterior draws used for secondary analyses."""
     fits, _, all_receipt = model_receipts(original, manifest)
-    summaries = {}
     for group, model in [("all", "main"), ("icu", "icu"), ("ed_inp", "arf"), ("pft", "lft")]:
         path = (
             next(original.glob("precision-64000/public-model/*/main/*/posterior.npz"))
@@ -58,9 +57,17 @@ def run(out, original, manifest):
             path,
             all_receipt["posterior_sha256"] if model == "main" else fits[model]["posterior_sha256"],
         )
-        theta = np.load(path)["theta"]
-        # Uniformly spaced posterior draws from all four chains for secondary estimates.
-        theta = theta[:, np.linspace(0, theta.shape[1] - 1, 2048, dtype=int)]
+        with np.load(path) as posterior:
+            theta = posterior["theta"]
+        if theta.shape[0] != 4 or theta.shape[1] < 2048:
+            raise ValueError("Classification requires 2,048 draws from each of four chains")
+        yield group, theta[:, np.linspace(0, theta.shape[1] - 1, 2048, dtype=int)]
+
+
+def run(out, original, manifest):
+    private_destination(out)
+    summaries = {}
+    for group, theta in classification_draws(out, original, manifest):
         a, w = read_prior(out, group)
         mask = a >= 45
         by_class = []

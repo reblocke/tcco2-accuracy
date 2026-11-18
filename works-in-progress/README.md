@@ -1,10 +1,10 @@
 # Works in progress
 
-[Current Word letter with revisions](letter.docx) · [Current supplement](supplement.docx) · [December 30, 2025 Word draft](december-2025/2025-12-30-letter.docx)
+[Current Word letter with revisions](letter.docx) · [Current supplement](supplement.docx) · [December 24 BWL draft](december-2025/2025-12-24-BWL-letter.docx) · [December 30 DAB draft](december-2025/2025-12-30-letter.docx)
 
 The research letter estimates paired arterial CO₂ given observed transcutaneous CO₂ in the population undergoing arterial blood gas testing. The December 30, 2025 letter is the legacy starting version. The Air and mini Word originals matched byte for byte at import and retain their comments. The working letter uses the December Word document as its layout and redline baseline. The two original figure positions contain the updated distribution and prediction exhibits. Supplementary Table 1 reports modeled classification and ABG referral. [Source inventory](source-revisions.json)
 
-The December comparison copy preserves the original wording and both figures as they appeared under the earlier model. Its citations appear as text, its figures are raster images, and author comments remain in the private original. The older classification figure shows how TcCO₂ would classify patients at each **arterial** CO₂ value. The current prediction figure starts with an **observed transcutaneous** CO₂ value. [December classification figure](december-2025/classification.png) · [December arterial distribution](december-2025/distribution.png)
+Both December review copies preserve their original wording and the same two figures. Citations appear as text and figures as raster images. The private BWL and DAB originals retain 15 and 20 comments, respectively. The older classification figure shows how TcCO₂ would classify patients at each **arterial** CO₂ value. The current prediction figure starts with an **observed transcutaneous** CO₂ value. [December classification figure](december-2025/classification.png) · [December arterial distribution](december-2025/distribution.png)
 
 | Review material | Question |
 | --- | --- |
@@ -12,6 +12,7 @@ The December comparison copy preserves the original wording and both figures as 
 | [Arterial distribution figure](arterial-distribution.png) | How do first-day arterial distributions differ across ABG-tested populations? |
 | [Paired prediction figure](paired-prediction.png) | How does arterial uncertainty change as observed TcCO₂ rises? ~~Gaps mark unresolved estimates.~~ **All 81 readings per setting qualified under the amended reporting criteria.** |
 | [Agreement comparison](agreement.md) | How do published limits, corrected legacy limits and the new target differ? |
+| [Four-setting classification figure](classification-figure.png) · [Side by side with December](classification-comparison.png) | At each arterial PaCO₂, how likely is TcCO₂ to reach 45 mmHg? The line shows the posterior median and the band shows the pointwise 95% credible interval. |
 | [Classification and ABG referral](classification.md) | How many patients would receive an ABG or a false classification under each strategy? |
 
 **In the Word review copies, bold text marks additions and strikethrough marks deletions. The revised figure and tables use the complete grid of saved results.**
