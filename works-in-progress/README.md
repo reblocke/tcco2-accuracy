@@ -2,7 +2,7 @@
 
 [Read the Word research letter](letter.docx) · [Open the methods and agreement supplement](supplement.docx)
 
-The research letter estimates paired arterial CO₂ given observed transcutaneous CO₂ in the population undergoing arterial blood gas testing. The December 30, 2025 letter is the legacy starting version. The Air and mini Word originals matched byte for byte at import and retain their comments. The working version replaces the legacy figures and results. [Source inventory](source-revisions.json)
+The research letter estimates paired arterial CO₂ given observed transcutaneous CO₂ in the population undergoing arterial blood gas testing. The December 30, 2025 letter is the legacy starting version. The Air and mini Word originals matched byte for byte at import and retain their comments. The working letter uses the December Word document as its layout and redline baseline. The two original figure positions contain the updated distribution and prediction exhibits. Supplementary Table 1 reports modeled classification and ABG referral. [Source inventory](source-revisions.json)
 
 | Review material | Question |
 | --- | --- |
