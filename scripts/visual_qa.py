@@ -121,7 +121,10 @@ def main() -> None:
                 page.locator("#lookup-chart .posterior-line").wait_for()
                 chart = page.locator("#lookup-chart")
                 page.locator("#lookup-bounds").get_by_text("35 to 53 mmHg").wait_for()
-                assert chart.locator(".tail-value").all_text_contents() == ["47%", "5%"]
+                assert page.locator("#lookup-values .tail-value").all_text_contents() == [
+                    "47%",
+                    "5%",
+                ]
                 assert page.locator("#lookup-tc").input_value() == "47"
                 initial = time.perf_counter() - start
                 view = page.locator(".predict .workspace")
@@ -130,6 +133,8 @@ def main() -> None:
                 view.screenshot(path=str(previews / f"{device}-opening-grayscale.png"))
                 gray.evaluate("style => style.remove()")
                 page.goto(url + "/research.html")
+                page.screenshot(path=str(OUTPUT_DIR / f"{device}-research.png"), full_page=True)
+                page.locator("#lookup-tools > summary").click()
                 page.locator("#lookup-demo").click()
                 page.locator("#lookup-bounds").get_by_text("39 to 56 mmHg").wait_for()
                 assert chart.locator(".tail-value").all_text_contents() == ["72%", "13%"]

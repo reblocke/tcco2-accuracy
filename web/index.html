@@ -6,13 +6,13 @@
     <title>Predicting paired arterial CO₂</title>
     <meta
       name="description"
-      content="Research-only browser app for estimating PaCO2 posterior distributions from TcCO2 values using the tcco2-accuracy Python model in Pyodide."
+      content="Research calculator for simultaneous arterial CO₂ from a transcutaneous reading, with TriNetX-based predictions across four settings."
     />
     <link rel="canonical" href="https://reblocke.github.io/tcco2-accuracy/" />
     <meta property="og:title" content="Predicting paired arterial CO₂" />
     <meta
       property="og:description"
-      content="Client-side research software for TcCO2-to-PaCO2 inference. No backend, telemetry, persistence, or patient-value URLs."
+      content="See the modeled 95% PaCO₂ prediction interval and probabilities at 45 and 52 mmHg for an observed TcCO₂ reading."
     />
     <meta property="og:url" content="https://reblocke.github.io/tcco2-accuracy/" />
     <meta property="og:type" content="website" />
@@ -22,7 +22,7 @@
     <script type="module" src="assets/js/paired.js"></script>
   </head>
 <body>
-<header><div class="wrap mast"><strong>Respiratory measurement</strong><a href="research.html#advanced">Research tools</a></div></header>
+<header><div class="wrap mast"><strong>Respiratory measurement</strong><a href="research.html#results-across-settings">Research results and methods</a></div></header>
 <main class="wrap">
 <section class="intro"><h1>From TcCO₂ to PaCO₂</h1><p>What arterial CO₂ values are plausible at the same time as this transcutaneous reading?</p></section>
 <section class="predict" aria-label="Paired arterial prediction"><div class="workspace">
@@ -30,8 +30,9 @@
 <input type="number" id="lookup-tc" min="20" max="100" step="any" inputmode="decimal" placeholder="20–100">
 <label for="lookup-setting">Setting (optional)</label>
 <select id="lookup-setting"><option value="all">All settings</option><option value="icu">ICU proxy</option><option value="ed_inp">ED / inpatient</option><option value="pft">Ambulatory</option></select>
+<p id="lookup-context" class="note">Based on patients who undergo arterial blood gas testing in TriNetX. Research use only.</p>
 <p id="lookup-status" role="status"></p><div id="neighbors"></div></div>
-<div class="panel primary-results"><div id="lookup-values" aria-live="polite" hidden><small>95% prediction interval for simultaneous PaCO₂</small><strong id="lookup-bounds"></strong><p id="lookup-estimates"></p></div>
+<div class="panel primary-results"><div id="lookup-values" aria-live="polite" hidden><small>95% prediction interval for simultaneous PaCO₂</small><strong id="lookup-bounds"></strong><p id="lookup-estimates"></p><div id="lookup-tails"></div></div>
 <div id="lookup-chart"></div><div id="lookup-interpretation" class="prediction-interpretation" hidden></div></div></div></section>
 <noscript>Enable JavaScript to look up a reading.</noscript>
 <details><summary>Population, assumptions and methods</summary><p>The reference population comprises patients undergoing arterial blood gas testing in TriNetX. Each patient contributes equal weight across eligible draws on their first testing day within the selected setting. All settings uses the first eligible day overall. ICU is identified by inpatient critical-care billing. Ambulatory describes the encounter type.</p>

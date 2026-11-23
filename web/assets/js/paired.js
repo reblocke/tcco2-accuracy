@@ -28,7 +28,7 @@ function render() {
   showInterpretation(el("lookup-interpretation"), null);
   el("lookup-status").textContent = failure;
   if (!input.value || !Number.isInteger(t) || t < 20 || t > 100 || !lookup) {
-    showDistribution(el("lookup-chart"), null);
+    showDistribution(el("lookup-chart"), null, el("lookup-tails"));
     if (!failure)
       el("lookup-status").textContent = !input.value
         ? "Enter a reading from 20 to 100 mmHg."
@@ -87,7 +87,7 @@ function render() {
       },
     });
   }
-  showDistribution(el("lookup-chart"), model);
+  showDistribution(el("lookup-chart"), model, el("lookup-tails"));
 }
 el("lookup-tc").addEventListener("input", render);
 el("lookup-setting").addEventListener("change", render);

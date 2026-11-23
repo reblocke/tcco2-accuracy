@@ -5,23 +5,28 @@
 [![App](https://img.shields.io/badge/app-GitHub%20Pages-green)](https://reblocke.github.io/tcco2-accuracy/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-Research software and a static browser app for studying agreement between
-transcutaneous CO2 (TcCO2) monitoring and arterial PaCO2 across clinical
-contexts. The browser app runs the Python numerical model in Pyodide and keeps
-all user-entered values client-side.
+Enter an observed transcutaneous CO₂ (TcCO₂) reading to estimate a simultaneous
+arterial CO₂ (PaCO₂) measurement. For whole-number readings from 20 to 100 mmHg,
+the calculator shows the median, 95% prediction interval, and probabilities at or
+above 45 and 52 mmHg. Choose All settings, ICU proxy, ED/inpatient, or ambulatory.
+The reference population comprises patients who undergo arterial blood gas testing in TriNetX.
 
-**Project status:** abstract/poster stage. Results have been presented at ATS
-2025 and CHEST 2025; the manuscript has not yet been submitted. This is research
-software and is not intended for clinical decision-making.
+- [Open the calculator](https://reblocke.github.io/tcco2-accuracy/)
+- [Compare results across readings and settings](https://reblocke.github.io/tcco2-accuracy/research.html#results-across-settings)
+- [Read the methods](docs/WEB_APP.md) and [review the public data release](models/pages/conditional-release.json)
 
-**Statistical revision:** the agreement-model logarithm and analytic LoA uncertainty
-equations have been corrected under method revision
-`agreement_natural_log_tau2_direct_v1`. Browser and agreement-parameter outputs are
-provisional pending independent biostatistical review. PaCO2-dependent manuscript and
-downstream outputs under `artifacts/` remain frozen at the legacy method revision; see
-[`artifacts/STATUS.md`](artifacts/STATUS.md).
+The calculator is for research use. Independent biostatistical review and validation
+of individual-patient coverage are pending. Preliminary results were presented at
+ATS and CHEST in 2025. The letter and supplement are available as working drafts.
 
-The [offline future-setting analysis](docs/FUTURE_SETTING.md) fits a joint Bayesian model to adjudicated public study summaries and produces candidate predictions and a synthetic-prior demonstration.
+The current predictions use the [joint Bayesian agreement model](docs/FUTURE_SETTING.md)
+and a fixed empirical arterial CO₂ distribution. The approved
+[lookup](models/pages/conditional-lookup.json) supplies the numbers. Separate
+[rounded drawing coordinates](models/pages/prediction-plots.json) supply the smooth
+chart. The exact empirical prior and full-resolution curves remain on the mini.
+
+The frozen outputs in [`artifacts/`](artifacts/STATUS.md) document the legacy
+analysis, including the correction to its mixed-log and analytic variance equations.
 
 ## Works in progress
 
@@ -31,7 +36,7 @@ The current Word letter, supplement, prediction figures and review checklist are
 
 | Goal | Source/access class | Current evidence and start |
 | --- | --- | --- |
-| Explore the browser | Public staged copies; client-side input | [Static app](https://reblocke.github.io/tcco2-accuracy/) or [local serve](#quick-start); corrected-provisional, research-only |
+| Explore the browser | Public staged copies; client-side input | [Static app](https://reblocke.github.io/tcco2-accuracy/) or [local serve](#quick-start); approved TriNetX summaries and grouped curves for research use |
 | Develop or test locally | Repository code and public fixtures | [Locked setup](#quick-start) and [checks](#quality-checks); engineering checks do not grant statistical review |
 | Understand or rebuild agreement artifacts | Public Conway table and five promoted outputs | [Artifact status](artifacts/STATUS.md) and [rebuild boundaries](#rebuild-outputs); corrected-provisional only |
 | Try the downstream API | In-memory synthetic inputs | [Synthetic example](#in-memory-downstream-implementation) and [contract](docs/SPEC.md); example is noncompliant |
@@ -72,9 +77,9 @@ network access for the locked dependencies and browser CDNs. Run the following
 from the repository root. It creates a fresh temporary clone and keeps its
 virtual environment, dependency cache, and staged public web assets there;
 the source checkout is not staged. The server remains active until `Ctrl-C`.
-Successful setup opens <http://127.0.0.1:8000> and, with the default
-overall setting, displays the TcCO₂ input, lookup availability and four-stratum agreement table. Dependency, port, or browser download failures stop that route;
-check their messages before retrying with another fresh temporary directory.
+Open <http://127.0.0.1:8000> to enter a TcCO₂ reading. The research page contains
+the agreement table and the local prior tool. Check the setup output for dependency,
+port, or browser download errors.
 
 ```bash
 (
@@ -93,11 +98,10 @@ make serve
 The `serve` target first stages the Python allowlist and public
 future-setting kernels into the clone's `web/assets/py/` and
 `web/assets/data/`, then starts an HTTP server. Open the local URL in a
-browser with Web Worker support. The worker downloads Pyodide plus NumPy,
-pandas and SciPy; XLSX parsing loads a spreadsheet reader on demand. A working
-browser route does not establish independent statistical review or clinical
-validity. The temporary clone remains after stopping the server so its
-generated files can be inspected and removed deliberately.
+browser with Web Worker support. The public calculator reads precomputed results
+and draws the chart in the browser. The advanced upload tool uses Pyodide, NumPy,
+pandas and SciPy. XLSX parsing loads a spreadsheet reader on demand. The temporary
+clone remains available for inspection after the server stops.
 
 Staged files are generated copies, not canonical sources. The `verify` target is a
 separate terminating integration gate that checks public history, stages assets,
@@ -272,19 +276,11 @@ are not release-approved.
 
 | Make target | Purpose and local effects |
 | --- | --- |
-<<<<<<< Updated upstream
-| `stage-web` | Replace staged Python and public data copies under `web/assets/` and write the staging manifest |
-| `test` | Run Python unit, workflow, staging, and browser-contract tests |
-| `e2e` | Run Playwright browser smoke tests against the staged app |
-| `visual-qa` | Write local review screenshots under `.pytest_tmp/visual-qa/` |
-| `verify` | Check public history, stage assets, check format/lint, and run unit and E2E tests |
-=======
-| `make stage-web` | Stage Python and data assets for the static app |
-| `make test` | Run scientific regression, workflow, staging, and browser-contract checks beyond browser E2E coverage |
-| `make e2e` | Run Playwright browser tests and save a result report plus replayable traces under `.pytest_tmp/e2e/` |
-| `make visual-qa` | Write local review screenshots under `.pytest_tmp/visual-qa/` |
-| `make verify` | Run public-history checks, staging, format check, lint, Python regression tests, and E2E tests |
->>>>>>> Stashed changes
+| `make stage-web` | Stage the allowlisted Python and public data assets and write the staging manifest |
+| `make test` | Run scientific regression, workflow, staging, and browser-contract tests |
+| `make e2e` | Run Playwright tests and save the report and replayable traces under `.pytest_tmp/e2e/` |
+| `make visual-qa` | Generate review screenshots under `.pytest_tmp/visual-qa/` and `.pytest_tmp/e2e/` |
+| `make verify` | Check public history and manuscript assets, stage the app, and run lint, formatting, scientific, and browser checks |
 
 Scientific validation targets are documented in `docs/VALIDATION.md`; current ticket states and
 their minimum completion evidence are maintained in `docs/PLAN.md`.

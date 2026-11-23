@@ -31,6 +31,12 @@ def test_comparison_without_javascript(browser, web_server):
     ctx = browser.new_context(java_script_enabled=False)
     page = ctx.new_page()
     page.goto(web_server + "research.html")
+    expect(page.locator("#results-across-settings img")).to_have_attribute(
+        "src", re.compile(r"/works-in-progress/paired-prediction\.png$")
+    )
+    expect(page.get_by_role("link", name="Cohort and example predictions")).to_be_visible()
+    expect(page.locator("#lookup-tools")).not_to_have_attribute("open", "")
+    page.locator("#comparison > summary").click()
     rows = page.locator("tbody tr")
     expect(rows).to_have_count(4)
     for i, group in enumerate(["main", "icu", "arf", "lft"]):
@@ -53,10 +59,12 @@ def test_public_trinetx_full_grid_and_release_boundary(page, web_server, width):
     page.goto(web_server)
     expect(page.locator("#lookup-tc")).to_have_value("")
     expect(page.locator("#lookup-values")).to_be_hidden()
+    expect(page.locator("#lookup-setting")).to_have_value("all")
+    expect(page.locator("#lookup-context")).to_contain_text("TriNetX")
     page.fill("#lookup-tc", "47")
     expect(page.locator("#lookup-chart .posterior-line")).to_be_visible()
     expect(page.locator("#lookup-bounds")).to_have_text("35 to 53 mmHg")
-    expect(page.locator("#lookup-chart .tail-value")).to_have_text(["47%", "5%"])
+    expect(page.locator("#lookup-values .tail-value")).to_have_text(["47%", "5%"])
     expect(page.locator("#lookup-interpretation")).to_contain_text("in TriNetX")
     before = list(traffic)
     display = page.evaluate("""() => {
@@ -71,21 +79,24 @@ def test_public_trinetx_full_grid_and_release_boundary(page, web_server, width):
           const chart = document.querySelector('#lookup-chart');
           const line = () => chart.querySelector('.posterior-line').getAttribute('d');
           const before = line();
-          const tailLabels = () => [...chart.querySelectorAll('.tail-value')].map(b=>b.textContent).join('|');
-          const labels = tailLabels();
-          chart.querySelector('[aria-label="Highlight ≥52 mmHg"]').click();
+          const results = document.querySelector('#lookup-values');
+          const labels = results.textContent;
+          const highlight = results.querySelector('[aria-label="Highlight ≥52 mmHg"]');
+          highlight.click();
+          if (highlight.getAttribute('aria-pressed') !== 'true' ||
+              chart.querySelector('.cut-label').textContent !== '≥52') throw Error('Wrong tail');
           if (line() !== before) throw Error('Threshold changed the distribution');
           const svg = chart.querySelector('svg');
           for (const key of ['Home','Enter','ArrowRight','ArrowRight','Enter']) {
             svg.dispatchEvent(new KeyboardEvent('keydown',{key}));
           }
-          if (line() === before || labels !== tailLabels()) throw Error('Zoom mismatch');
+          if (line() === before || labels !== results.textContent) throw Error('Zoom mismatch');
           svg.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}));
-          if (line() !== before || labels !== tailLabels()) throw Error('Reset mismatch');
+          if (line() !== before || labels !== results.textContent) throw Error('Reset mismatch');
           out[option.value].push({
             bounds: document.querySelector('#lookup-bounds').textContent,
             estimates: document.querySelector('#lookup-estimates').textContent,
-            tails: [...document.querySelectorAll('#lookup-chart .tail-value')].map(x=>x.textContent),
+            tails: [...document.querySelectorAll('#lookup-values .tail-value')].map(x=>x.textContent),
             interpretation: document.querySelector('#lookup-interpretation').textContent,
           });
         }
@@ -134,6 +145,20 @@ def test_public_trinetx_full_grid_and_release_boundary(page, web_server, width):
     expect(page.locator("#neighbors button")).to_have_text(["47 mmHg", "48 mmHg"])
     page.get_by_role("button", name="48 mmHg", exact=True).click()
     expect(page.locator("#lookup-tc")).to_have_value("48")
+
+    def corrupt(route):
+        route.fulfill(body="{}", content_type="application/json")
+
+    page.route("**/assets/data/prediction-plots.json", corrupt)
+    page.reload()
+    page.fill("#lookup-tc", "47")
+    expect(page.locator("#lookup-status")).to_contain_text("chart could not be verified")
+    expect(page.locator("#lookup-bounds")).to_have_text("35 to 53 mmHg")
+    expect(page.locator("#lookup-estimates")).to_have_text("Median 44 mmHg")
+    expect(page.locator("#lookup-values .tail-value")).to_have_text(["47%", "5%"])
+    expect(page.locator("#lookup-chart svg")).to_have_count(0)
+    expect(page.get_by_role("button", name="Highlight ≥52 mmHg")).to_be_disabled()
+    page.unroute("**/assets/data/prediction-plots.json", corrupt)
     page.route(
         "**/assets/data/conditional-lookup.json",
         lambda route: route.fulfill(body="{}", content_type="application/json"),
@@ -293,6 +318,7 @@ def test_conditional_lookup_first_and_no_rounding(page, web_server, tmp_path):
     sent = []
     page.on("request", lambda req: sent.append(req.url))
     page.goto(web_server + "research.html")
+    page.locator("#lookup-tools > summary").click()
     expect(page.locator("#lookup-setting")).to_have_value("all")
     expect(page.locator("#lookup-interpretation")).to_contain_text("in TriNetX")
     data = json.loads((ROOT / "models/pages/synthetic-lookup.json").read_text())
@@ -322,6 +348,7 @@ def test_conditional_lookup_first_and_no_rounding(page, web_server, tmp_path):
 
 def test_staged_demo_all_readings_and_offline_references(page, web_server):
     page.goto(web_server + "research.html")
+    page.locator("#lookup-tools > summary").click()
     page.locator("#lookup-demo").click()
     expect(page.locator("#lookup-interpretation")).to_contain_text("In this example")
     display = page.evaluate("""() => {
@@ -366,6 +393,7 @@ def test_staged_demo_all_readings_and_offline_references(page, web_server):
 
 def test_distribution_inspection_and_summary_compatibility(page, web_server, tmp_path):
     page.goto(web_server + "research.html")
+    page.locator("#lookup-tools > summary").click()
     expect(page.locator("#lookup-values")).to_be_visible()
     page.click("#lookup-reset")
     chart = page.locator("#lookup-chart")
@@ -488,6 +516,7 @@ def test_distribution_inspection_and_summary_compatibility(page, web_server, tmp
         lambda route: route.fulfill(body=payload, content_type="application/json"),
     )
     page.goto(web_server + "research.html")
+    page.locator("#lookup-tools > summary").click()
     expect(page.locator("#lookup-values")).to_be_visible()
     for group, setting in [
         ("all", "across the eligible settings"),
@@ -519,6 +548,7 @@ def test_amended_independent_holds_and_rounding(page, web_server, tmp_path):
     path = tmp_path / "independent.json"
     path.write_text(json.dumps(doc))
     page.goto(web_server + "research.html")
+    page.locator("#lookup-tools > summary").click()
     page.locator("#lookup-file").set_input_files(path)
     expect(page.locator("#lookup-bounds")).to_have_text("39 to 56 mmHg")
     expect(page.locator("#lookup-estimates")).to_contain_text("Median unresolved")
