@@ -99,11 +99,12 @@ export function hasInterval(q) {
   return q?.[0] != null && q?.[2] != null;
 }
 
-export function showDistribution(host, model) {
+export function showDistribution(host, model, tailHost) {
   const previous = views.get(host);
   previous?.observer.disconnect();
   views.delete(host);
   host.replaceChildren();
+  tailHost?.replaceChildren();
   if (!model) return;
   const q = hasInterval(model.q) ? model.q : null;
   const median = model.q?.[1];
@@ -153,9 +154,11 @@ export function showDistribution(host, model) {
   );
   const figure = html(host, "figure", undefined, "distribution");
   figure.classList.toggle("dense", Boolean(smooth));
-  const heading = html(figure, "div", undefined, "figure-head");
-  html(heading, "h3", model.title);
-  if (model.subtitle) html(heading, "span", model.subtitle, "chart-source");
+  if (!tailHost) {
+    const heading = html(figure, "div", undefined, "figure-head");
+    html(heading, "h3", model.title);
+    if (model.subtitle) html(heading, "span", model.subtitle, "chart-source");
+  }
   if (forward)
     html(
       figure,
@@ -183,10 +186,11 @@ export function showDistribution(host, model) {
               : "Select a threshold to highlight the arterial values at or above it.",
       "chart-explanation",
     );
-    const band = html(figure, "div", undefined, "tail-cards");
+    const band = html(tailHost ?? figure, "div", undefined, "tail-cards");
     for (const k of thresholds) {
       const b = html(band, "button", undefined, "tail-choice");
       b.type = "button";
+      b.disabled = Boolean(tailHost && summary);
       b.setAttribute("aria-label", "Highlight ≥" + k + " mmHg");
       html(b, "span", "PaCO₂ ≥" + k + " mmHg");
       const p = probs.get(k);
@@ -207,6 +211,11 @@ export function showDistribution(host, model) {
         paint();
       };
       cards.set(k, b);
+    }
+    if (tailHost && summary) {
+      // The numbers come from the verified lookup and remain available without the plot.
+      figure.remove();
+      return;
     }
     complement = html(figure, "p", "", "tail-note");
   }

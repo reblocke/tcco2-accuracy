@@ -744,3 +744,24 @@ details label[for="lookup-file"] {
 .distribution .axis-title {
   font-weight: 600;
 }
+
+.prediction-overview {
+  max-width: 780px;
+  margin: 0 0 1rem;
+}
+.prediction-overview img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.prediction-overview figcaption {
+  color: var(--muted);
+  margin-top: 0.5rem;
+}
+#lookup-tails .tail-choice:disabled {
+  opacity: 1;
+  cursor: default;
+}
+#lookup-context {
+  margin: 12px 0;
+}

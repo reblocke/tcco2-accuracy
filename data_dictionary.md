@@ -15,7 +15,7 @@ The machine-readable companion is `data_dictionary.csv`.
 
 The Conway study table follows `docs/CONWAY_DATA_SCHEMA.md`. No restricted-derived PaCO2 prior is
 shipped or staged. Normalized weights can remain reconstructable when a denominator is known, so
-the default public calculator uses only approved precomputed prediction summaries. Advanced prior-weighted browser calculations use explicit client-side uploads.
+the default public calculator reads the approved prediction summaries and separately approved drawing coordinates. Advanced prior-weighted browser calculations use explicit client-side uploads.
 
 The RData/count exporter rejects missing or blank study identifiers and non-integer observed
 counts even when `--no-strict` or `--allow-missing-counts` is selected.
@@ -176,6 +176,6 @@ The Pages synthetic conditional lookup contains 81 integer readings per setting,
 
 ## Working manuscript exhibits
 
-The [manuscript tables](works-in-progress/cohort-and-prediction.md) give separate patient, encounter and draw denominators. Prediction intervals and paired medians are in mmHg. Both threshold probabilities include equality. Held denotes a numerical precision hold. The approved arterial distribution is a grouped raster figure. The supporting fixed empirical weights are private.
+The [manuscript tables](works-in-progress/cohort-and-prediction.md) give separate patient, encounter and draw denominators. Prediction intervals and paired medians are in mmHg. Both threshold probabilities include equality. The versioned working tables retain historical precision holds alongside amended results. The current public lookup qualified at all 324 combinations. The approved arterial distribution is a grouped raster figure. The supporting fixed empirical weights are private.
 
 The public calculator displays the approved summary lookup together with separate rounded fixed-grid drawing coordinates from `models/pages/prediction-plots.json`. The private source curves remain on the mini.

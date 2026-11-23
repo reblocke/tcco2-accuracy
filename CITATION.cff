@@ -9,7 +9,7 @@ authors:
 repository-code: "https://github.com/reblocke/tcco2-accuracy"
 url: "https://reblocke.github.io/tcco2-accuracy/"
 license: "MIT"
-abstract: "Research software and a static browser app for evaluating TcCO2-to-PaCO2 agreement, simulation-based hypercapnia classification, and TcCO2-conditioned PaCO2 inference."
+abstract: "Research software for predicting simultaneous arterial CO₂ from transcutaneous readings. The public calculator reports approved aggregate TriNetX-based prediction intervals and threshold probabilities across four settings."
 keywords:
   - transcutaneous CO2
   - TcCO2

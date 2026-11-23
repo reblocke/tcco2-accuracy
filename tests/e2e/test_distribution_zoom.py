@@ -17,6 +17,7 @@ def test_distribution_zoom_keeps_inference_and_resets(page):
     stage_web_python(ROOT)
     with _serve_web() as url:
         page.goto(url + "/research.html")
+        page.locator("#lookup-tools > summary").click()
         page.locator("#lookup-demo").click()
         chart = page.locator("#lookup-chart")
         svg = chart.locator("svg")
@@ -60,6 +61,7 @@ def test_sparse_posterior_axis_includes_thresholds_and_uses_full_weights(page):
     stage_web_python(ROOT)
     with _serve_web() as url:
         page.goto(url + "/research.html")
+        page.locator("#lookup-tools > summary").click()
         expect(page.locator("#lookup-values")).to_be_visible()
         page.set_viewport_size({"width": 390, "height": 900})
         for center, limits in [(29, "25 to 55"), (81, "45 to 85")]:

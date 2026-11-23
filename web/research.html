@@ -3,16 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>CO₂ agreement and conditional inference</title>
+    <title>PaCO₂ research results and methods</title>
     <meta
       name="description"
-      content="Research-only browser app for estimating PaCO2 posterior distributions from TcCO2 values using the tcco2-accuracy Python model in Pyodide."
+      content="Compare paired PaCO₂ predictions across readings and settings and explore the research methods."
     />
     <link rel="canonical" href="https://reblocke.github.io/tcco2-accuracy/" />
-    <meta property="og:title" content="CO₂ agreement and conditional inference" />
+    <meta property="og:title" content="PaCO₂ research results and methods" />
     <meta
       property="og:description"
-      content="Client-side research software for TcCO2-to-PaCO2 inference. No backend, telemetry, persistence, or patient-value URLs."
+      content="Find the full-range prediction figure, example results, and local research tools."
     />
     <meta property="og:url" content="https://reblocke.github.io/tcco2-accuracy/" />
     <meta property="og:type" content="website" />
@@ -32,7 +32,7 @@
         "codeRepository": "https://github.com/reblocke/tcco2-accuracy",
         "license": "https://github.com/reblocke/tcco2-accuracy/blob/main/LICENSE",
         "isAccessibleForFree": true,
-        "description": "Research-only static browser app for estimating PaCO2 posterior distributions from observed TcCO2 values using a Python model in Pyodide.",
+        "description": "Research results and methods for predicting simultaneous arterial CO₂ from a transcutaneous reading.",
         "citation": [
           "https://doi.org/10.1016/j.chest.2025.07.3877",
           "https://doi.org/10.1164/ajrccm.2025.211.Abstracts.A2683",
@@ -50,10 +50,20 @@
 <body>
 <header><div class="wrap mast"><a href="./">Paired PaCO₂ calculator</a><a href="https://github.com/reblocke/tcco2-accuracy">Research repository ↗</a></div></header>
 <main class="wrap">
-<section class="intro"><h1 id="prediction">From TcCO₂ to PaCO₂</h1>
-<p>Enter a TcCO₂ reading to estimate a simultaneous PaCO₂ value and the probability it reaches 45 or 52 mmHg, using patients who undergo arterial blood gas testing in TriNetX as the reference population.</p>
-<small>Research use only · Independent biostatistical review pending</small></section>
-<section aria-labelledby="prediction" class="predict">
+<section class="intro"><h1>PaCO₂ research results and methods</h1>
+<p>Modeled predictions for patients who undergo arterial blood gas testing in TriNetX.</p></section>
+<section id="results-across-settings" aria-labelledby="prediction">
+<h2 id="prediction">Prediction across readings and settings</h2>
+<p><a href="https://github.com/reblocke/tcco2-accuracy/blob/main/works-in-progress/cohort-and-prediction.md">Cohort and example predictions</a></p>
+<figure class="prediction-overview">
+<a href="https://github.com/reblocke/tcco2-accuracy/blob/main/works-in-progress/paired-prediction.png"><img src="https://raw.githubusercontent.com/reblocke/tcco2-accuracy/195721620043b490c4e37eb6f5d116eaaa81c7f1/works-in-progress/paired-prediction.png" width="1435" height="1575" referrerpolicy="no-referrer" alt="Four rows compare All settings, ICU proxy, ED or inpatient, and ambulatory predictions. Each row shows the median and 95% prediction interval for PaCO₂ and the probabilities of reaching 45 and 52 mmHg across observed TcCO₂ from 20 to 100 mmHg."></a>
+<figcaption>Each row shows one reference population. The left panel gives the median and 95% prediction interval for simultaneous PaCO₂. The right panel shows the probability that PaCO₂ is at or above 45 or 52 mmHg.</figcaption>
+</figure>
+<p>The <a href="https://github.com/reblocke/tcco2-accuracy/blob/main/works-in-progress/classification-figure.png">classification figure</a> asks how often TcCO₂ would reach 45 mmHg at a given arterial PaCO₂. The <a href="https://github.com/reblocke/tcco2-accuracy/blob/main/works-in-progress/classification.md">classification table</a> summarizes modeled errors and ABG referrals.</p>
+<p class="note">Research use only. Independent biostatistical review and validation of individual-patient coverage are pending.</p>
+</section>
+<details id="lookup-tools"><summary>Synthetic example and local lookup files</summary>
+<section aria-label="Research lookups" class="predict">
   <div class="workspace">
     <div class="lookup-controls">
       <label for="lookup-tc">Observed TcCO₂ (mmHg)</label>
@@ -81,11 +91,11 @@
     </div>
   </div>
   <noscript><p>Enable JavaScript to look up a reading. The agreement table below is available here.</p></noscript>
-  <p class="note">Individual-patient coverage has yet to be validated.</p>
   <div id="conditional-budget" hidden></div>
   <details><summary>Open a local lookup</summary><label for="lookup-file">Offline lookup file (JSON)</label><input id="lookup-file" type="file" accept=".json,application/json"><small>Only this browser reads the file. A lookup contains precomputed results for integer readings from 20 to 100 mmHg.</small></details>
-</section>
-<section aria-labelledby="comparison"><div class="section-title"><h2 id="comparison">Agreement by setting</h2><span>95% intervals · mmHg</span></div>
+</section></details>
+<details id="comparison"><summary>Compare current and historical agreement intervals</summary>
+<section aria-labelledby="agreement-title"><div class="section-title"><h2 id="agreement-title">Agreement by source stratum</h2><span>95% intervals · mmHg</span></div>
 <p>Differences are arterial minus transcutaneous CO₂. Positive values mean the arterial reading is higher.</p>
 <table><caption class="sr">Agreement intervals by source setting, in mmHg</caption>
 <thead><tr><th rowspan="2" scope="col">Source setting</th><th colspan="2" scope="colgroup">Conway, Table 1</th><th colspan="2" scope="colgroup">Corrected legacy</th><th scope="col">New Bayesian fit</th></tr>
@@ -97,8 +107,8 @@
 </tbody></table>
 <p class="note">Each outer envelope spans the outer confidence bounds on the two agreement limits. The predictive interval covers the central 95% of modeled differences for one new pair.</p>
 <div id="forward-budget"></div>
-<details><summary>Source populations and methods</summary><p>Conway reported 73 studies overall. The corrected legacy calculation uses 76 rows, including the ICU-only Bolliger cohort. The new overall fit uses 75 adjudicated units from 73 publications and incorporates the Simon steady-state correction. Each stratum was fitted separately with future_setting_joint_v1. Subgroup memberships overlap. <a href="https://doi.org/10.1136/thoraxjnl-2017-211466">Conway et al., Thorax 2019</a></p><p>The default predictions use the original TriNetX cohort over its full observation period. Each patient contributes total weight one, split equally across eligible arterial draws on the first testing day in the selected setting. All is selected independently across eligible settings. ICU is a critical-care billing proxy; ambulatory status does not establish pulmonary function testing. The summary lookup reports whole mmHg and whole percentages under the documented numerical reporting amendment. Exact priors and full curves remain private.</p><p>The synthetic example uses an illustrative PaCO₂ distribution on a 0.25 mmHg grid. The curves connect density estimates per mmHg. The interval uses the full grid. Each threshold percentage sums the posterior probabilities of all grid values at or above that threshold.</p></details></section>
-<details id="advanced"><summary>Explore paired disagreement or use your own prior</summary><section class="calc" aria-labelledby="calculator"><div class="section-title"><h2 id="calculator">Explore a setting</h2></div>
+<details><summary>Source populations and methods</summary><p>Conway reported 73 studies overall. The corrected legacy calculation uses 76 rows, including the ICU-only Bolliger cohort. The new overall fit uses 75 adjudicated units from 73 publications and incorporates the Simon steady-state correction. Each stratum was fitted separately with future_setting_joint_v1. Subgroup memberships overlap. <a href="https://doi.org/10.1136/thoraxjnl-2017-211466">Conway et al., Thorax 2019</a></p><p>The default predictions use the original TriNetX cohort over its full observation period. Each patient contributes total weight one, split equally across eligible arterial draws on the first testing day in the selected setting. All is selected independently across eligible settings. ICU is a critical-care billing proxy; ambulatory status does not establish pulmonary function testing. The summary lookup reports whole mmHg and whole percentages under the documented numerical reporting amendment. Exact priors and full curves remain private.</p><p>The synthetic example uses an illustrative PaCO₂ distribution on a 0.25 mmHg grid. The curves connect density estimates per mmHg. The interval uses the full grid. Each threshold percentage sums the posterior probabilities of all grid values at or above that threshold.</p></details></section></details>
+<details id="advanced"><summary>Explore paired disagreement or upload a local PaCO₂ prior</summary><section class="calc" aria-labelledby="calculator"><div class="section-title"><h2 id="calculator">Explore a setting</h2></div>
 <div class="workspace"><form id="controls"><label for="subgroup">Measurement setting</label><select id="subgroup"><option value="all">All settings</option><option value="icu">ICU</option><option value="ed_inp">ED / inpatient</option><option value="pft">Ambulatory / PFT</option></select>
 <fieldset><legend>Calculation</legend><label><input type="radio" name="mode" checked id="agreement"> Paired disagreement</label><label><input type="radio" name="mode" id="inverse"> PaCO₂ given TcCO₂</label></fieldset>
 <div id="inputs" hidden><label for="tcco2">Observed TcCO₂ (mmHg)</label><input id="tcco2" type="number" step="any" value="50" required>

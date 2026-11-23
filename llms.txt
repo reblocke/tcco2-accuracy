@@ -5,7 +5,7 @@ Static app: https://reblocke.github.io/tcco2-accuracy/
 License: MIT for repository code and author-owned documentation.
 
 Purpose:
-This public repository contains research software, validation artifacts, Stata reference code, and a static GitHub Pages app for evaluating transcutaneous CO2 (TcCO2) monitoring against arterial PaCO2. The app estimates a PaCO2 posterior distribution from an observed TcCO2 using the repository Python model in the browser.
+This public repository contains research software, validation artifacts, Stata reference code, and a static GitHub Pages app for evaluating transcutaneous CO2 (TcCO2) monitoring against arterial PaCO2. The homepage looks up approved aggregate PaCO2 predictions for an observed TcCO2. The advanced research tool uses Python in the browser for local prior uploads.
 
 Project status:
 Abstract/poster stage. Results have been presented at ATS 2025 and CHEST 2025. The manuscript has not yet been submitted. The reviewed working letter and supplemental results are indexed at works-in-progress/README.md.
@@ -13,7 +13,7 @@ Abstract/poster stage. Results have been presented at ATS 2025 and CHEST 2025. T
 Statistical status:
 - Agreement method revision `agreement_natural_log_tau2_direct_v1` corrects the inherited mixed-log and analytic tau-squared uncertainty equations.
 - Browser and agreement-parameter outputs are provisional pending independent biostatistical review.
-- PaCO2-dependent manuscript, simulation, inference, classification, and two-stage outputs remain frozen at the legacy method revision. See artifacts/STATUS.md.
+- Legacy downstream outputs under artifacts/ remain frozen. Current manuscript figures and aggregate tables are indexed in works-in-progress/README.md.
 - Current validation-ticket states and minimum completion evidence are maintained in docs/PLAN.md.
 
 Citable records:
@@ -41,8 +41,8 @@ App behavior:
 - User-entered values and uploaded CSV/XLSX files remain in the browser.
 - Generated staged assets under web/assets/py/ and web/assets/data/ come from make stage-web and must not be edited by hand.
 - The in-memory downstream workflow is intentionally absent from the Pages Python staging allowlist and cannot be called by the browser app.
-- The homepage opens with the approved four-setting TriNetX summary lookup for integer TcCO2 readings 20–100 mmHg, reporting median, 95% prediction interval and inclusive ≥45/≥52 probabilities. The exact prior and full curves stay private. It also offers a labeled synthetic example, a local lookup and an advanced prior-upload calculator. See docs/FUTURE_SETTING.md for the separate, offline private prior and posterior chart at TcCO2 47 mmHg.
-- The static comparison and calculator share the accepted candidate method and kernel checksums.
+- The homepage opens with the approved four-setting TriNetX summary lookup for integer TcCO2 readings 20–100 mmHg, reporting median, 95% prediction interval and inclusive ≥45/≥52 probabilities. The exact prior and full curves stay private. The research page links the full-range prediction figure and offers a labeled synthetic example, a local lookup and an advanced prior-upload calculator. See docs/FUTURE_SETTING.md for the separate, offline private prior and posterior chart at TcCO2 47 mmHg.
+- The research agreement table uses the public source fits. The public lookup uses the extended posteriors recorded in models/pages/conditional-release.json.
 - Grouped parameters fail closed when a requested mapped group is missing; the public calculator uses the matched predictive kernel.
 
 Current tracked public/reference data:
