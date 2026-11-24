@@ -109,6 +109,8 @@ def file_sha(p):
 def load_group(cache, group, entry):
     from referral_analysis import check_numerical_sources
 
+    if entry.get("precision_code") != file_sha(Path(__file__).with_name("referral_precision.py")):
+        raise ValueError("Rounded risk certificate has a different precision implementation")
     path = cache / (group + "-bin-certificate.npz")
     if file_sha(path) != entry["output"]:
         raise ValueError("Rounded risk certificate digest differs")

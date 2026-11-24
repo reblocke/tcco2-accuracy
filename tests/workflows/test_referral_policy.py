@@ -18,7 +18,7 @@ from tcco2_accuracy.core.referral_policy import (
 )
 
 
-def test_referral_cache_rejects_a_changed_predictive_kernel(tmp_path, monkeypatch):
+def test_referral_cache_and_certificate_require_the_current_methods(tmp_path, monkeypatch):
     monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "scripts/manuscript"))
     import referral_analysis
     import referral_report
@@ -53,9 +53,19 @@ def test_referral_cache_rejects_a_changed_predictive_kernel(tmp_path, monkeypatc
     cert = cache / "all-bin-certificate.npz"
     q = np.full(81, 0.5)
     np.savez(cert, q=q, lower=q, upper=q, quadrature=np.zeros_like(q), per_chain=4)
-    entry = {"output": referral_analysis.digest(cert), "sources": receipts}
+    precision_script = Path(referral_report.__file__).with_name("referral_precision.py")
+    entry = {
+        "output": referral_analysis.digest(cert),
+        "sources": receipts,
+        "precision_code": referral_analysis.digest(precision_script),
+    }
     generate(32)
     referral_report.load_group(cache, "all", entry)
+
+    legacy = {k: v for k, v in entry.items() if k != "precision_code"}
+    for stale in (legacy, dict(entry, precision_code="0" * 64)):
+        with pytest.raises(ValueError, match="precision implementation"):
+            referral_report.load_group(cache, "all", stale)
 
     source.write_bytes(source.read_bytes() + b"\n# synthetic kernel revision\n")
     with pytest.raises(ValueError, match="different inputs"):

@@ -18,6 +18,7 @@ from tcco2_accuracy.core.referral_policy import DISPLAY, DisplayIntegral, correc
 
 def precision(store, original, run, cache, counts, workers):
     private_destination(cache)
+    precision_code = digest(Path(__file__))
     receipts = {}
     for group, n in zip(DRAWS, counts, strict=True):
         _, _, a, w, screen = inputs(run, group)
@@ -85,6 +86,7 @@ def precision(store, original, run, cache, counts, workers):
             per_chain=n,
         )
         receipts[group] = dict(
+            precision_code=precision_code,
             point_certificate=digest(cert),
             point_source=digest(screen / "precision.json"),
             output=digest(cache / f"{group}-bin-certificate.npz"),
