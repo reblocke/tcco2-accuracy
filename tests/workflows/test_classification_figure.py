@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import numpy as np
+import pytest
 from scipy.stats import norm
 
 from tcco2_accuracy.core.future_setting import PredictiveKernel
@@ -27,3 +28,16 @@ def test_classification_figure_with_known_offset(monkeypatch):
     np.testing.assert_allclose(curves, np.tile(norm.cdf(x - 47), (3, 1)), atol=1e-14)
     for name, value in expected.items():
         np.testing.assert_allclose(cells[name], 100 * value)
+
+
+def test_public_supplement_must_reproduce_credible_bounds(monkeypatch):
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "scripts/manuscript"))
+    from classification_figure import CELLS, check_cells
+
+    estimates = dict.fromkeys(CELLS, (1.0, 2.0, 4.0))
+    rows = [{"Measure": label + " per 100", "All": "2.00 (1.00–4.00)"} for label in CELLS.values()]
+    check_cells(estimates, "All", [rows, rows])
+    for wrong in ("2.00", "2.00 (1.00–3.00)"):
+        supplement = [dict(rows[0], All=wrong), *rows[1:]]
+        with pytest.raises(ValueError, match="True positives"):
+            check_cells(estimates, "All", [rows, supplement])

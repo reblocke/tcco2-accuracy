@@ -75,5 +75,10 @@ temp.log
 # Only reviewed manuscript assets use these stable public Word paths.
 !/works-in-progress/letter.docx
 !/works-in-progress/supplement.docx
+!/works-in-progress/original-research.docx
+!/works-in-progress/original-research-review.docx
+!/works-in-progress/letter-review.docx
+!/works-in-progress/letter-december-comparison.docx
+!/works-in-progress/supplement-review.docx
 !/works-in-progress/december-2025/2025-12-24-BWL-letter.docx
 !/works-in-progress/december-2025/2025-12-30-letter.docx

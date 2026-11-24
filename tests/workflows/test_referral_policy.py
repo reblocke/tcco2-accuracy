@@ -20,12 +20,12 @@ def test_rounded_forward_law_and_inverse_agree_with_independent_normal_truth():
     w = np.array([0.3, 0.5, 0.2])
     theta = np.zeros((4, 16, 5))
     theta[:2, :, 0] = 3
-    theta[2:, :, 0] = -7
+    theta[2:, :, 0] = -12
     theta[..., 1] = np.log(9.0)
     joint = class_joint(PredictiveKernel(theta), a, w)
     edges = np.r_[-np.inf, DISPLAY - 0.5, 100.5, np.inf]
     for chain in range(4):
-        truth = np.diff(norm.cdf(edges[:, None], loc=a-theta[chain, 0, 0], scale=3), axis=0)
+        truth = np.diff(norm.cdf(edges[:, None], loc=a - theta[chain, 0, 0], scale=3), axis=0)
         for c, mask in enumerate((a < 45, a >= 45)):
             np.testing.assert_allclose(joint[chain, 0, c], truth[:, mask] @ w[mask], atol=2e-15)
     q, _, _ = risk_bounds(joint, joint)
@@ -60,9 +60,52 @@ def test_class_denominators_optimum_and_empty_call_regions():
     x[:, :, 1, [1, 2, -2]] = [0.01, 0.20, 0.34]
     cut = class_policy(x.mean(axis=(0, 1)), 0.05)
     m = evaluate_policy(x, cut)
-    np.testing.assert_allclose(m['efficiency'], 0.78)
-    assert np.all(m['FNR'] <= 0.05) and np.all(m['FPR'] <= 0.05)
+    np.testing.assert_allclose(m["efficiency"], 0.78)
+    assert np.all(m["FNR"] <= 0.05) and np.all(m["FPR"] <= 0.05)
     none = evaluate_policy(x, (19, 101))
-    assert np.all(none['referral'] == 1)
-    assert np.isnan(none['negative_wrong']).all() and np.isnan(none['positive_wrong']).all()
-    assert np.all(none['FN'] + none['FP'] == 0)
+    assert np.all(none["referral"] == 1)
+    assert np.isnan(none["negative_wrong"]).all() and np.isnan(none["positive_wrong"]).all()
+    assert np.all(none["FN"] + none["FP"] == 0)
+
+
+def test_inclusive_probability_cap_and_common_draw_plot_denominators():
+    from scripts.manuscript.referral_report import figure_counts, summarize
+
+    q = np.linspace(0.05, 0.95, 81)
+    assert display_policy(q, q, 0.05) == (20, 100)
+    rng = np.random.default_rng(9801)
+    x = rng.dirichlet(np.ones(166), size=(4, 64)).reshape(4, 64, 2, 83)
+    mean = x.mean(axis=(0, 1))
+    metrics = evaluate_policy(x, (39, 51))
+    counts = figure_counts(mean, (39, 51))
+    np.testing.assert_allclose(counts.sum(axis=0), mean.sum(axis=0) * 100)
+    assert counts[1].sum() == pytest.approx(metrics["FN"].mean() * 100)
+    assert counts[3].sum() == pytest.approx(metrics["FP"].mean() * 100)
+    assert counts[4].sum() == pytest.approx(metrics["referral"].mean() * 100)
+    row = summarize(x, (39, 51), q, q, q)
+    np.testing.assert_allclose(
+        row["median_cri"]["efficiency"],
+        np.quantile(metrics["efficiency"], [0.025, 0.5, 0.975]) * 100,
+    )
+
+
+def test_full_point_control_recovers_rounded_risk_with_equal_drawwise_midpoints():
+    from tcco2_accuracy.core.referral_policy import corrected_bin_risk
+
+    a = np.array([36.0, 45.0, 57.0])
+    w = np.array([0.4, 0.4, 0.2])
+    theta = np.zeros((4, 16, 5))
+    theta[..., 1] = np.log(16)
+    theta[2:, :, 0] = 5
+    joint = class_joint(PredictiveKernel(theta), a, w)
+    offsets = a[:, None] - DISPLAY
+    density = norm.pdf(offsets[None, None] - theta[..., 0, None, None], scale=4)
+    point = np.stack(
+        [np.einsum("cdak,a->cdk", density, w * mask) for mask in (a < 45, a >= 45)], axis=2
+    )
+    center = point.mean(axis=(0, 1))
+    point_q = center[1] / center.sum(axis=0)
+    inferred, se = corrected_bin_risk(joint, point, point_q, np.zeros_like(point_q))
+    expected, _, _ = risk_bounds(joint, joint)
+    np.testing.assert_allclose(inferred, expected, atol=1e-14)
+    assert np.all(np.isfinite(se))

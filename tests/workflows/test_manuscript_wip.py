@@ -124,7 +124,8 @@ def test_two_mac_review_and_publish(tmp_path):
             for p in xml.iter("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}p")
         )
         assert not any("private" in name or "comments" in name for name in doc.namelist())
-        assert len([n for n in doc.namelist() if n.startswith("word/media/")]) == 2
+        media = [doc.read(n) for n in doc.namelist() if n.startswith("word/media/")]
+        assert media == [(repo / "paired-prediction.png").read_bytes()]
     # Only the reviewed bytes can be published.
     good = revised.read_bytes()
     with ZipFile(revised, "a") as z:
