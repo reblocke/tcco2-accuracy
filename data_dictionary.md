@@ -176,6 +176,8 @@ The Pages synthetic conditional lookup contains 81 integer readings per setting,
 
 ## Working manuscript exhibits
 
-The [manuscript tables](works-in-progress/cohort-and-prediction.md) give separate patient, encounter and draw denominators. Prediction intervals and paired medians are in mmHg. Both threshold probabilities include equality. The versioned working tables retain historical precision holds alongside amended results. The current public lookup qualified at all 324 combinations. The approved arterial distribution is a grouped raster figure. The supporting fixed empirical weights are private.
+The [manuscript tables](works-in-progress/cohort-and-prediction.md) give separate denominators for patients, encounters and arterial result records. Prediction intervals and paired medians are in mmHg. Both threshold probabilities include equality. The versioned working tables retain historical precision holds alongside amended results. The current public lookup qualified at all 324 combinations. The approved arterial distribution is a grouped raster figure. The supporting fixed empirical weights are private.
 
 The public calculator displays the approved summary lookup together with separate rounded fixed-grid drawing coordinates from `models/pages/prediction-plots.json`. The private source curves remain on the mini.
+
+The [paired-study appraisal](works-in-progress/study-appraisal.csv) describes the 76-row source union, including 75 overall units. It distinguishes inherited Conway protocol and risk judgments from primary-report adjudications. Unreported timing, calibration and failures are identified in the corresponding fields.

@@ -91,3 +91,9 @@ asserted removed.
 ## Manuscript review package
 
 The approved public distribution exhibit is a rasterized, grouped manuscript figure. The Word letter, supplement and rounded derived summaries live in the named GitHub WIP package. Every WIP asset, including prose, tables and the source inventory, is checked by exact path and reviewed digest in the current package and public history. Private arterial weights, patient records and full posterior curves remain on the mini. Manuscript inclusion does not change the Pages allowlist.
+
+On November 24, 2026, the custodian approved the aggregate tables from `manuscript-results-for-review.md` (SHA-256 `9eda8d45034040a81f757854e55701008057a35f299b4428911d53e7ac67d4f3`) for draft PR #24. The [public manuscript tables](../works-in-progress/manuscript-aggregate-tables.md) reproduce the approved table cells. Their public file digest is recorded in `docs/data_release_contract.json`.
+
+The custodian subsequently approved the 16 files in `draft-pr-candidates.sha256` (manifest SHA-256 `8efe87d6b000c6f766a3659408a29f2788887a0e48e857ae10251a54a0483af7`) for the same draft PR. The release includes seven Word reading and comparison copies, two aggregate tables, five figures, the working index and the reviewer questions. Each published file must match its approved digest. [Manuscript index](../works-in-progress/README.md) · [Referral policies](../works-in-progress/referral-tables.md) · [Encounter selection](../works-in-progress/encounter-selection.md)
+
+The custodian approved merging the package to `main` with two corrections to the working index. The revised index describes both Short Report figures and the line spacing in Original Research Table 2. The release contract records the index from the approved manifest and its successor. The private manuscript archive preserves the intermediate Word revisions and their Git history.

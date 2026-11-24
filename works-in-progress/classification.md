@@ -1,6 +1,6 @@
 # Model-based threshold classification and ABG referral
 
-Posterior medians and pointwise 95% credible intervals. A single TcCO₂ ≥45 predicts arterial PaCO₂ ≥45 mmHg. The two-stage strategy assigns arterial status using the reference ABG throughout the inclusive 40–50 mmHg reflex range. Remaining errors are expressed per 100 eligible patients.
+Posterior medians and pointwise 95% credible intervals. A single TcCO₂ ≥45 predicts arterial PaCO₂ ≥45 mmHg. The two-stage strategy assigns arterial status using the reference ABG throughout the inclusive 40–50 mmHg reflex range. Remaining errors are expressed per 100 eligible patient-weighted testing occasions.
 
 | Measure | All settings | ICU proxy | ED / inpatient | Ambulatory |
 | --- | --- | --- | --- | --- |

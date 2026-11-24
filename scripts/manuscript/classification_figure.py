@@ -91,9 +91,8 @@ def tables(wip):
 def check_cells(cells, setting, references):
     for code, label in CELLS.items():
         low, median, high = cells[code]
-        for rows, expected in zip(
-            references, (f"{median:.2f} ({low:.2f}–{high:.2f})", f"{median:.2f}"), strict=True
-        ):
+        expected = f"{median:.2f} ({low:.2f}–{high:.2f})"
+        for rows in references:
             [actual] = [row[setting] for row in rows if row["Measure"] == label + " per 100"]
             if actual != expected:
                 raise ValueError(f"{setting}, {label}: calculated {expected}, manuscript {actual}")
