@@ -18,7 +18,8 @@
         "1560e910b6a98dcc583e34ba1a018eac02dafd6ab0eae9ffe248c0bfcaaad8b2",
         "3b458671faa5d2844373a73a06cd33ce93fc70115ac321b434ee649b19ac09cf",
         "b1de7593763fd844840750e4b38fd459ccbcc7d3f5142bf976716c7d8deddb96",
-        "21d4786439ac2baa6efc6acd11220afe49b30797163e85e0f027877b194095f8"
+        "21d4786439ac2baa6efc6acd11220afe49b30797163e85e0f027877b194095f8",
+        "0a4797c5d55a18c160f0937c879270e0ef30d03415ea49b713b0c3d23f577a2d"
       ],
       "works-in-progress/paired-prediction.png": [
         "8ccbfd7a7292fe05768fd174d997310cc294494de69cdaeffe0a1a17092a5854",
@@ -28,7 +29,8 @@
         "ebdbde34a35b3853bc30d39fd8c073dc014921dab6209ebb00c585f48a1c55fb",
         "50f13e881539e9083b52f4a4b2a1e8b0ca203a25e23958ae1ae80266cb5cf17f",
         "1243cb05d677dd6fe8482c4e27c66111eaf28c395ebe6ec22a66200da29ffd72",
-        "27dfc6dbd7242fd2ce39cbfd8565caea859ef4ebe62055b4dc2cff1efc113653"
+        "27dfc6dbd7242fd2ce39cbfd8565caea859ef4ebe62055b4dc2cff1efc113653",
+        "a35742a8316f8306eac16fcb2ec8147d53cc102859486c5ae78110ef41aecd6b"
       ],
       "works-in-progress/README.md": [
         "dc2c681bc16699469fe862ec14577d4c5ea23d425c8319c2c1730e14e50a1b26",
@@ -37,14 +39,18 @@
         "25490c066dd8014c1678d6571729898adbe2e15d149cc2af726f43d452ff2d13",
         "5d77c4d4a5409e35b1599217519727ff3411e9ad329f155cb6f98e66fc430919",
         "6498ae147a66ea3706ad2a000744cd79767a3678b7410218ae46bf65691cc7d4",
-        "d8825e907af853ee859fdec8c163d5d58256635ff6eff165209c23a9ad434381"
+        "d8825e907af853ee859fdec8c163d5d58256635ff6eff165209c23a9ad434381",
+        "73adce3125116ae84368a9c79732530bd24aa14961c164381a627a5c554550af",
+        "e2866b86be024d811e429832543744a2d70374630ce1a3c352ec9f8547cf6c40"
       ],
       "works-in-progress/cohort-and-prediction.md": [
         "750367908e22df59a9b0b552b229f4f6d05a60c90a0c98495040d7e8da830c91",
-        "fb9e6265639ce8129880c9e41f7827f9a4eefb452f9013584296c78c7b02ed34"
+        "fb9e6265639ce8129880c9e41f7827f9a4eefb452f9013584296c78c7b02ed34",
+        "b016cde77fb520a9d8d084699c42d7c1e46a1c4dda8c337d990b541ef4dbf3ea"
       ],
       "works-in-progress/classification.md": [
-        "26ea78933012495119ce103938b2022ac9cd0b1cd5fef69b0043141507e6fd30"
+        "26ea78933012495119ce103938b2022ac9cd0b1cd5fef69b0043141507e6fd30",
+        "5dc6df13c4700f3ad9693892850b6adfdeb4c32fc1cf9bee935e09408acc35eb"
       ],
       "works-in-progress/agreement.md": [
         "6352a644eaf91175ae1af308f1e8e74400d13b6b41c6ae58bc05c0bdad9cd053"
@@ -61,6 +67,57 @@
       ],
       "works-in-progress/december-2025/2025-12-24-BWL-letter.docx": [
         "49897ec66f30216191b9d3316c8e4469011a1e8658a849ca47308cec38ff3034"
+      ],
+      "works-in-progress/letter-december-comparison.docx": [
+        "b41a7093be57af7754cf32931be388a7384f18bf6df593d7e2b1c094b5e84b81"
+      ],
+      "works-in-progress/letter-review.docx": [
+        "4a0aeeabba2d35344f24bf8f6cd7f51e58618470973641630e509e2426caa08e"
+      ],
+      "works-in-progress/manuscript-contrasts.json": [
+        "58a05fd7d9231634b7f8eacd87995e2f8ed1261fb6345f0bd782fbf83da63a9a"
+      ],
+      "works-in-progress/original-research-review.docx": [
+        "23b8585f5b1cb0644da5a1347450f08b27ec8fce6ab675d539ab9b232d7e45be"
+      ],
+      "works-in-progress/original-research.docx": [
+        "7ec6c846604f91cc5cb7555c6e1473fd3c4e46cdd67de1647ed0ced80797d665"
+      ],
+      "works-in-progress/overall-envelope.R": [
+        "95d92482079124f9483e67329887f3e86448257b3a1ec7af0a1d7980e4be3b03"
+      ],
+      "works-in-progress/reviewer-questions.md": [
+        "9e39503df47ea72a938c67e9e4d47b465e8269ec4bbfa43541944fdc0439affd"
+      ],
+      "works-in-progress/study-appraisal.csv": [
+        "f433e74327fea052081f2b823163b517a32ca6eb2e016de431c5f515a7045f66"
+      ],
+      "works-in-progress/supplement-review.docx": [
+        "1777fae1f42f2368b65e006299a167baf0ab093f5be4a339eb614f5d7dda4756"
+      ],
+      "works-in-progress/manuscript-aggregate-tables.md": [
+        "4ed6fc906e190a37f871e2f7d9718cf18fa80ad4626d71117bbcb88a6c0e2d54"
+      ],
+      "works-in-progress/referral-tables.md": [
+        "ffa578c4d6e89ceb87c9c2ce9661d976cec1484714096f6e9c1197858bc5143b"
+      ],
+      "works-in-progress/encounter-selection.md": [
+        "dee51b84bb297efa9e9a79f567a6a8cfb91d9c3dcc7cad340693b3f1b203fabc"
+      ],
+      "works-in-progress/referral-all.png": [
+        "4707cc609df74f679ef8052185d8da413848508e381d5595532f3789c575ff5c"
+      ],
+      "works-in-progress/referral-icu.png": [
+        "d36e9b3ce767c333193d524b31f18b173314a7fa61adabbf1a86a94a336d6228"
+      ],
+      "works-in-progress/referral-ed_inp.png": [
+        "0c41242616748ede3a635947e536f0fd88062076bd25f9468aeee945c92f199c"
+      ],
+      "works-in-progress/referral-pft.png": [
+        "bb24a25770cea453b2dfdd2339000e397ef49b5f0619402366449f3d8ec5981c"
+      ],
+      "works-in-progress/referral-efficiency.png": [
+        "651e48903543a589e2538831c2b4f75a3068667e4c5a6abb1542082f576962c9"
       ]
     }
   },

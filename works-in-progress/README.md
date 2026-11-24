@@ -1,31 +1,37 @@
 # Works in progress
 
-[Current Word letter with revisions](letter.docx) · [Current supplement](supplement.docx) · [December 24 BWL draft](december-2025/2025-12-24-BWL-letter.docx) · [December 30 DAB draft](december-2025/2025-12-30-letter.docx)
+## Manuscripts for coauthor review
 
-The research letter estimates paired arterial CO₂ given observed transcutaneous CO₂ in the population undergoing arterial blood gas testing. The December 30, 2025 letter is the legacy starting version. The Air and mini Word originals matched byte for byte at import and retain their comments. The working letter uses the December Word document as its layout and redline baseline. The two original figure positions contain the updated distribution and prediction exhibits. Supplementary Table 1 reports modeled classification and ABG referral. [Source inventory](source-revisions.json)
+| Draft | Clean reading copy | Changes |
+| --- | --- | --- |
+| Original Research | [Read the full paper](original-research.docx) | [Compare with the preceding full paper](original-research-review.docx) |
+| Short Report | [Read the standalone report](letter.docx) | [Compare with the preceding Short Report](letter-review.docx) · [Compare with December 30](letter-december-comparison.docx) |
+| Supplement to Original Research | [Read the supplement](supplement.docx) | [Compare with the preceding supplement](supplement-review.docx) |
 
-Both December review copies preserve their original wording and the same two figures. Citations appear as text and figures as raster images. The private BWL and DAB originals retain 15 and 20 comments, respectively. The older classification figure shows how TcCO₂ would classify patients at each **arterial** CO₂ value. The current prediction figure starts with an **observed transcutaneous** CO₂ value. [December classification figure](december-2025/classification.png) · [December arterial distribution](december-2025/distribution.png)
+Bold text marks additions and strikethrough marks deletions in the comparison copies. The clean manuscripts use double-spaced body text and references. Table 2 in Original Research uses 1.1-line spacing. The Short Report includes two figures. Figure 1 shows PaCO₂ predictions across settings, and Figure 2 compares referral policies in All settings. The supplement accompanies the full paper only. The private December originals retain their Word comments and Zotero fields.
 
-| Review material | Question |
+**Earlier drafts.** [December 24 BWL](december-2025/2025-12-24-BWL-letter.docx) · [December 30 DAB](december-2025/2025-12-30-letter.docx) · [Preceding GitHub letter](https://github.com/reblocke/tcco2-accuracy/blob/c35d1b0ee2d7fc958b0ab47b5ce91c5a9cd5a4b3/works-in-progress/letter.docx)
+
+The private manuscript archive preserves the intermediate drafts and their redlines, including the supplement that introduced the 75-row agreement audit.
+
+## Evidence and review
+
+| Material | Question it answers |
 | --- | --- |
-| [Cohort and prediction tables](cohort-and-prediction.md) | Who contributed and how do intervals and probabilities change with the reading and setting? |
-| [Arterial distribution figure](arterial-distribution.png) | How do first-day arterial distributions differ across ABG-tested populations? |
-| [Paired prediction figure](paired-prediction.png) | How does arterial uncertainty change as observed TcCO₂ rises? ~~Gaps mark unresolved estimates.~~ **All 81 readings per setting qualified under the amended reporting criteria.** |
-| [Agreement comparison](agreement.md) | How do published limits, corrected legacy limits and the new target differ? |
-| [Four-setting classification figure](classification-figure.png) · [Side by side with December](classification-comparison.png) | At each arterial PaCO₂, how likely is TcCO₂ to reach 45 mmHg? The line shows the posterior median and the band shows the pointwise 95% credible interval. |
-| [Classification and ABG referral](classification.md) | How many patients would receive an ABG or a false classification under each strategy? |
+| [Prediction figure](paired-prediction.png) · [Cohort and prediction tables](cohort-and-prediction.md) | Given a reading from 20 to 100 mmHg, what simultaneous arterial values are plausible and how likely is PaCO₂ to reach 45 or 52? |
+| [Arterial distribution](arterial-distribution.png) | How common were different arterial values before observing TcCO₂? |
+| [Agreement intervals](agreement.md) · [Study appraisal](study-appraisal.csv) · [Source ledger](../models/future_setting/source_ledger.csv) | Which populations and measurement protocols contributed to each agreement fit? The appraisal adds protocol and risk-of-bias fields from Conway’s CC BY 4.0 archive, published supplement and selected primary reports. [Conway archive](https://doi.org/10.6084/m9.figshare.6244058.v2) |
+| [Classification and referral](classification.md) · [Four-setting figure](classification-figure.png) · [December comparison](classification-comparison.png) | At a given arterial value, how often would TcCO₂ reach 45, and what would the referral rule miss per 100 eligible occasions? |
+| [Aggregate manuscript tables](manuscript-aggregate-tables.md) | How do the results change with the arterial code, reference population, agreement fit, or omission of an ambulatory study? How do the two ABG strategies differ? |
+| [Reviewer questions](reviewer-questions.md) · [Contrasts recorded before the runs](manuscript-contrasts.json) · [Same-75-row envelope replay](overall-envelope.R) | Which assumptions and calculations need independent verification? |
 
-**In the Word review copies, bold text marks additions and strikethrough marks deletions. The revised figure and tables use the complete grid of saved results.**
+The custodian approved the manuscript aggregate tables for draft PR #24 on November 24, 2026. Independent statistical review, coauthor approval and submission remain pending. Individual records, exact empirical weights and full curves stay on the mini. [December source inventory](source-revisions.json)
 
-## Review and remaining work
+## Secondary analysis of displayed TcCO₂
 
-- [x] Reconstruct the four patient-weighted populations, demographic summaries and threshold prevalences. The historical 7,460-encounter gap consists of ED encounters with critical-care billing. All includes eligible patients outside the named setting definitions.
-- [x] Generate the distribution figure from grouped probabilities on the mini. The exact empirical support, weights, patient records and full posterior density curves stay there.
-- [x] Evaluate both inclusive thresholds and the 95% paired prediction interval on the integer 20–100 mmHg grid. An independent calculation on the mini checked all 324 rows, including the precision holds. The table gives six example readings and counts of resolved values. The 52 mmHg outcome refers to the full selected population.
-- [x] Recalculate threshold classification and the reflex-ABG strategy with agreement-parameter uncertainty. The historical outputs under `artifacts/` retain their legacy status.
-- [ ] Independent biostatistical review of the study ledger, overlap, uncertainty, transport assumptions, operating characteristics and ~~unresolved grid points~~ **the post hoc numerical reporting amendment**.
-- [ ] Coauthors to confirm the byline, affiliations, institutional protocol and data-access wording, funding and disclosures. Check journal length and figure requirements after choosing the destination.
-- [ ] Submission and manuscript release. This GitHub package is a working draft. Clinical coverage requires an independent paired validation sample.
+The four-panel figure compares referrals and residual errors at displayed TcCO₂ values under a fixed 40–50 mmHg band and 1%, 5% and 10% wrong-call caps. The x-axis is the measurement available when the decision is made. The earlier arterial-axis figure answers the forward classification question. [Overall policies](referral-all.png) · [ICU](referral-icu.png) · [ED/noncritical inpatient](referral-ed_inp.png) · [Ambulatory](referral-pft.png) · [Efficiency across error caps](referral-efficiency.png)
+
+[Operating characteristics and paired contrasts](referral-tables.md) · [Encounter order and arterial predictions](encounter-selection.md) · [Reviewer questions](reviewer-questions.md)
 
 ## Importing a newer Word revision
 

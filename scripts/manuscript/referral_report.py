@@ -107,6 +107,8 @@ def file_sha(p):
 
 
 def load_group(cache, group, entry):
+    from referral_analysis import check_numerical_sources
+
     path = cache / (group + "-bin-certificate.npz")
     if file_sha(path) != entry["output"]:
         raise ValueError("Rounded risk certificate digest differs")
@@ -120,7 +122,9 @@ def load_group(cache, group, entry):
     arrays = []
     for order in (32, 64):
         f = cache / f"{group}-{n}-{order}.npy"
-        if file_sha(f) != entry["sources"][str(order)]["output"]:
+        receipt = entry["sources"][str(order)]
+        check_numerical_sources(receipt)
+        if file_sha(f) != receipt["output"]:
             raise ValueError("Draw-level bin file differs from certificate source")
         arrays.append(np.load(f, mmap_mode="r"))
     return *arrays, q, lo, hi, noise

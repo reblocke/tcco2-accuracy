@@ -1,0 +1,25 @@
+{
+  "version": "2026-11-23-manuscript-v1",
+  "status": "registered before new manuscript fits or reweighting",
+  "classification": "post hoc",
+  "fit": "unchanged canonical Stan source and adjudicated LFT summary-data rules",
+  "variants": [
+    "omit each of four named lung-function units in source order",
+    "retain all four, set only prior_tau_ell to 0.4"
+  ],
+  "chains": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "seed": 88032,
+  "warmup": 1000,
+  "adapt_delta": 0.99,
+  "max_retained_per_chain": 65536000,
+  "stopping": "Evaluate complete four-chain attempts at 8192 retained per chain, doubling only if numerical precision remains unresolved. Stop a variant on any divergence or failed archived sampler gate. Stop each qualified variant. Retain all attempts.",
+  "numerical": "Apply November 17 v2 pointwise brackets, signed a-t, 32/64 quadrature, refine integration on same draws first if limiting. Fit uncertainty gate as in canonical four chains. If higher quadrature is required report orders and assess discrepancy separately.",
+  "target": "Fixed ambulatory empirical population for influence. Cross each of 4 priors with 4 saved fits at 35,47,55; compare within prior against assigned fit and within fit against matched prior. Differences described as model dependence.",
+  "arterial": "Re-index eligible LOINC 2019-8 alone in each setting, same rules and equal patient weighting. Compute changes in eligibility, baseline tails, three paired predictions and residual false-negative classifications. Within each ordered-time alternative share weights across exactly tied earliest eligible records, only when genuine timestamps support ordering.",
+  "evaluation": "Hold each unresolved quantity. Discrete mass and inclusive thresholds before rounding. Zero patient bootstrap. No canonical output replacement. New private estimates require custodian review before any transfer."
+}

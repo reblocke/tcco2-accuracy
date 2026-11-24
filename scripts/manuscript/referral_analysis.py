@@ -12,8 +12,21 @@ import numpy as np
 from private_inputs import digest, private_destination, read_prior
 from strategy import classification_draws
 
-from tcco2_accuracy.core.future_setting import PredictiveKernel
-from tcco2_accuracy.core.referral_policy import DisplayIntegral
+from tcco2_accuracy.core import future_setting, referral_policy
+
+
+def numerical_sources():
+    return {
+        "code": digest(Path(__file__)),
+        "integral": digest(Path(referral_policy.__file__)),
+        "predictive_kernel": digest(Path(future_setting.__file__)),
+    }
+
+
+def check_numerical_sources(receipt):
+    for name, expected in numerical_sources().items():
+        if receipt["inputs"].get(name) != expected:
+            raise ValueError(f"Cached numerical implementation differs for {name}")
 
 
 def calculate(theta, integral, order, workers, *, midpoint=False):
@@ -22,7 +35,7 @@ def calculate(theta, integral, order, workers, *, midpoint=False):
 
     def block(position):
         c, start = position
-        kernel = PredictiveKernel(theta[c : c + 1, start : start + 64], order=order)
+        kernel = future_setting.PredictiveKernel(theta[c : c + 1, start : start + 64], order=order)
         values = integral.point_block(kernel) if midpoint else integral.block(kernel)
         return c, start, values[0]
 
@@ -50,17 +63,14 @@ def run(store, original, folder, setting, per_chain, order, workers):
             "per_chain": per_chain,
             "selection": "four original chains, equally spaced including both endpoints",
             "order": order,
-            "code": digest(Path(__file__)),
-            "integral": digest(
-                Path(__import__(DisplayIntegral.__module__, fromlist=[""]).__file__)
-            ),
+            **numerical_sources(),
         }
         if receipt.exists():
             saved = json.loads(receipt.read_bytes())
             if saved["inputs"] == inputs and saved["output"] == digest(dest):
                 continue
             raise ValueError("Existing cache has different inputs or bytes")
-        result = calculate(theta, DisplayIntegral(a, w), order, workers)
+        result = calculate(theta, referral_policy.DisplayIntegral(a, w), order, workers)
         with tempfile.NamedTemporaryFile(dir=folder, delete=False) as f:
             np.save(f, result)
         os.replace(f.name, dest)

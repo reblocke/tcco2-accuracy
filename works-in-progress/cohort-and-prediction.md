@@ -1,6 +1,6 @@
 # Cohort and paired predictions
 
-| Setting | Eligible patients | Eligible encounters | Eligible draws | First-day encounters | First-day draws |
+| Setting | Eligible patients | Eligible encounters | Eligible arterial result records | First-day encounters | First-day arterial result records |
 | --- | --- | --- | --- | --- | --- |
 | All settings | 142,156 | 147,028 | 1,019,099 | 142,424 | 385,867 |
 | ICU proxy | 52,931 | 53,985 | 535,791 | 52,968 | 141,818 |
@@ -27,7 +27,7 @@ Each patient contributes total weight one within the target. Settings can overla
 | Opioid use disorder | 4.2% | 4.6% | 3.9% | 3.5% |
 | Pulmonary hypertension | 9.6% | 9.9% | 9.2% | 14.5% |
 
-Age and coded characteristics use first-day draw weights and the associated encounter. Percentages use nonmissing values. Race and ethnicity are separate recorded indicators.
+Age and coded characteristics use first-day arterial result weights and the associated encounter. Percentages use nonmissing values. Race and ethnicity are separate recorded indicators.
 
 ## Before observing TcCO₂
 

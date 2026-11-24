@@ -1,5 +1,8 @@
 """Acceptance cases for whole-mmHg displays and fixed two-step policies."""
 
+import json
+from pathlib import Path
+
 import numpy as np
 import pytest
 from scipy.stats import norm
@@ -13,6 +16,52 @@ from tcco2_accuracy.core.referral_policy import (
     evaluate_policy,
     risk_bounds,
 )
+
+
+def test_referral_cache_rejects_a_changed_predictive_kernel(tmp_path, monkeypatch):
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2] / "scripts/manuscript"))
+    import referral_analysis
+    import referral_report
+
+    from tcco2_accuracy.core import future_setting
+
+    store = tmp_path / "store"
+    cache = tmp_path / "cache"
+    store.mkdir()
+    cache.mkdir()
+    prior = store / "all-weights.csv"
+    prior.write_text("a,w\n40,0.5\n50,0.5\n")
+    (store / "cohort.json").write_text(
+        json.dumps({"all": {"prior_sha256": referral_analysis.digest(prior)}})
+    )
+    (store / "manifest.json").write_text("{}")
+    theta = np.zeros((4, 4, 5))
+    monkeypatch.setattr(
+        referral_analysis, "classification_draws", lambda *a, **kw: [("all", theta)]
+    )
+    source = tmp_path / "future_setting.py"
+    source.write_bytes(Path(future_setting.__file__).read_bytes())
+    monkeypatch.setattr(future_setting, "__file__", str(source))
+
+    def generate(order):
+        referral_analysis.run(store, store, cache, "all", 4, order, 1)
+
+    receipts = {}
+    for order in (32, 64):
+        generate(order)
+        receipts[str(order)] = json.loads((cache / f"all-4-{order}.json").read_bytes())
+    cert = cache / "all-bin-certificate.npz"
+    q = np.full(81, 0.5)
+    np.savez(cert, q=q, lower=q, upper=q, quadrature=np.zeros_like(q), per_chain=4)
+    entry = {"output": referral_analysis.digest(cert), "sources": receipts}
+    generate(32)
+    referral_report.load_group(cache, "all", entry)
+
+    source.write_bytes(source.read_bytes() + b"\n# synthetic kernel revision\n")
+    with pytest.raises(ValueError, match="different inputs"):
+        generate(32)
+    with pytest.raises(ValueError, match="numerical implementation"):
+        referral_report.load_group(cache, "all", entry)
 
 
 def test_rounded_forward_law_and_inverse_agree_with_independent_normal_truth():

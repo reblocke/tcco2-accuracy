@@ -30,7 +30,7 @@ analysis, including the correction to its mixed-log and analytic variance equati
 
 ## Works in progress
 
-The current Word letter, supplement, prediction figures and review checklist are available in the [manuscript working package](works-in-progress/README.md).
+Read the Original Research manuscript or the standalone Short Report, compare the revisions with December, and open the supplement and statistical review questions from the [manuscript working package](works-in-progress/README.md).
 
 ## Choose a Route
 

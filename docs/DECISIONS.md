@@ -237,3 +237,7 @@ The investigator explicitly authorized publication and deployment of summary pre
 ## Public distribution plots for paired predictions
 
 The authorized display file contains fixed-grid derivatives of rounded cumulative probabilities, one prior per setting and one posterior per reading. At each grid edge the cumulative probability counts strictly lower arterial values. The exporter checks both inclusive shaded areas against the full-support results within 0.1 percentage point and verifies the signed likelihood against each private posterior. The summary lookup supplies all displayed estimates. The release contract pins the plot and lookup separately.
+
+## Secondary referral policies in the ABG-tested population
+
+The [November 24 post hoc specification](REFERRAL_POLICY.md) freezes the rounded display, inclusive arterial threshold, risk denominators, numeric qualification, common-draw comparisons and two overflow referrals. Potential efficiency counts patient-weighted occasions on which a usable TcCO₂ would classify arterial CO₂ without a reflex ABG. Clinical utility for another purpose and actual changes in sampling require separate evidence.

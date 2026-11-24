@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 from cache_private_grid import DRAWS, inputs
 from private_inputs import digest, private_destination, require_digest
-from referral_analysis import calculate
+from referral_analysis import calculate, check_numerical_sources
 from reporting_grid import CERTIFICATES
 from strategy import classification_draws
 
@@ -55,6 +55,7 @@ def precision(store, original, run, cache, counts, workers):
             stem = f"{group}-{n}-{order}"
             path = cache / (stem + ".npy")
             receipt = json.loads((cache / (stem + ".json")).read_bytes())
+            check_numerical_sources(receipt)
             require_digest(path, receipt["output"])
             if receipt["inputs"]["prior"] != digest(store / (group + "-weights.csv")):
                 raise ValueError("Rounding correction has a different arterial distribution")

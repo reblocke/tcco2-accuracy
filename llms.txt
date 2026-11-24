@@ -8,7 +8,7 @@ Purpose:
 This public repository contains research software, validation artifacts, Stata reference code, and a static GitHub Pages app for evaluating transcutaneous CO2 (TcCO2) monitoring against arterial PaCO2. The homepage looks up approved aggregate PaCO2 predictions for an observed TcCO2. The advanced research tool uses Python in the browser for local prior uploads.
 
 Project status:
-Abstract/poster stage. Results have been presented at ATS 2025 and CHEST 2025. The manuscript has not yet been submitted. The reviewed working letter and supplemental results are indexed at works-in-progress/README.md.
+Abstract/poster stage. Results have been presented at ATS 2025 and CHEST 2025. The manuscript has not yet been submitted. Original Research and Short Report coauthor drafts, their comparisons, the full-paper supplement and independent review questions are indexed at works-in-progress/README.md.
 
 Statistical status:
 - Agreement method revision `agreement_natural_log_tau2_direct_v1` corrects the inherited mixed-log and analytic tau-squared uncertainty equations.
