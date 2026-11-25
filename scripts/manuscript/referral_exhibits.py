@@ -17,10 +17,10 @@ from referral_report import CAPS, GROUPS
 from tcco2_accuracy.core.referral_policy import display_policy
 
 LABELS = {
-    "fixed": "Fixed 40–50 mmHg",
     "cap 1%": "1% wrong-call cap",
     "cap 5%": "5% wrong-call cap",
     "cap 10%": "10% wrong-call cap",
+    "fixed": "Fixed 40–50 mmHg",
 }
 OUTCOMES = [
     "Correct negative",
@@ -63,7 +63,7 @@ def panels(data, dest):
     fig.text(
         0.085,
         0.932,
-        GROUPS[data["setting"]] + "  ·  Modeled testing occasions per 100",
+        GROUPS[data["setting"]] + "  ·  Posterior mean per 100 eligible testing occasions",
         fontsize=10.5,
     )
     xs = np.r_[13, np.arange(20, 101), 107]
@@ -78,13 +78,20 @@ def panels(data, dest):
             weight="bold",
             pad=16,
         )
+        if (
+            counts.shape != (5, len(xs))
+            or not np.all(np.isfinite(counts))
+            or np.any(counts < -1e-10)
+        ):
+            raise ValueError("Expected five disposition counts for each of the 83 display bins")
+        np.testing.assert_allclose(counts.sum(), 100, rtol=0, atol=1e-8)
         eff = counts[:4].sum()
         ax.text(
             0,
             1.035,
-            f"Classified without ABG {eff:.1f}%    ·    False negatives {counts[1].sum():.2f}    ·    False positives {counts[3].sum():.2f}",
+            f"Classified {eff:.1f} (including {counts[1].sum():.2f} false negative, {counts[3].sum():.2f} false positive)   ·   Referred {counts[4].sum():.1f}",
             transform=ax.transAxes,
-            fontsize=8.5,
+            fontsize=8.0,
         )
         bottom = np.zeros(83)
         for heights, color, pattern in zip(counts, COLORS, HATCHES, strict=True):
@@ -182,13 +189,15 @@ def run(work, dest):
     lines = [
         "# TcCO₂ referral policies in an ABG-tested population",
         "",
-        "Private aggregate review copy. Each eligible patient has total weight one, split over arterial result records on the first eligible testing day. Each policy assumes a usable, contemporaneous TcCO₂ and a timely, definitive ABG after referral. Other indications for arterial sampling include pH and PaO₂. Their frequency, sensor failure frequency, and actual punctures avoided are unknown.",
+        "Each eligible patient has total weight one, split over arterial result records on the first eligible testing day. Each policy assumes a usable, contemporaneous TcCO₂ and a timely, definitive ABG after referral. Other indications for arterial sampling include pH and PaO₂. Their frequency, sensor failure frequency, and actual punctures avoided are unknown.",
         "",
         "The primary policies limit the modeled probability of a wrong call at each displayed integer. The class-denominator alternatives limit FNR among all reference-positive and FPR among all reference-negative occasions. All arterial thresholds are inclusive at 45 mmHg. Parentheses give pointwise 95% credible intervals for fixed policies. Operating characteristics are posterior medians. Figure bars and totals are posterior means.",
         "",
     ]
     for g, d in data.items():
         panels(d, dest)
+        policies = {k: d["policies"][k] for k in LABELS}
+        policies.update((k, v) for k, v in d["policies"].items() if k not in policies)
         lines += ["## " + GROUPS[g], "", "### Cutoffs and efficiency", ""]
         lines += table(
             [
@@ -209,7 +218,7 @@ def run(work, dest):
                     r["cuts"][1] if r["cuts"][1] <= 100 else "None",
                     *[fmt(r["median_cri"][n]) for n in ("efficiency", "referral", "FN", "FP")],
                 )
-                for k, r in d["policies"].items()
+                for k, r in policies.items()
             ],
         )
         lines += ["### Class and call denominators", ""]
@@ -240,7 +249,7 @@ def run(work, dest):
                         )
                     ],
                 )
-                for k, r in d["policies"].items()
+                for k, r in policies.items()
             ],
         )
         lines += [
@@ -250,7 +259,7 @@ def run(work, dest):
             "",
         ]
         rows = []
-        for k, r in d["policies"].items():
+        for k, r in policies.items():
             for side, entry in r["design_risk_percent"].items():
                 rows.append(
                     [

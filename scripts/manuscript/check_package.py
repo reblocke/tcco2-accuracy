@@ -86,6 +86,13 @@ def inspect_word(data, figures):
 def check(root):
     config = json.loads((root / CONTRACT).read_text())["manuscript_wip"]
     figures = {sha((root / p).read_bytes()) for p in config["reviewed"] if p.endswith(".png")}
+    # Comparison documents also show the previously published version of an exhibit.
+    comparison_figures = {
+        digest
+        for p, revisions in config["reviewed"].items()
+        if p.endswith(".png")
+        for digest in revisions
+    }
     allowed = set(config["reviewed"])
     found = {
         p.relative_to(root).as_posix()
@@ -100,7 +107,8 @@ def check(root):
         if file.is_symlink() or sha(data) not in hashes:
             raise ValueError(f"Unreviewed manuscript file: {name}")
         if name.endswith(".docx"):
-            inspect_word(data, figures)
+            comparison = name.endswith(("-review.docx", "-december-comparison.docx"))
+            inspect_word(data, comparison_figures if comparison else figures)
 
 
 if __name__ == "__main__":

@@ -518,9 +518,12 @@ def test_distribution_inspection_and_summary_compatibility(page, web_server, tmp
     page.goto(web_server + "research.html")
     page.locator("#lookup-tools > summary").click()
     expect(page.locator("#lookup-values")).to_be_visible()
+    expect(page.locator('#lookup-setting option[value="icu"]')).to_have_text(
+        "Critical Care Billing"
+    )
     for group, setting in [
         ("all", "across the eligible settings"),
-        ("icu", "in inpatient encounters with critical-care billing (the ICU proxy)"),
+        ("icu", "in inpatient encounters with critical-care billing"),
         ("pft", "in ambulatory encounters"),
         ("ed_inp", "in the emergency department or during an inpatient stay"),
     ]:

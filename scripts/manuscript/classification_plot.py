@@ -12,11 +12,11 @@ def render(x, curves, historical, output):
         "all": "All settings",
         "pft": "Ambulatory",
         "ed_inp": "ED / inpatient",
-        "icu": "ICU billing proxy",
+        "icu": "Critical Care Billing",
     }
     fig, axes = plt.subplots(4, 1, sharex=True, figsize=(7.0, 7.6))
     fig.subplots_adjust(left=0.105, right=0.97, top=0.84, bottom=0.11, hspace=0.53)
-    fig.text(0.105, 0.963, "How does TcCO₂ classify arterial hypercapnia?", size=16, weight="bold")
+    fig.text(0.105, 0.963, "How often does TcCO₂ reach 45 mmHg?", size=16, weight="bold")
     fig.text(
         0.105,
         0.927,
@@ -34,9 +34,6 @@ def render(x, curves, historical, output):
         ax.set_facecolor("#f2f6f6")
         ax.set_xlim(x[0], x[-1])
         ax.set_ylim(0, 1)
-        # Fill each side separately. At 45 the arterial reference class switches to positive.
-        for side, boundary in ((x <= 45, 0), (x >= 45, 1)):
-            ax.fill_between(x[side], median[side], boundary, color="#f0cf9f", linewidth=0)
         ax.fill_between(x, low, high, color="#87a7b2", linewidth=0)
         ax.plot(x, median, color="#103f4e", lw=1.7)
         ax.axvline(45, color="#4d5051", ls=(0, (3, 2)), lw=0.9)
@@ -46,19 +43,12 @@ def render(x, curves, historical, output):
         ax.spines[["top", "right"]].set_visible(False)
         ax.spines[["left", "bottom"]].set_color("#899597")
         ax.tick_params(length=3, labelsize=8.5, color="#899597")
-    for xpos, ypos, txt, align in [
-        (31, 0.72, "True negative", "left"),
-        (44.6, 0.095, "False positive", "right"),
-        (45.4, 0.91, "False negative", "left"),
-        (59, 0.28, "True positive", "right"),
-    ]:
-        axes[0].text(xpos, ypos, txt, va="center", ha=align, fontsize=8.4, color="#17272c")
     axes[-1].set_xticks(range(30, 61, 5))
     axes[-1].set_xlabel("Arterial PaCO₂ (mmHg)", fontsize=11)
     fig.text(
         0.105,
         0.019,
-        "Arterial PaCO₂ ≥45 mmHg defines hypercapnia. The shaded wedges show false classifications.",
+        "The dashed line marks arterial hypercapnia (PaCO₂ ≥45 mmHg).",
         fontsize=8.8,
     )
     name = output / "classification-figure.png"

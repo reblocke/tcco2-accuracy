@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import re
 from pathlib import Path
 from xml.etree import ElementTree as ET
 from zipfile import ZipFile
@@ -16,7 +17,7 @@ SETTINGS = {
     "all": "All settings",
     "pft": "Ambulatory",
     "ed_inp": "ED / inpatient",
-    "icu": "ICU proxy",
+    "icu": "Critical Care Billing",
 }
 CELLS = {
     "TP": "True positives",
@@ -55,11 +56,13 @@ def calculate(kernel, arterial, mass):
 
 
 def tables(wip):
-    md = [
-        line.strip("|").split("|")
-        for line in (wip / "classification.md").read_text().splitlines()
-        if line.startswith("|")
+    text = (wip / "classification.md").read_text()
+    [section] = [
+        block
+        for block in re.findall(r"(?m)(?:^\|.*\n)+", text + "\n")
+        if block.startswith("| Measure |") and "| True positives per 100 |" in block
     ]
+    md = [line.strip("|").split("|") for line in section.splitlines()]
     ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
     with ZipFile(wip / "supplement.docx") as doc:
         root = ET.fromstring(doc.read("word/document.xml"))

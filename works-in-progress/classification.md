@@ -1,8 +1,12 @@
-# Model-based threshold classification and ABG referral
+# Classification of arterial PaCO₂ ≥45 mmHg
 
-Posterior medians and pointwise 95% credible intervals. A single TcCO₂ ≥45 predicts arterial PaCO₂ ≥45 mmHg. The two-stage strategy assigns arterial status using the reference ABG throughout the inclusive 40–50 mmHg reflex range. Remaining errors are expressed per 100 eligible patient-weighted testing occasions.
+Posterior medians with pointwise 95% credible intervals. Counts per 100 use all eligible patient-weighted testing occasions.
 
-| Measure | All settings | ICU proxy | ED / inpatient | Ambulatory |
+## Single TcCO₂ cutoff of 45 mmHg
+
+Classify a reading of at least 45 mmHg as positive. Sensitivity uses all truly hypercapnic occasions. Specificity uses all truly nonhypercapnic occasions.
+
+| Measure | All settings | Critical Care Billing | ED / inpatient | Ambulatory |
 | --- | --- | --- | --- | --- |
 | True positives per 100 | 24.97 (24.32–25.55) | 27.68 (26.30–28.75) | 20.53 (18.60–22.30) | 21.95 (18.41–24.18) |
 | False positives per 100 | 8.33 (7.04–9.81) | 7.38 (5.35–10.46) | 6.84 (4.33–10.56) | 6.21 (3.03–14.46) |
@@ -14,6 +18,13 @@ Posterior medians and pointwise 95% credible intervals. A single TcCO₂ ≥45 p
 | Negative predictive value (%) | 93.38 (92.54–94.16) | 93.92 (92.09–95.38) | 89.96 (87.74–92.09) | 93.60 (89.23–96.47) |
 | Positive likelihood ratio | 7.20 (6.17–8.42) | 8.10 (5.79–10.94) | 7.80 (5.18–11.86) | 9.76 (4.23–19.13) |
 | Negative likelihood ratio | 0.17 (0.15–0.19) | 0.14 (0.10–0.19) | 0.29 (0.22–0.36) | 0.19 (0.10–0.33) |
+
+## Reflex ABG for continuous TcCO₂ of 40–50 mmHg
+
+Refer the inclusive 40–50 range. Outside it, classify using TcCO₂ alone. In All settings this refers 30.07 per 100, compared with 36.95 for the whole-number device rule. Rounding widens the underlying continuous range that displays 40–50 and the device rule also refers both off-grid tails. [Whole-number referral policies](referral-tables.md)
+
+| Measure | All settings | Critical Care Billing | ED / inpatient | Ambulatory |
+| --- | --- | --- | --- | --- |
 | TcCO₂ <40 (%) | 48.86 (46.72–50.98) | 49.13 (44.67–53.21) | 56.08 (50.26–61.32) | 50.28 (40.70–58.89) |
 | Reflex ABG, 40–50 (%) | 30.07 (28.82–31.27) | 26.85 (24.45–29.06) | 27.15 (23.61–30.80) | 34.95 (28.65–39.93) |
 | TcCO₂ >50 (%) | 21.05 (19.96–22.30) | 24.01 (22.13–26.59) | 16.67 (14.36–19.97) | 14.61 (11.70–21.03) |
