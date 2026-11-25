@@ -17,7 +17,7 @@ from tcco2_accuracy.core.referral_policy import (
 
 GROUPS = {
     "all": "All settings",
-    "icu": "ICU billing proxy",
+    "icu": "Critical Care Billing",
     "ed_inp": "ED/noncritical inpatient",
     "pft": "Ambulatory",
 }

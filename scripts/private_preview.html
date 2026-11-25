@@ -37,7 +37,7 @@
   <section id="private-result" aria-label="Paired arterial prediction" hidden>
     <div id="private-grid" hidden>
       <label for="private-setting">Setting</label>
-      <select id="private-setting"><option value="all">All eligible settings</option><option value="icu">ICU proxy</option><option value="ed_inp">ED / inpatient</option><option value="pft">Ambulatory</option></select>
+      <select id="private-setting"><option value="all">All eligible settings</option><option value="icu">Critical Care Billing</option><option value="ed_inp">ED / inpatient</option><option value="pft">Ambulatory</option></select>
       <label for="private-reading">Observed TcCO₂ (mmHg)</label>
       <input id="private-reading" type="number" min="20" max="100" step="1" value="47">
     </div>
@@ -59,7 +59,7 @@
 
 const byId = (id) => document.getElementById(id);
 const settingNames = {
-  all: "All eligible settings", icu: "ICU billing proxy",
+  all: "All eligible settings", icu: "Critical Care Billing",
   ed_inp: "Emergency department / inpatient", pft: "Ambulatory",
 };
 const fmt = new Intl.NumberFormat("en-US", {maximumSignificantDigits: 12}).format;

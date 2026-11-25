@@ -30,9 +30,9 @@ Within each group all three rows use the same agreement fit. Probabilities are f
 | All settings | archived | 29.4% | 15.3% | 44 | 35 to 53 | 47% | 5% |
 | All settings | reason-first | 29.4% | 15.3% | 44 | 35 to 53 | 47% | 5% |
 | All settings | setting-first | 29.4% | 15.3% | 44 | 35 to 53 | 47% | 5% |
-| ICU billing proxy | archived | 31.6% | 18.8% | 44 | 35 to 54 | 46% | 6% |
-| ICU billing proxy | reason-first | 31.6% | 18.8% | 44 | 35 to 54 | 46% | 6% |
-| ICU billing proxy | setting-first | 31.6% | 18.8% | 44 | 35 to 54 | 46% | 6% |
+| Critical Care Billing | archived | 31.6% | 18.8% | 44 | 35 to 54 | 46% | 6% |
+| Critical Care Billing | reason-first | 31.6% | 18.8% | 44 | 35 to 54 | 46% | 6% |
+| Critical Care Billing | setting-first | 31.6% | 18.8% | 44 | 35 to 54 | 46% | 6% |
 | ED/noncritical inpatient | archived | 27.8% | 12.9% | 45 | 35 to 56 | 54% | 10% |
 | ED/noncritical inpatient | reason-first | 27.8% | 12.9% | 45 | 35 to 56 | 54% | 10% |
 | ED/noncritical inpatient | setting-first | 27.9% | 13.0% | 45 | 35 to 56 | 54% | 10% |
@@ -197,6 +197,6 @@ Setting-first minus archived. Baseline differences use the underlying patient-we
 | Setting | Baseline ≥45 (pp) | Baseline ≥52 (pp) | Lower (mmHg) | Median (mmHg) | Upper (mmHg) | After ≥45 (pp) | After ≥52 (pp) |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | All settings | +0.04 | +0.02 | +0 | +0 | +0 | +0 | +0 |
-| ICU billing proxy | +0.02 | +0.00 | +0 | +0 | +0 | +0 | +0 |
+| Critical Care Billing | +0.02 | +0.00 | +0 | +0 | +0 | +0 | +0 |
 | ED/noncritical inpatient | +0.12 | +0.08 | +0 | +0 | +0 | +0 | +0 |
 | Ambulatory | +0.82 | +0.78 | +0 | +0 | +1 | +0 | +0 |

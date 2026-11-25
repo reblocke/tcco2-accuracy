@@ -1,10 +1,12 @@
 # Questions for independent biostatistical review
 
+Please start with three decisions. Does equal patient weight on the first eligible testing day describe the intended reference population, and does the agreement model transport across arterial levels within each setting? Can you independently reproduce the separate endpoint confidence bounds on the same 75 archive rows? For the displayed-reading rules, do the wrong-call probabilities and residual errors use the right denominators for comparing referral burden?
+
 The primary estimand is simultaneous arterial CO₂ given a transcutaneous reading in a patient like those undergoing arterial blood gas testing. The forward classification analysis answers a separate question. Please record your derivation, any discrepancy and whether it changes an estimate or its interpretation. [Original Research](original-research.docx) · [Supplement](supplement.docx) · [Short Report](letter.docx)
 
 | Question | Evidence for review |
 | --- | --- |
-| Does a patient with total weight one, split over eligible results on the first testing day, represent the intended occasion? Evaluate independent All construction, overlapping setting memberships, the encounter selection window and the ICU billing proxy. | Specimen linkage and within-day ordering are unavailable. Compare date windows, eligible and first-day counts, and threshold estimates before and after restricting to ordinary arterial results. [Cohort characteristics](cohort-and-prediction.md) · [Arterial record definitions and counts](manuscript-aggregate-tables.md#reference-measurement-and-population) |
+| Does a patient with total weight one, split over eligible results on the first testing day, represent the intended occasion? Evaluate independent All construction, overlapping setting memberships, the encounter selection window and the eligibility definition for Critical Care Billing. | Specimen linkage and within-day ordering are unavailable. Compare date windows, eligible and first-day counts, and threshold estimates before and after restricting to ordinary arterial results. [Cohort characteristics](cohort-and-prediction.md) · [Arterial record definitions and counts](manuscript-aggregate-tables.md#reference-measurement-and-population) |
 | Does each selected agreement summary inform a single-occasion paired difference? Review the 75 overall units from 73 publications, 35 baseline Maniscalco pairs, disjoint cohorts, repeated observations and studies with incompletely described averaging, calibration or pairing. | [Source appraisal](study-appraisal.csv) · [Adjudicated units and original reports](../models/future_setting/README.md) |
 | Can one signed disagreement distribution within setting be transported across arterial values and populations? Consider Ruiz’s arterial-level subgroup findings, reference-based grouping, sparse extremes, device failures, and mixed-age and inpatient contributions. | Examine the 48 combinations, changing one input at a time, and the differences of differences relative to All. [Crossed population and fit tables](manuscript-aggregate-tables.md#arterial-population-and-agreement-fit) |
 | How much do the four ambulatory source studies and the log-variance prior influence the predictions? Review the omission of each study, particularly Maniscalco, the four-study half-normal scale of 0.4, and the precision of the resulting estimates. | [Post hoc contrasts recorded before computation](manuscript-contrasts.json) · [Ambulatory estimates, ranges and sampler diagnostics](manuscript-aggregate-tables.md#four-unit-ambulatory-evidence) |
@@ -21,3 +23,16 @@ Please identify corrections required for either paper separately from requests f
 3. Compare risks at the boundary and across each definitive region with residual errors per 100. Separately verify the least-referring policies restricted by whole-strategy FNR and FPR. Are the conditional denominators, undefined rates and within-draw comparisons reported correctly?
 4. Audit the before- and after-screen keys for six indications in three settings. Which differences reflect selection order, which reflect upstream definitions, and which remain unresolved because the May 2025 producer is unidentified? Compare the independent first-day populations on the same agreement fit at 47 mmHg.
 5. Reconcile the four policy panels and the efficiency steps with the tables. The bars sum to 100 with both overflow cells. The figure uses posterior means and the operating table uses posterior medians with pointwise intervals. Assess the cap as a model-based decision preference and the need for validation on both sides of the referral band.
+
+## Numerical reporting audit
+
+Each entry counts whole-mmHg TcCO₂ readings eligible for display out of 81 (20–100). Each cell gives the earlier count followed by the count under the current precision amendment. These checks concern uncertainty in the numerical calculation.
+
+| Population | Both interval endpoints | Probability ≥45 | Probability ≥52 |
+| --- | --- | --- | --- |
+| All settings | 69 → 81 | 81 → 81 | 81 → 81 |
+| Critical Care Billing | 48 → 81 | 81 → 81 | 81 → 81 |
+| ED / inpatient | 62 → 81 | 81 → 81 | 81 → 81 |
+| Ambulatory | 51 → 81 | 81 → 81 | 76 → 81 |
+
+[Earlier example table with editorial markup](https://github.com/reblocke/tcco2-accuracy/blob/4903a7fc381b2f42094889e018d497c5157509c1/works-in-progress/cohort-and-prediction.md)

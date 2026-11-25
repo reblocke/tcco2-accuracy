@@ -18,10 +18,10 @@ Each arterial result record has a unique source ID. Specimen and panel identifie
 | All settings | eligible | 32771-8 | 93,400 | 23,977 |
 | All settings | first | 2019-8 | 335,016 | 126,432 |
 | All settings | first | 32771-8 | 50,851 | 23,525 |
-| ICU proxy | eligible | 2019-8 | 504,065 | 49,287 |
-| ICU proxy | eligible | 32771-8 | 31,726 | 6,758 |
-| ICU proxy | first | 2019-8 | 128,251 | 49,197 |
-| ICU proxy | first | 32771-8 | 13,567 | 6,416 |
+| Critical Care Billing | eligible | 2019-8 | 504,065 | 49,287 |
+| Critical Care Billing | eligible | 32771-8 | 31,726 | 6,758 |
+| Critical Care Billing | first | 2019-8 | 128,251 | 49,197 |
+| Critical Care Billing | first | 32771-8 | 13,567 | 6,416 |
 | ED/inpatient | eligible | 2019-8 | 359,625 | 66,746 |
 | ED/inpatient | eligible | 32771-8 | 59,259 | 15,456 |
 | ED/inpatient | first | 2019-8 | 186,889 | 66,615 |
@@ -39,10 +39,10 @@ Restricting to ordinary PaCO₂ can change a patient’s first eligible day. The
 | All settings | Eligible | 2019-8 only | 126,686 | 130,888 | 925,699 |
 | All settings | First day | Both codes | 142,156 | 142,424 | 385,867 |
 | All settings | First day | 2019-8 only | 126,686 | 126,948 | 336,010 |
-| ICU proxy | Eligible | Both codes | 52,931 | 53,985 | 535,791 |
-| ICU proxy | Eligible | 2019-8 only | 49,287 | 50,245 | 504,065 |
-| ICU proxy | First day | Both codes | 52,931 | 52,968 | 141,818 |
-| ICU proxy | First day | 2019-8 only | 49,287 | 49,322 | 128,373 |
+| Critical Care Billing | Eligible | Both codes | 52,931 | 53,985 | 535,791 |
+| Critical Care Billing | Eligible | 2019-8 only | 49,287 | 50,245 | 504,065 |
+| Critical Care Billing | First day | Both codes | 52,931 | 52,968 | 141,818 |
+| Critical Care Billing | First day | 2019-8 only | 49,287 | 49,322 | 128,373 |
 | ED/inpatient | Eligible | Both codes | 77,119 | 78,561 | 418,884 |
 | ED/inpatient | Eligible | 2019-8 only | 66,746 | 67,757 | 359,625 |
 | ED/inpatient | First day | Both codes | 77,119 | 77,146 | 222,358 |
@@ -57,29 +57,11 @@ The baseline percentages describe PaCO₂ before observing TcCO₂. A residual f
 | Population | Both ≥45 | 2019-8 ≥45 | Both ≥52 | 2019-8 ≥52 | Ordinary residual FN per 100 (95% CrI) | Change in residual FN per 100 (95% CrI) |
 | --- | --- | --- | --- | --- | --- | --- |
 | All settings | 29.39% | 28.01% | 15.25% | 13.60% | 1.22 (0.92–1.60) | 0.02 (0.02–0.03) |
-| ICU proxy | 31.63% | 28.20% | 18.83% | 14.67% | 1.12 (0.63–2.03) | 0.06 (0.03–0.11) |
+| Critical Care Billing | 31.63% | 28.20% | 18.83% | 14.67% | 1.12 (0.63–2.03) | 0.06 (0.03–0.11) |
 | ED/inpatient | 27.81% | 27.46% | 12.89% | 12.47% | 2.97 (1.79–4.62) | 0.02 (0.01–0.03) |
 | Ambulatory | 26.52% | 27.12% | 10.12% | 10.77% | 0.80 (0.19–2.98) | -0.00 (-0.01–-0.00) |
 
-For each displayed cohort characteristic the next table gives the percentage of patient weight with missing encounter data. Zero recorded on a binary indicator may include unrecorded disease.
-
-| Covariate | All settings | ICU proxy | ED/inpatient | Ambulatory |
-| --- | --- | --- | --- | --- |
-| age_at_encounter | 0.000% | 0.000% | 0.000% | 0.000% |
-| male | 0.000% | 0.000% | 0.000% | 0.000% |
-| female | 0.000% | 0.000% | 0.000% | 0.000% |
-| white_race | 0.000% | 0.000% | 0.000% | 0.000% |
-| black_race | 0.000% | 0.000% | 0.000% | 0.000% |
-| asian_race | 0.000% | 0.000% | 0.000% | 0.000% |
-| hisp_eth | 0.000% | 0.000% | 0.000% | 0.000% |
-| osa | 0.000% | 0.000% | 0.000% | 0.000% |
-| asthma | 0.000% | 0.000% | 0.000% | 0.000% |
-| copd | 0.000% | 0.000% | 0.000% | 0.000% |
-| chf | 0.000% | 0.000% | 0.000% | 0.000% |
-| oud | 0.000% | 0.000% | 0.000% | 0.000% |
-| phtn | 0.000% | 0.000% | 0.000% | 0.000% |
-| ckd | 0.000% | 0.000% | 0.000% | 0.000% |
-| dm | 0.000% | 0.000% | 0.000% | 0.000% |
+Across the 15 displayed characteristics in each setting, the percentage of patient weight with a missing stored field rounds to 0.000%. A zero diagnosis indicator can include unrecorded disease. [Field-level missingness audit](https://github.com/reblocke/tcco2-accuracy/blob/4903a7fc381b2f42094889e018d497c5157509c1/works-in-progress/manuscript-aggregate-tables.md#reference-measurement-and-population)
 
 ## Reference-code check at three readings
 
@@ -87,27 +69,27 @@ The first table uses ordinary arterial results and the assigned agreement fit. T
 
 | Arterial population | Agreement fit | TcCO₂ | Median | 95% PI | P(≥45) | P(≥52) |
 | --- | --- | --- | --- | --- | --- | --- |
-| All settings ordinary only | All settings | 35 | 36 | 28 to 44 | 2% | <1% |
-| All settings ordinary only | All settings | 47 | 44 | 35 to 53 | 47% | 5% |
-| All settings ordinary only | All settings | 55 | 52 | 39 to 62 | 87% | 49% |
-| ICU proxy ordinary only | ICU proxy | 35 | 36 | 27 to 44 | 2% | <1% |
-| ICU proxy ordinary only | ICU proxy | 47 | 44 | 35 to 54 | 46% | 6% |
-| ICU proxy ordinary only | ICU proxy | 55 | 52 | 40 to 62 | 89% | 49% |
-| ED/inpatient ordinary only | ED/inpatient | 35 | 37 | 29 to 47 | 6% | 1% |
-| ED/inpatient ordinary only | ED/inpatient | 47 | 45 | 35 to 56 | 54% | 10% |
-| ED/inpatient ordinary only | ED/inpatient | 55 | 52 | 37 to 65 | 84% | 54% |
-| Ambulatory ordinary only | Ambulatory | 35 | 36 | 30 to 44 | 1% | <1% |
-| Ambulatory ordinary only | Ambulatory | 47 | 45 | 37 to 53 | 57% | 4% |
-| Ambulatory ordinary only | Ambulatory | 55 | 53 | 41 to 61 | 93% | 63% |
+| All settings ordinary only | Overall | 35 | 36 | 28 to 44 | 2% | <1% |
+| All settings ordinary only | Overall | 47 | 44 | 35 to 53 | 47% | 5% |
+| All settings ordinary only | Overall | 55 | 52 | 39 to 62 | 87% | 49% |
+| Critical Care Billing ordinary only | ICU | 35 | 36 | 27 to 44 | 2% | <1% |
+| Critical Care Billing ordinary only | ICU | 47 | 44 | 35 to 54 | 46% | 6% |
+| Critical Care Billing ordinary only | ICU | 55 | 52 | 40 to 62 | 89% | 49% |
+| ED/inpatient ordinary only | Acute respiratory failure | 35 | 37 | 29 to 47 | 6% | 1% |
+| ED/inpatient ordinary only | Acute respiratory failure | 47 | 45 | 35 to 56 | 54% | 10% |
+| ED/inpatient ordinary only | Acute respiratory failure | 55 | 52 | 37 to 65 | 84% | 54% |
+| Ambulatory ordinary only | Lung function | 35 | 36 | 30 to 44 | 1% | <1% |
+| Ambulatory ordinary only | Lung function | 47 | 45 | 37 to 53 | 57% | 4% |
+| Ambulatory ordinary only | Lung function | 55 | 53 | 41 to 61 | 93% | 63% |
 
 | Population | TcCO₂ | Δ lower | Δ median | Δ upper | Δ ≥45 (pp) | Δ ≥52 (pp) |
 | --- | --- | --- | --- | --- | --- | --- |
 | All settings | 35 | +0.0 | +0.0 | +0.0 | -0.0 | +0.0 |
 | All settings | 47 | +0.0 | +0.0 | +0.0 | -0.1 | +0.0 |
 | All settings | 55 | +0.0 | +0.0 | +0.0 | -0.0 | -0.0 |
-| ICU proxy | 35 | +0.0 | +0.1 | +0.0 | +0.0 | -0.0 |
-| ICU proxy | 47 | +0.0 | +0.0 | +0.0 | -0.1 | -0.2 |
-| ICU proxy | 55 | +0.0 | -0.3 | -0.9 | -0.3 | -1.2 |
+| Critical Care Billing | 35 | +0.0 | +0.1 | +0.0 | +0.0 | -0.0 |
+| Critical Care Billing | 47 | +0.0 | +0.0 | +0.0 | -0.1 | -0.2 |
+| Critical Care Billing | 55 | +0.0 | -0.3 | -0.9 | -0.3 | -1.2 |
 | ED/inpatient | 35 | +0.0 | +0.2 | +0.0 | -0.0 | +0.0 |
 | ED/inpatient | 47 | +0.0 | +0.0 | +0.0 | -0.1 | +0.2 |
 | ED/inpatient | 55 | +0.0 | +0.0 | +0.0 | +0.1 | +0.4 |
@@ -121,136 +103,136 @@ The 12 assigned pairs reproduce the approved unrounded lookup. Each other pair a
 
 | Arterial population | Agreement fit | TcCO₂ | Median | 95% PI | P(≥45) | P(≥52) |
 | --- | --- | --- | --- | --- | --- | --- |
-| All settings | All settings | 35 | 36 | 28 to 44 | 2% | <1% |
-| All settings | ICU proxy | 35 | 36 | 28 to 45 | 2% | <1% |
-| All settings | ED/inpatient | 35 | 37 | 29 to 47 | 6% | 1% |
-| All settings | Ambulatory | 35 | 36 | 29 to 43 | 1% | <1% |
-| ICU proxy | All settings | 35 | 36 | 27 to 44 | 2% | <1% |
-| ICU proxy | ICU proxy | 35 | 35 | 27 to 44 | 2% | <1% |
-| ICU proxy | ED/inpatient | 35 | 37 | 28 to 47 | 6% | 1% |
-| ICU proxy | Ambulatory | 35 | 35 | 29 to 43 | 1% | <1% |
-| ED/inpatient | All settings | 35 | 36 | 28 to 44 | 2% | <1% |
-| ED/inpatient | ICU proxy | 35 | 36 | 28 to 45 | 3% | <1% |
-| ED/inpatient | ED/inpatient | 35 | 37 | 29 to 47 | 6% | 1% |
-| ED/inpatient | Ambulatory | 35 | 36 | 30 to 43 | 1% | <1% |
-| Ambulatory | All settings | 35 | 36 | 29 to 45 | 2% | <1% |
-| Ambulatory | ICU proxy | 35 | 36 | 29 to 45 | 3% | <1% |
-| Ambulatory | ED/inpatient | 35 | 37 | 30 to 47 | 6% | 1% |
-| Ambulatory | Ambulatory | 35 | 36 | 30 to 44 | 1% | <1% |
-| All settings | All settings | 47 | 44 | 35 to 53 | 47% | 5% |
-| All settings | ICU proxy | 47 | 44 | 35 to 54 | 45% | 5% |
-| All settings | ED/inpatient | 47 | 45 | 35 to 56 | 55% | 10% |
-| All settings | Ambulatory | 47 | 45 | 37 to 53 | 58% | 4% |
-| ICU proxy | All settings | 47 | 44 | 35 to 54 | 48% | 6% |
-| ICU proxy | ICU proxy | 47 | 44 | 35 to 54 | 46% | 6% |
-| ICU proxy | ED/inpatient | 47 | 45 | 34 to 57 | 57% | 12% |
-| ICU proxy | Ambulatory | 47 | 45 | 37 to 53 | 59% | 5% |
-| ED/inpatient | All settings | 47 | 44 | 35 to 53 | 46% | 5% |
-| ED/inpatient | ICU proxy | 47 | 44 | 35 to 53 | 44% | 5% |
-| ED/inpatient | ED/inpatient | 47 | 45 | 35 to 56 | 54% | 10% |
-| ED/inpatient | Ambulatory | 47 | 45 | 37 to 53 | 57% | 4% |
-| Ambulatory | All settings | 47 | 44 | 35 to 53 | 47% | 5% |
-| Ambulatory | ICU proxy | 47 | 44 | 36 to 53 | 44–45% | 5% |
-| Ambulatory | ED/inpatient | 47 | 45 | 35 to 55 | 55% | 9% |
-| Ambulatory | Ambulatory | 47 | 45 | 37 to 52 | 58% | 4% |
-| All settings | All settings | 55 | 52 | 39 to 62 | 87% | 49% |
-| All settings | ICU proxy | 55 | 51 | 40 to 62 | 88% | 47% |
-| All settings | ED/inpatient | 55 | 52 | 37 to 66 | 85% | 55% |
-| All settings | Ambulatory | 55 | 53 | 41 to 61 | 93% | 64% |
-| ICU proxy | All settings | 55 | 52 | 39 to 63 | 88% | 53% |
-| ICU proxy | ICU proxy | 55 | 52 | 40 to 63 | 89% | 51% |
-| ICU proxy | ED/inpatient | 55 | 53 | 37 to 67 | 87% | 59% |
-| ICU proxy | Ambulatory | 55 | 53 | 41 to 62 | 94% | 67% |
-| ED/inpatient | All settings | 55 | 51 | 38 to 62 | 86% | 47% |
-| ED/inpatient | ICU proxy | 55 | 51 | 39 to 62 | 87% | 46% |
-| ED/inpatient | ED/inpatient | 55 | 52 | 37 to 65 | 84% | 53% |
-| ED/inpatient | Ambulatory | 55 | 53 | 41 to 61 | 93% | 63% |
-| Ambulatory | All settings | 55 | 51 | 39 to 61 | 86% | 46% |
-| Ambulatory | ICU proxy | 55 | 51 | 39 to 61 | 87% | 44% |
-| Ambulatory | ED/inpatient | 55 | 52 | 37 to 64 | 83% | 51% |
-| Ambulatory | Ambulatory | 55 | 53 | 41 to 61 | 93% | 61% |
+| All settings | Overall | 35 | 36 | 28 to 44 | 2% | <1% |
+| All settings | ICU | 35 | 36 | 28 to 45 | 2% | <1% |
+| All settings | Acute respiratory failure | 35 | 37 | 29 to 47 | 6% | 1% |
+| All settings | Lung function | 35 | 36 | 29 to 43 | 1% | <1% |
+| Critical Care Billing | Overall | 35 | 36 | 27 to 44 | 2% | <1% |
+| Critical Care Billing | ICU | 35 | 35 | 27 to 44 | 2% | <1% |
+| Critical Care Billing | Acute respiratory failure | 35 | 37 | 28 to 47 | 6% | 1% |
+| Critical Care Billing | Lung function | 35 | 35 | 29 to 43 | 1% | <1% |
+| ED/inpatient | Overall | 35 | 36 | 28 to 44 | 2% | <1% |
+| ED/inpatient | ICU | 35 | 36 | 28 to 45 | 3% | <1% |
+| ED/inpatient | Acute respiratory failure | 35 | 37 | 29 to 47 | 6% | 1% |
+| ED/inpatient | Lung function | 35 | 36 | 30 to 43 | 1% | <1% |
+| Ambulatory | Overall | 35 | 36 | 29 to 45 | 2% | <1% |
+| Ambulatory | ICU | 35 | 36 | 29 to 45 | 3% | <1% |
+| Ambulatory | Acute respiratory failure | 35 | 37 | 30 to 47 | 6% | 1% |
+| Ambulatory | Lung function | 35 | 36 | 30 to 44 | 1% | <1% |
+| All settings | Overall | 47 | 44 | 35 to 53 | 47% | 5% |
+| All settings | ICU | 47 | 44 | 35 to 54 | 45% | 5% |
+| All settings | Acute respiratory failure | 47 | 45 | 35 to 56 | 55% | 10% |
+| All settings | Lung function | 47 | 45 | 37 to 53 | 58% | 4% |
+| Critical Care Billing | Overall | 47 | 44 | 35 to 54 | 48% | 6% |
+| Critical Care Billing | ICU | 47 | 44 | 35 to 54 | 46% | 6% |
+| Critical Care Billing | Acute respiratory failure | 47 | 45 | 34 to 57 | 57% | 12% |
+| Critical Care Billing | Lung function | 47 | 45 | 37 to 53 | 59% | 5% |
+| ED/inpatient | Overall | 47 | 44 | 35 to 53 | 46% | 5% |
+| ED/inpatient | ICU | 47 | 44 | 35 to 53 | 44% | 5% |
+| ED/inpatient | Acute respiratory failure | 47 | 45 | 35 to 56 | 54% | 10% |
+| ED/inpatient | Lung function | 47 | 45 | 37 to 53 | 57% | 4% |
+| Ambulatory | Overall | 47 | 44 | 35 to 53 | 47% | 5% |
+| Ambulatory | ICU | 47 | 44 | 36 to 53 | 44–45% | 5% |
+| Ambulatory | Acute respiratory failure | 47 | 45 | 35 to 55 | 55% | 9% |
+| Ambulatory | Lung function | 47 | 45 | 37 to 52 | 58% | 4% |
+| All settings | Overall | 55 | 52 | 39 to 62 | 87% | 49% |
+| All settings | ICU | 55 | 51 | 40 to 62 | 88% | 47% |
+| All settings | Acute respiratory failure | 55 | 52 | 37 to 66 | 85% | 55% |
+| All settings | Lung function | 55 | 53 | 41 to 61 | 93% | 64% |
+| Critical Care Billing | Overall | 55 | 52 | 39 to 63 | 88% | 53% |
+| Critical Care Billing | ICU | 55 | 52 | 40 to 63 | 89% | 51% |
+| Critical Care Billing | Acute respiratory failure | 55 | 53 | 37 to 67 | 87% | 59% |
+| Critical Care Billing | Lung function | 55 | 53 | 41 to 62 | 94% | 67% |
+| ED/inpatient | Overall | 55 | 51 | 38 to 62 | 86% | 47% |
+| ED/inpatient | ICU | 55 | 51 | 39 to 62 | 87% | 46% |
+| ED/inpatient | Acute respiratory failure | 55 | 52 | 37 to 65 | 84% | 53% |
+| ED/inpatient | Lung function | 55 | 53 | 41 to 61 | 93% | 63% |
+| Ambulatory | Overall | 55 | 51 | 39 to 61 | 86% | 46% |
+| Ambulatory | ICU | 55 | 51 | 39 to 61 | 87% | 44% |
+| Ambulatory | Acute respiratory failure | 55 | 52 | 37 to 64 | 83% | 51% |
+| Ambulatory | Lung function | 55 | 53 | 41 to 61 | 93% | 61% |
 
 ### Change the agreement fit while holding the arterial population fixed
 
 | Population | Fit | TcCO₂ | Δ lower | Δ median | Δ upper | Δ ≥45 (pp) | Δ ≥52 (pp) |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| ICU proxy | All settings | 35 | +0.2 | +0.1 | -0.2 | -0.1 | +0.0 |
-| ICU proxy | All settings | 47 | -0.1 | +0.3 | +0.0 | +2.3 | -0.2 |
-| ICU proxy | All settings | 55 | -1.0 | +0.0 | +0.0 | -0.8 | +1.9 |
-| ED/inpatient | All settings | 35 | -1.0 | -1.0 | -2.7 | -3.4 | -0.4 |
-| ED/inpatient | All settings | 47 | +0.0 | -1.0 | -3.0 | -7.9 | -4.8 |
-| ED/inpatient | All settings | 55 | +1.4 | -1.0 | -3.0 | +1.9 | -5.7 |
-| Ambulatory | All settings | 35 | -1.0 | +0.0 | +1.3 | +1.0 | +0.1 |
-| Ambulatory | All settings | 47 | -1.8 | -1.0 | +0.8 | -11.0 | +0.9 |
-| Ambulatory | All settings | 55 | -2.5 | -2.0 | +0.0 | -7.1 | -15.7 |
-| All settings | ICU proxy | 35 | +0.0 | +0.0 | +0.6 | +0.1 | -0.0 |
-| All settings | ICU proxy | 47 | +0.0 | +0.0 | +0.4 | -2.4 | +0.1 |
-| All settings | ICU proxy | 55 | +0.9 | -0.6 | +0.0 | +0.9 | -2.0 |
-| ED/inpatient | ICU proxy | 35 | -1.0 | -1.0 | -2.0 | -3.2 | -0.4 |
-| ED/inpatient | ICU proxy | 47 | +0.3 | -1.0 | -3.0 | -10.3 | -4.7 |
-| ED/inpatient | ICU proxy | 55 | +2.0 | -1.0 | -3.0 | +2.8 | -7.7 |
-| Ambulatory | ICU proxy | 35 | -1.0 | +0.0 | +1.4 | +1.2 | +0.0 |
-| Ambulatory | ICU proxy | 47 | -1.2 | -1.0 | +0.8 | -13.4 | +1.0 |
-| Ambulatory | ICU proxy | 55 | -1.8 | -2.0 | +0.0 | -6.2 | -17.7 |
-| All settings | ED/inpatient | 35 | +1.0 | +1.0 | +2.9 | +3.4 | +0.5 |
-| All settings | ED/inpatient | 47 | +0.0 | +1.0 | +2.7 | +8.0 | +5.2 |
-| All settings | ED/inpatient | 55 | -1.8 | +0.7 | +3.9 | -1.7 | +6.1 |
-| ICU proxy | ED/inpatient | 35 | +1.0 | +1.6 | +2.8 | +3.3 | +0.5 |
-| ICU proxy | ED/inpatient | 47 | -1.0 | +1.3 | +3.0 | +10.6 | +5.7 |
-| ICU proxy | ED/inpatient | 55 | -3.1 | +1.0 | +4.0 | -2.3 | +8.5 |
-| Ambulatory | ED/inpatient | 35 | -0.3 | +1.2 | +3.4 | +4.5 | +0.5 |
-| Ambulatory | ED/inpatient | 47 | -2.0 | +0.0 | +2.8 | -3.3 | +5.4 |
-| Ambulatory | ED/inpatient | 55 | -4.0 | -1.0 | +3.0 | -9.3 | -10.6 |
-| All settings | Ambulatory | 35 | +1.0 | +0.0 | -1.1 | -0.9 | -0.1 |
-| All settings | Ambulatory | 47 | +2.0 | +1.0 | -0.3 | +11.0 | -1.0 |
-| All settings | Ambulatory | 55 | +2.2 | +1.4 | -0.6 | +6.7 | +14.8 |
-| ICU proxy | Ambulatory | 35 | +2.0 | -0.3 | -1.2 | -1.0 | -0.0 |
-| ICU proxy | Ambulatory | 47 | +2.0 | +1.3 | -1.0 | +13.3 | -1.3 |
-| ICU proxy | Ambulatory | 55 | +1.0 | +1.0 | -1.0 | +5.3 | +16.1 |
-| ED/inpatient | Ambulatory | 35 | +0.5 | -1.0 | -4.0 | -4.4 | -0.5 |
-| ED/inpatient | Ambulatory | 47 | +2.0 | +0.0 | -3.3 | +3.2 | -5.7 |
-| ED/inpatient | Ambulatory | 55 | +4.0 | +1.0 | -4.0 | +9.0 | +9.6 |
+| Critical Care Billing | Overall | 35 | +0.2 | +0.1 | -0.2 | -0.1 | +0.0 |
+| Critical Care Billing | Overall | 47 | -0.1 | +0.3 | +0.0 | +2.3 | -0.2 |
+| Critical Care Billing | Overall | 55 | -1.0 | +0.0 | +0.0 | -0.8 | +1.9 |
+| ED/inpatient | Overall | 35 | -1.0 | -1.0 | -2.7 | -3.4 | -0.4 |
+| ED/inpatient | Overall | 47 | +0.0 | -1.0 | -3.0 | -7.9 | -4.8 |
+| ED/inpatient | Overall | 55 | +1.4 | -1.0 | -3.0 | +1.9 | -5.7 |
+| Ambulatory | Overall | 35 | -1.0 | +0.0 | +1.3 | +1.0 | +0.1 |
+| Ambulatory | Overall | 47 | -1.8 | -1.0 | +0.8 | -11.0 | +0.9 |
+| Ambulatory | Overall | 55 | -2.5 | -2.0 | +0.0 | -7.1 | -15.7 |
+| All settings | ICU | 35 | +0.0 | +0.0 | +0.6 | +0.1 | -0.0 |
+| All settings | ICU | 47 | +0.0 | +0.0 | +0.4 | -2.4 | +0.1 |
+| All settings | ICU | 55 | +0.9 | -0.6 | +0.0 | +0.9 | -2.0 |
+| ED/inpatient | ICU | 35 | -1.0 | -1.0 | -2.0 | -3.2 | -0.4 |
+| ED/inpatient | ICU | 47 | +0.3 | -1.0 | -3.0 | -10.3 | -4.7 |
+| ED/inpatient | ICU | 55 | +2.0 | -1.0 | -3.0 | +2.8 | -7.7 |
+| Ambulatory | ICU | 35 | -1.0 | +0.0 | +1.4 | +1.2 | +0.0 |
+| Ambulatory | ICU | 47 | -1.2 | -1.0 | +0.8 | -13.4 | +1.0 |
+| Ambulatory | ICU | 55 | -1.8 | -2.0 | +0.0 | -6.2 | -17.7 |
+| All settings | Acute respiratory failure | 35 | +1.0 | +1.0 | +2.9 | +3.4 | +0.5 |
+| All settings | Acute respiratory failure | 47 | +0.0 | +1.0 | +2.7 | +8.0 | +5.2 |
+| All settings | Acute respiratory failure | 55 | -1.8 | +0.7 | +3.9 | -1.7 | +6.1 |
+| Critical Care Billing | Acute respiratory failure | 35 | +1.0 | +1.6 | +2.8 | +3.3 | +0.5 |
+| Critical Care Billing | Acute respiratory failure | 47 | -1.0 | +1.3 | +3.0 | +10.6 | +5.7 |
+| Critical Care Billing | Acute respiratory failure | 55 | -3.1 | +1.0 | +4.0 | -2.3 | +8.5 |
+| Ambulatory | Acute respiratory failure | 35 | -0.3 | +1.2 | +3.4 | +4.5 | +0.5 |
+| Ambulatory | Acute respiratory failure | 47 | -2.0 | +0.0 | +2.8 | -3.3 | +5.4 |
+| Ambulatory | Acute respiratory failure | 55 | -4.0 | -1.0 | +3.0 | -9.3 | -10.6 |
+| All settings | Lung function | 35 | +1.0 | +0.0 | -1.1 | -0.9 | -0.1 |
+| All settings | Lung function | 47 | +2.0 | +1.0 | -0.3 | +11.0 | -1.0 |
+| All settings | Lung function | 55 | +2.2 | +1.4 | -0.6 | +6.7 | +14.8 |
+| Critical Care Billing | Lung function | 35 | +2.0 | -0.3 | -1.2 | -1.0 | -0.0 |
+| Critical Care Billing | Lung function | 47 | +2.0 | +1.3 | -1.0 | +13.3 | -1.3 |
+| Critical Care Billing | Lung function | 55 | +1.0 | +1.0 | -1.0 | +5.3 | +16.1 |
+| ED/inpatient | Lung function | 35 | +0.5 | -1.0 | -4.0 | -4.4 | -0.5 |
+| ED/inpatient | Lung function | 47 | +2.0 | +0.0 | -3.3 | +3.2 | -5.7 |
+| ED/inpatient | Lung function | 55 | +4.0 | +1.0 | -4.0 | +9.0 | +9.6 |
 
 ### Change the arterial population while holding the agreement fit fixed
 
 | Population | Fit | TcCO₂ | Δ lower | Δ median | Δ upper | Δ ≥45 (pp) | Δ ≥52 (pp) |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| ICU proxy | All settings | 35 | -0.8 | -0.5 | -0.1 | -0.1 | +0.0 |
-| ICU proxy | All settings | 47 | -0.1 | +0.3 | +0.7 | +1.3 | +0.6 |
-| ICU proxy | All settings | 55 | +0.2 | +0.4 | +1.0 | +1.4 | +3.2 |
-| ED/inpatient | All settings | 35 | +0.0 | +0.0 | +0.2 | +0.1 | -0.0 |
-| ED/inpatient | All settings | 47 | +0.0 | +0.0 | -0.3 | -0.8 | -0.3 |
-| ED/inpatient | All settings | 55 | -0.4 | -0.6 | +0.0 | -0.9 | -1.9 |
-| Ambulatory | All settings | 35 | +1.0 | +0.0 | +0.8 | +0.2 | -0.0 |
-| Ambulatory | All settings | 47 | +0.2 | +0.0 | -0.3 | -0.0 | -0.5 |
-| Ambulatory | All settings | 55 | -0.3 | -0.6 | -1.0 | -1.1 | -3.6 |
-| All settings | ICU proxy | 35 | +1.0 | +0.6 | +0.5 | +0.2 | -0.0 |
-| All settings | ICU proxy | 47 | +0.0 | +0.0 | -0.3 | -1.4 | -0.7 |
-| All settings | ICU proxy | 55 | -0.3 | -1.0 | -1.0 | -1.3 | -3.2 |
-| ED/inpatient | ICU proxy | 35 | +1.0 | +0.6 | +0.8 | +0.3 | -0.0 |
-| ED/inpatient | ICU proxy | 47 | +0.3 | +0.0 | -1.0 | -2.2 | -1.0 |
-| ED/inpatient | ICU proxy | 55 | -1.0 | -1.0 | -1.0 | -2.2 | -5.1 |
-| Ambulatory | ICU proxy | 35 | +2.0 | +0.6 | +0.8 | +0.4 | -0.0 |
-| Ambulatory | ICU proxy | 47 | +0.8 | +0.0 | -1.0 | -1.5 | -1.2 |
-| Ambulatory | ICU proxy | 55 | -0.8 | -1.0 | -2.0 | -2.4 | -6.9 |
-| All settings | ED/inpatient | 35 | +0.0 | +0.0 | +0.0 | -0.1 | +0.0 |
-| All settings | ED/inpatient | 47 | +0.0 | +0.0 | +0.0 | +1.0 | +0.7 |
-| All settings | ED/inpatient | 55 | +0.0 | +0.3 | +0.9 | +1.1 | +2.2 |
-| ICU proxy | ED/inpatient | 35 | -1.0 | +0.0 | +0.0 | -0.2 | +0.1 |
-| ICU proxy | ED/inpatient | 47 | -1.0 | +0.3 | +1.0 | +2.5 | +2.0 |
-| ICU proxy | ED/inpatient | 55 | -0.1 | +1.0 | +2.0 | +2.7 | +5.9 |
-| Ambulatory | ED/inpatient | 35 | +0.7 | +0.2 | +0.0 | +0.3 | -0.0 |
-| Ambulatory | ED/inpatient | 47 | +0.0 | +0.0 | -1.0 | +0.6 | -0.5 |
-| Ambulatory | ED/inpatient | 55 | +0.0 | +0.0 | -1.0 | -0.4 | -2.3 |
-| All settings | Ambulatory | 35 | -1.0 | +0.0 | -0.6 | -0.1 | +0.0 |
-| All settings | Ambulatory | 47 | +0.0 | +0.0 | +0.8 | +0.1 | +0.5 |
-| All settings | Ambulatory | 55 | +0.0 | +0.0 | +0.4 | +0.7 | +2.8 |
-| ICU proxy | Ambulatory | 35 | -1.0 | -0.9 | -0.6 | -0.2 | +0.0 |
-| ICU proxy | Ambulatory | 47 | +0.0 | +0.3 | +0.8 | +1.3 | +0.9 |
-| ICU proxy | Ambulatory | 55 | +0.0 | +0.0 | +1.0 | +1.4 | +5.2 |
-| ED/inpatient | Ambulatory | 35 | -0.5 | +0.0 | -0.6 | -0.1 | +0.0 |
-| ED/inpatient | Ambulatory | 47 | +0.0 | +0.0 | +0.5 | -0.6 | +0.2 |
-| ED/inpatient | Ambulatory | 55 | +0.0 | +0.0 | +0.0 | +0.1 | +1.3 |
+| Critical Care Billing | Overall | 35 | -0.8 | -0.5 | -0.1 | -0.1 | +0.0 |
+| Critical Care Billing | Overall | 47 | -0.1 | +0.3 | +0.7 | +1.3 | +0.6 |
+| Critical Care Billing | Overall | 55 | +0.2 | +0.4 | +1.0 | +1.4 | +3.2 |
+| ED/inpatient | Overall | 35 | +0.0 | +0.0 | +0.2 | +0.1 | -0.0 |
+| ED/inpatient | Overall | 47 | +0.0 | +0.0 | -0.3 | -0.8 | -0.3 |
+| ED/inpatient | Overall | 55 | -0.4 | -0.6 | +0.0 | -0.9 | -1.9 |
+| Ambulatory | Overall | 35 | +1.0 | +0.0 | +0.8 | +0.2 | -0.0 |
+| Ambulatory | Overall | 47 | +0.2 | +0.0 | -0.3 | -0.0 | -0.5 |
+| Ambulatory | Overall | 55 | -0.3 | -0.6 | -1.0 | -1.1 | -3.6 |
+| All settings | ICU | 35 | +1.0 | +0.6 | +0.5 | +0.2 | -0.0 |
+| All settings | ICU | 47 | +0.0 | +0.0 | -0.3 | -1.4 | -0.7 |
+| All settings | ICU | 55 | -0.3 | -1.0 | -1.0 | -1.3 | -3.2 |
+| ED/inpatient | ICU | 35 | +1.0 | +0.6 | +0.8 | +0.3 | -0.0 |
+| ED/inpatient | ICU | 47 | +0.3 | +0.0 | -1.0 | -2.2 | -1.0 |
+| ED/inpatient | ICU | 55 | -1.0 | -1.0 | -1.0 | -2.2 | -5.1 |
+| Ambulatory | ICU | 35 | +2.0 | +0.6 | +0.8 | +0.4 | -0.0 |
+| Ambulatory | ICU | 47 | +0.8 | +0.0 | -1.0 | -1.5 | -1.2 |
+| Ambulatory | ICU | 55 | -0.8 | -1.0 | -2.0 | -2.4 | -6.9 |
+| All settings | Acute respiratory failure | 35 | +0.0 | +0.0 | +0.0 | -0.1 | +0.0 |
+| All settings | Acute respiratory failure | 47 | +0.0 | +0.0 | +0.0 | +1.0 | +0.7 |
+| All settings | Acute respiratory failure | 55 | +0.0 | +0.3 | +0.9 | +1.1 | +2.2 |
+| Critical Care Billing | Acute respiratory failure | 35 | -1.0 | +0.0 | +0.0 | -0.2 | +0.1 |
+| Critical Care Billing | Acute respiratory failure | 47 | -1.0 | +0.3 | +1.0 | +2.5 | +2.0 |
+| Critical Care Billing | Acute respiratory failure | 55 | -0.1 | +1.0 | +2.0 | +2.7 | +5.9 |
+| Ambulatory | Acute respiratory failure | 35 | +0.7 | +0.2 | +0.0 | +0.3 | -0.0 |
+| Ambulatory | Acute respiratory failure | 47 | +0.0 | +0.0 | -1.0 | +0.6 | -0.5 |
+| Ambulatory | Acute respiratory failure | 55 | +0.0 | +0.0 | -1.0 | -0.4 | -2.3 |
+| All settings | Lung function | 35 | -1.0 | +0.0 | -0.6 | -0.1 | +0.0 |
+| All settings | Lung function | 47 | +0.0 | +0.0 | +0.8 | +0.1 | +0.5 |
+| All settings | Lung function | 55 | +0.0 | +0.0 | +0.4 | +0.7 | +2.8 |
+| Critical Care Billing | Lung function | 35 | -1.0 | -0.9 | -0.6 | -0.2 | +0.0 |
+| Critical Care Billing | Lung function | 47 | +0.0 | +0.3 | +0.8 | +1.3 | +0.9 |
+| Critical Care Billing | Lung function | 55 | +0.0 | +0.0 | +1.0 | +1.4 | +5.2 |
+| ED/inpatient | Lung function | 35 | -0.5 | +0.0 | -0.6 | -0.1 | +0.0 |
+| ED/inpatient | Lung function | 47 | +0.0 | +0.0 | +0.5 | -0.6 | +0.2 |
+| ED/inpatient | Lung function | 55 | +0.0 | +0.0 | +0.0 | +0.1 | +1.3 |
 
 ### Interaction compared with All
 
@@ -258,33 +240,33 @@ Each entry is the effect of changing the fit from All in the indicated populatio
 
 | Population | Fit | TcCO₂ | ΔΔ lower | ΔΔ median | ΔΔ upper | ΔΔ ≥45 (pp) | ΔΔ ≥52 (pp) |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| ICU proxy | ICU proxy | 35 | -0.2 | -0.1 | -0.4 | -0.0 | -0.0 |
-| ICU proxy | ICU proxy | 47 | +0.1 | -0.3 | -0.4 | +0.1 | +0.0 |
-| ICU proxy | ICU proxy | 55 | +0.1 | +0.6 | +0.0 | -0.1 | +0.0 |
-| ICU proxy | ED/inpatient | 35 | -0.2 | +0.5 | +0.1 | -0.0 | +0.1 |
-| ICU proxy | ED/inpatient | 47 | -0.9 | +0.0 | +0.3 | +0.2 | +0.7 |
-| ICU proxy | ED/inpatient | 55 | -0.3 | +0.3 | +0.1 | +0.3 | +0.5 |
-| ICU proxy | Ambulatory | 35 | +0.8 | -0.4 | +0.1 | +0.1 | -0.0 |
-| ICU proxy | Ambulatory | 47 | +0.1 | +0.0 | -0.7 | -0.1 | -0.2 |
-| ICU proxy | Ambulatory | 55 | -0.2 | -0.4 | -0.4 | -0.6 | -0.7 |
-| ED/inpatient | ICU proxy | 35 | +0.0 | +0.0 | +0.1 | +0.0 | +0.0 |
-| ED/inpatient | ICU proxy | 47 | +0.3 | +0.0 | -0.4 | -0.0 | -0.0 |
-| ED/inpatient | ICU proxy | 55 | -0.3 | +0.6 | +0.0 | +0.0 | -0.0 |
-| ED/inpatient | ED/inpatient | 35 | +0.0 | +0.0 | -0.2 | -0.0 | -0.0 |
-| ED/inpatient | ED/inpatient | 47 | +0.0 | +0.0 | +0.3 | -0.1 | -0.4 |
-| ED/inpatient | ED/inpatient | 55 | +0.4 | +0.3 | -0.9 | -0.2 | -0.4 |
-| ED/inpatient | Ambulatory | 35 | +0.5 | +0.0 | -0.2 | -0.0 | +0.0 |
-| ED/inpatient | Ambulatory | 47 | +0.0 | +0.0 | +0.0 | +0.1 | +0.1 |
-| ED/inpatient | Ambulatory | 55 | +0.4 | +0.6 | -0.4 | +0.4 | +0.4 |
-| Ambulatory | ICU proxy | 35 | +0.0 | +0.0 | -0.5 | +0.0 | +0.0 |
-| Ambulatory | ICU proxy | 47 | +0.6 | +0.0 | -0.4 | -0.0 | -0.0 |
-| Ambulatory | ICU proxy | 55 | -0.2 | +0.6 | +0.0 | +0.0 | -0.1 |
-| Ambulatory | ED/inpatient | 35 | -0.3 | +0.2 | -0.8 | +0.1 | -0.0 |
-| Ambulatory | ED/inpatient | 47 | -0.2 | +0.0 | -0.7 | -0.3 | -0.7 |
-| Ambulatory | ED/inpatient | 55 | +0.3 | +0.3 | -0.9 | -0.4 | -0.9 |
-| Ambulatory | Ambulatory | 35 | +0.0 | +0.0 | -0.2 | -0.1 | +0.0 |
-| Ambulatory | Ambulatory | 47 | -0.2 | +0.0 | -0.5 | -0.1 | +0.1 |
-| Ambulatory | Ambulatory | 55 | +0.3 | +0.6 | +0.6 | +0.5 | +0.9 |
+| Critical Care Billing | ICU | 35 | -0.2 | -0.1 | -0.4 | -0.0 | -0.0 |
+| Critical Care Billing | ICU | 47 | +0.1 | -0.3 | -0.4 | +0.1 | +0.0 |
+| Critical Care Billing | ICU | 55 | +0.1 | +0.6 | +0.0 | -0.1 | +0.0 |
+| Critical Care Billing | Acute respiratory failure | 35 | -0.2 | +0.5 | +0.1 | -0.0 | +0.1 |
+| Critical Care Billing | Acute respiratory failure | 47 | -0.9 | +0.0 | +0.3 | +0.2 | +0.7 |
+| Critical Care Billing | Acute respiratory failure | 55 | -0.3 | +0.3 | +0.1 | +0.3 | +0.5 |
+| Critical Care Billing | Lung function | 35 | +0.8 | -0.4 | +0.1 | +0.1 | -0.0 |
+| Critical Care Billing | Lung function | 47 | +0.1 | +0.0 | -0.7 | -0.1 | -0.2 |
+| Critical Care Billing | Lung function | 55 | -0.2 | -0.4 | -0.4 | -0.6 | -0.7 |
+| ED/inpatient | ICU | 35 | +0.0 | +0.0 | +0.1 | +0.0 | +0.0 |
+| ED/inpatient | ICU | 47 | +0.3 | +0.0 | -0.4 | -0.0 | -0.0 |
+| ED/inpatient | ICU | 55 | -0.3 | +0.6 | +0.0 | +0.0 | -0.0 |
+| ED/inpatient | Acute respiratory failure | 35 | +0.0 | +0.0 | -0.2 | -0.0 | -0.0 |
+| ED/inpatient | Acute respiratory failure | 47 | +0.0 | +0.0 | +0.3 | -0.1 | -0.4 |
+| ED/inpatient | Acute respiratory failure | 55 | +0.4 | +0.3 | -0.9 | -0.2 | -0.4 |
+| ED/inpatient | Lung function | 35 | +0.5 | +0.0 | -0.2 | -0.0 | +0.0 |
+| ED/inpatient | Lung function | 47 | +0.0 | +0.0 | +0.0 | +0.1 | +0.1 |
+| ED/inpatient | Lung function | 55 | +0.4 | +0.6 | -0.4 | +0.4 | +0.4 |
+| Ambulatory | ICU | 35 | +0.0 | +0.0 | -0.5 | +0.0 | +0.0 |
+| Ambulatory | ICU | 47 | +0.6 | +0.0 | -0.4 | -0.0 | -0.0 |
+| Ambulatory | ICU | 55 | -0.2 | +0.6 | +0.0 | +0.0 | -0.1 |
+| Ambulatory | Acute respiratory failure | 35 | -0.3 | +0.2 | -0.8 | +0.1 | -0.0 |
+| Ambulatory | Acute respiratory failure | 47 | -0.2 | +0.0 | -0.7 | -0.3 | -0.7 |
+| Ambulatory | Acute respiratory failure | 55 | +0.3 | +0.3 | -0.9 | -0.4 | -0.9 |
+| Ambulatory | Lung function | 35 | +0.0 | +0.0 | -0.2 | -0.1 | +0.0 |
+| Ambulatory | Lung function | 47 | -0.2 | +0.0 | -0.5 | -0.1 | +0.1 |
+| Ambulatory | Lung function | 55 | +0.3 | +0.6 | +0.6 | +0.5 | +0.9 |
 
 ## Four-unit ambulatory evidence
 
@@ -333,6 +315,6 @@ The following contrasts subtract the single-threshold errors from the two-stage 
 | Population | Difference in false negatives per 100 (95% CrI) | Difference in false positives per 100 (95% CrI) |
 | --- | --- | --- |
 | All settings | -3.21 (-3.60–-2.85) | -6.25 (-7.14–-5.42) |
-| ICU proxy | -2.86 (-3.57–-2.20) | -5.68 (-7.55–-4.30) |
+| Critical Care Billing | -2.86 (-3.57–-2.20) | -5.68 (-7.55–-4.30) |
 | ED/inpatient | -4.28 (-5.16–-3.40) | -4.71 (-6.91–-3.23) |
 | Ambulatory | -3.69 (-5.65–-2.04) | -5.29 (-10.40–-2.75) |

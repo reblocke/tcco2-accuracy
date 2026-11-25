@@ -8,7 +8,7 @@
 Enter an observed transcutaneous CO₂ (TcCO₂) reading to estimate a simultaneous
 arterial CO₂ (PaCO₂) measurement. For whole-number readings from 20 to 100 mmHg,
 the calculator shows the median, 95% prediction interval, and probabilities at or
-above 45 and 52 mmHg. Choose All settings, ICU proxy, ED/inpatient, or ambulatory.
+above 45 and 52 mmHg. Choose All settings, Critical Care Billing, ED/inpatient, or ambulatory.
 The reference population comprises patients who undergo arterial blood gas testing in TriNetX.
 
 - [Open the calculator](https://reblocke.github.io/tcco2-accuracy/)
@@ -137,7 +137,7 @@ browser setup step.
 
 Normalized restricted-derived weights are not automatically public-safe: they may reconstruct the
 exact source distribution even without a `count` column. The static app therefore stages no PaCO2
-prior. Its initial view uses the investigator-approved TriNetX summary lookup for All, ICU proxy,
+prior. Its initial view uses the investigator-approved TriNetX summary lookup for All, Critical Care Billing,
 ED/inpatient and ambulatory populations at integer TcCO₂ readings from 20 to 100 mmHg.
 It reports the median, 95% PaCO₂ prediction interval and inclusive ≥45/≥52 probabilities.
 The exact prior and full curves remain on the mini. [Release record](models/pages/conditional-release.json).

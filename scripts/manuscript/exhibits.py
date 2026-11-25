@@ -14,7 +14,7 @@ import pandas as pd
 
 GROUPS = {
     "all": "All settings",
-    "icu": "ICU proxy",
+    "icu": "Critical Care Billing",
     "ed_inp": "ED / inpatient",
     "pft": "Ambulatory",
 }
@@ -48,6 +48,7 @@ def render(private, dest, *, grid=None):
     )
     examples = []
     quality = []
+    ed_caption = ""
     for (key, name), ax, (left, right) in zip(GROUPS.items(), axes.flat, panels, strict=True):
         a, w = read_prior(private, key)
         edges = np.arange(0, 106, 5)
@@ -62,6 +63,17 @@ def render(private, dest, *, grid=None):
         if list(d.index) != list(range(20, 101)):
             raise ValueError(f"Incomplete or unordered prediction grid for {key}")
         lower, median, upper, p, q = d.iloc[:, :5].to_numpy().T
+        if key == "ed_inp":
+            first, second = d.loc[[35, 80]].iloc[:, :3].to_numpy()
+            if np.isfinite([first, second]).all():
+                ed_caption = (
+                    f"ED / inpatient: at TcCO₂ 35 and 80, median PaCO₂ is {first[1]:g} and {second[1]:g} mmHg "
+                    f"(95% intervals {first[0]:g}–{first[2]:g} and {second[0]:g}–{second[2]:g})."
+                )
+            else:
+                ed_caption = (
+                    "Gaps mark readings at which the numerical prediction limits remain unresolved."
+                )
         t = d.index.to_numpy()
         tails = np.stack([p, q])
         if np.any((tails < 0) | (tails > 1)) or np.any(q > p):
@@ -72,7 +84,9 @@ def render(private, dest, *, grid=None):
         left.plot(t, upper, ".", ms=1.8, color="#476273")
         right.plot(t, p * 100, ".-", ms=2, color="#15574b", label="≥45")
         right.plot(t, q * 100, ".--", ms=2, color="#743e28", label="≥52")
-        left.set_ylabel(name + "\nPaCO₂ (mmHg)")
+        left.set_ylabel(
+            name.replace("Critical Care Billing", "Critical Care\nBilling") + "\nPaCO₂ (mmHg)"
+        )
         right.set_ylim(-3, 103)
         quality.append(
             [
@@ -105,7 +119,17 @@ def render(private, dest, *, grid=None):
     panels[0, 0].set_title("Median and 95% prediction interval", fontsize=12)
     panels[0, 1].set_title("Probability of arterial hypercapnia (%)", fontsize=12)
     panels[0, 1].legend(loc="lower right", frameon=False)
-    pred.supxlabel("Observed TcCO₂ (mmHg)")
+    pred.text(0.51, 0.075, "Observed TcCO₂ (mmHg)", ha="center", va="center", fontsize=12)
+    pred.get_layout_engine().set(rect=(0, 0.105, 1, 0.895))
+    pred.text(
+        0.51,
+        0.032,
+        ed_caption + "\n"
+        "Arterial values are weighted by their frequency and agreement with the reading. The ≥52 group is included in ≥45.",
+        ha="center",
+        va="center",
+        fontsize=9,
+    )
     pred.savefig(dest / "paired-prediction.png", dpi=175)
     plt.close("all")
     flow = []
@@ -171,10 +195,13 @@ def render(private, dest, *, grid=None):
         ["Setting", "TcCO₂", "Median PaCO₂", "95% prediction interval", "PaCO₂ ≥45", "PaCO₂ ≥52"],
         examples,
     )
-    text += (
-        "\nPressures are in mmHg. Held denotes a result that did not meet the numerical precision criteria.\n\n"
-        + table(["Qualified readings out of 81", "Interval", "≥45", "≥52"], quality)
-    )
+    if all(counts[1:] == [81, 81, 81] for counts in quality):
+        text += "\nIn each setting all 81 readings from 20 through 100 mmHg met the numerical criteria for the interval and both threshold probabilities.\n"
+    else:
+        text += (
+            "\nNumbers of readings meeting the numerical criteria, out of 81 per setting.\n\n"
+            + table(["Setting", "Interval", "≥45", "≥52"], quality)
+        )
     (dest / "cohort-and-prediction.md").write_text(text)
     metric_names = {
         "TP": "True positives per 100",
@@ -206,8 +233,10 @@ def render(private, dest, *, grid=None):
             vals.append(f"{m:.2f} ({lo:.2f}–{hi:.2f})")
         rows.append([label, *vals])
     (dest / "classification.md").write_text(
-        "# Model-based threshold classification and ABG referral\n\nPosterior medians and pointwise 95% credible intervals. A single TcCO₂ ≥45 predicts arterial PaCO₂ ≥45 mmHg. The two-stage strategy assigns arterial status using the reference ABG throughout the inclusive 40–50 mmHg reflex range. Remaining errors are expressed per 100 eligible patients.\n\n"
-        + table(["Measure", *GROUPS.values()], rows)
+        "# Classification of arterial PaCO₂ ≥45 mmHg\n\nPosterior medians with pointwise 95% credible intervals. Counts per 100 use all eligible patient-weighted testing occasions.\n\n## Single TcCO₂ cutoff of 45 mmHg\n\nClassify a reading of at least 45 mmHg as positive. Sensitivity uses all truly hypercapnic occasions. Specificity uses all truly nonhypercapnic occasions.\n\n"
+        + table(["Measure", *GROUPS.values()], rows[:10])
+        + "\n## Reflex ABG for continuous TcCO₂ of 40–50 mmHg\n\nRefer the inclusive 40–50 range. Outside it, classify using TcCO₂ alone. In All settings this refers 30.07 per 100, compared with 36.95 for the whole-number device rule. Rounding widens the underlying continuous range that displays 40–50 and the device rule also refers both off-grid tails. [Whole-number referral policies](referral-tables.md)\n\n"
+        + table(["Measure", *GROUPS.values()], rows[10:])
     )
 
 

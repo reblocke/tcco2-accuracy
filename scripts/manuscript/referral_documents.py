@@ -16,7 +16,7 @@ from docx.shared import Inches, Pt
 
 NAMES = {
     "all": "All settings",
-    "icu": "ICU billing proxy",
+    "icu": "Critical Care Billing",
     "ed_inp": "ED/noncritical inpatient",
     "pft": "Ambulatory",
 }
@@ -41,9 +41,9 @@ COHORT = (
     "The reason-first replay reproduced archived membership across all 18 indication-by-setting groups and the four arterial distributions. Changing the order changed encounter membership. The surviving records do not establish which execution produced the May 2025 archive."
 )
 CAPTION = (
-    "Modeled disposition by displayed TcCO₂ for PaCO₂ ≥45 mmHg. Each bar gives weighted testing occasions per 100. "
-    "Hatching identifies residual false negatives and false positives. The pale bars show ABG referrals, including usable readings outside the grid. "
-    "Each risk cap applies separately to a negative or positive call at that display. Panel totals are posterior means. All panels assume a usable TcCO₂ and timely arterial testing after referral."
+    "Disposition per 100 eligible testing occasions under the 1%, 5%, and 10% wrong-call caps and fixed 40–50 mmHg referral rule. "
+    "Classified and referred occasions sum to 100 across the display bins. Hatched segments show errors among those classified. "
+    "Both off-grid bins go to ABG. Bars and totals are posterior means, conditional on a usable TcCO₂ and timely ABG."
 )
 HEADERS = [
     "Policy",
@@ -257,7 +257,7 @@ def main_version(parent, dest, pol, figure):
     )
     d.add_page_break()
     rows = [HEADERS]
-    for key in ("fixed", "cap 1%", "cap 5%", "cap 10%"):
+    for key in ("cap 1%", "cap 5%", "cap 10%", "fixed"):
         r = pol[key]
         rows.append([key, band(r), *[ci(r, n) for n in ("efficiency", "referral", "FN", "FP")]])
     tab(

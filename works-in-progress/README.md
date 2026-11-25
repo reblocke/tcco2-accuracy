@@ -1,4 +1,4 @@
-# Works in progress
+# Works in progress · Biostatistical review packet
 
 ## Manuscripts for coauthor review
 
@@ -14,29 +14,18 @@ Bold text marks additions and strikethrough marks deletions in the comparison co
 
 The private manuscript archive preserves the intermediate drafts and their redlines, including the supplement that introduced the 75-row agreement audit.
 
-## Evidence and review
+## Evidence and questions for review
 
-| Material | Question it answers |
+| Read in this order | Question |
 | --- | --- |
-| [Prediction figure](paired-prediction.png) · [Cohort and prediction tables](cohort-and-prediction.md) | Given a reading from 20 to 100 mmHg, what simultaneous arterial values are plausible and how likely is PaCO₂ to reach 45 or 52? |
-| [Arterial distribution](arterial-distribution.png) | How common were different arterial values before observing TcCO₂? |
-| [Agreement intervals](agreement.md) · [Study appraisal](study-appraisal.csv) · [Source ledger](../models/future_setting/source_ledger.csv) | Which populations and measurement protocols contributed to each agreement fit? The appraisal adds protocol and risk-of-bias fields from Conway’s CC BY 4.0 archive, published supplement and selected primary reports. [Conway archive](https://doi.org/10.6084/m9.figshare.6244058.v2) |
-| [Classification and referral](classification.md) · [Four-setting figure](classification-figure.png) · [December comparison](classification-comparison.png) | At a given arterial value, how often would TcCO₂ reach 45, and what would the referral rule miss per 100 eligible occasions? |
-| [Aggregate manuscript tables](manuscript-aggregate-tables.md) | How do the results change with the arterial code, reference population, agreement fit, or omission of an ambulatory study? How do the two ABG strategies differ? |
-| [Reviewer questions](reviewer-questions.md) · [Contrasts recorded before the runs](manuscript-contrasts.json) · [Same-75-row envelope replay](overall-envelope.R) | Which assumptions and calculations need independent verification? |
+| [Arterial distribution](arterial-distribution.png) · [Cohort and prediction tables](cohort-and-prediction.md) | Who underwent ABG testing, and how common was hypercapnia before a TcCO₂ reading? |
+| [Four-setting prediction figure](paired-prediction.png) · [24 example predictions](cohort-and-prediction.md#given-observed-tcco) | Given TcCO₂, what simultaneous PaCO₂ values are plausible? What are the probabilities of ≥45 and ≥52 mmHg? |
+| [Agreement limits and endpoint audit](agreement.md) · [Study appraisal](study-appraisal.csv) · [Source ledger](../models/future_setting/source_ledger.csv) | How much can a paired difference vary in a new setting? How much uncertainty surrounds the estimated agreement limits? |
+| [Single-cutoff figure](classification-figure.png) · [Classification and continuous 40–50 referral tables](classification.md) · [December comparison](classification-comparison.png) | At a given arterial value, how often does TcCO₂ reach 45? What happens if continuous readings of 40–50 mmHg prompt an ABG? |
+| **Whole-number device policies** · [All settings](referral-all.png) · [Critical Care Billing](referral-icu.png) · [ED/noncritical inpatient](referral-ed_inp.png) · [Ambulatory](referral-pft.png) · [Efficiency](referral-efficiency.png) · [Referral tables](referral-tables.md) | Per 100 eligible occasions, how often would each rule refer for ABG, classify without ABG, or leave a wrong call? Compare the 1%, 5%, and 10% caps with fixed 40–50. |
+| [Sensitivity analyses](manuscript-aggregate-tables.md) · [Encounter selection](encounter-selection.md) · [Prespecified contrasts for the post hoc analyses](manuscript-contrasts.json) | How do the arterial record definition, population, agreement fit, and four ambulatory studies influence the results? |
+| [Questions for the biostatistician](reviewer-questions.md) · [Endpoint calculation](overall-envelope.R) | Please review the population weighting, transport assumptions, endpoint uncertainty, and referral denominators. |
 
-The custodian approved the manuscript aggregate tables for draft PR #24 on November 24, 2026. Independent statistical review, coauthor approval and submission remain pending. Individual records, exact empirical weights and full curves stay on the mini. [December source inventory](source-revisions.json)
+Critical Care Billing identifies eligible inpatient encounters with a critical-care billing indicator. ICU bed location was unavailable. The matched agreement evidence comes from ICU studies.
 
-## Secondary analysis of displayed TcCO₂
-
-The four-panel figure compares referrals and residual errors at displayed TcCO₂ values under a fixed 40–50 mmHg band and 1%, 5% and 10% wrong-call caps. The x-axis is the measurement available when the decision is made. The earlier arterial-axis figure answers the forward classification question. [Overall policies](referral-all.png) · [ICU](referral-icu.png) · [ED/noncritical inpatient](referral-ed_inp.png) · [Ambulatory](referral-pft.png) · [Efficiency across error caps](referral-efficiency.png)
-
-[Operating characteristics and paired contrasts](referral-tables.md) · [Encounter order and arterial predictions](encounter-selection.md) · [Reviewer questions](reviewer-questions.md)
-
-## Importing a newer Word revision
-
-From the Air checkout, run `make manuscript-wip` with Python, Pandoc, GitHub CLI and SSH access to the mini. Both hosts are checked for letter and supplement Word files in the checkout’s top-level `Drafts/` and the older working clone’s top-level `Drafts/`. Subdirectories contain conference material and are outside this import. Identical editable copies named “Current TcCO2 Letter.docx” and “Current TcCO2 Supplement.docx” were placed in both checkout draft folders. New revisions may use dated filenames containing “letter” or “supplement.”
-
-The command compares SHA-256 hashes against current remote main. It prepares visible text and tables in a local Word review copy. Inspect it beside the current public Word file and reconcile changes in Word. Existing approved figures are carried forward by content hash. Other illustrations receive a review marker. Native Word equations retain their mathematical structure. Verify the prose, tables, authorship, graphics and source inventory before using the printed digest to open a draft PR. A changed review copy produces a new digest. Compare divergent edits, stale copies and newly named revisions with current main in Word. Save the reconciled document under the current source filename on its Mac. Keep superseded revisions in a local archive outside the import folders. An unavailable Mac is identified in the command output.
-
-The WIP folder is part of the GitHub repository. The Pages deployment stages its own allowlist of calculator assets. [Private analysis and reproduction](../docs/MANUSCRIPT_OUTPUTS.md)
+The packet uses the approved aggregate results. Independent statistical review, coauthor approval and validation of individual-patient coverage remain pending. [December source inventory](source-revisions.json) · [Manuscript maintenance and Word import](../docs/MANUSCRIPT_OUTPUTS.md#importing-a-newer-word-revision)

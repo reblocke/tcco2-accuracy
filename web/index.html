@@ -29,13 +29,13 @@
 <div class="lookup-controls"><label for="lookup-tc">Observed TcCO₂ (mmHg)</label>
 <input type="number" id="lookup-tc" min="20" max="100" step="any" inputmode="decimal" placeholder="20–100">
 <label for="lookup-setting">Setting (optional)</label>
-<select id="lookup-setting"><option value="all">All settings</option><option value="icu">ICU proxy</option><option value="ed_inp">ED / inpatient</option><option value="pft">Ambulatory</option></select>
+<select id="lookup-setting"><option value="all">All settings</option><option value="icu">Critical Care Billing</option><option value="ed_inp">ED / inpatient</option><option value="pft">Ambulatory</option></select>
 <p id="lookup-context" class="note">Based on patients who undergo arterial blood gas testing in TriNetX. Research use only.</p>
 <p id="lookup-status" role="status"></p><div id="neighbors"></div></div>
 <div class="panel primary-results"><div id="lookup-values" aria-live="polite" hidden><small>95% prediction interval for simultaneous PaCO₂</small><strong id="lookup-bounds"></strong><p id="lookup-estimates"></p><div id="lookup-tails"></div></div>
 <div id="lookup-chart"></div><div id="lookup-interpretation" class="prediction-interpretation" hidden></div></div></div></section>
 <noscript>Enable JavaScript to look up a reading.</noscript>
-<details><summary>Population, assumptions and methods</summary><p>The reference population comprises patients undergoing arterial blood gas testing in TriNetX. Each patient contributes equal weight across eligible draws on their first testing day within the selected setting. All settings uses the first eligible day overall. ICU is identified by inpatient critical-care billing. Ambulatory describes the encounter type.</p>
+<details><summary>Population, assumptions and methods</summary><p>The reference population comprises patients undergoing arterial blood gas testing in TriNetX. Each patient contributes equal weight across eligible draws on their first testing day within the selected setting. All settings uses the first eligible day overall. Critical Care Billing identifies eligible inpatient encounters with a critical-care billing indicator. ICU bed location was unavailable. Ambulatory describes the encounter type.</p>
 <p>Both thresholds apply to this population. Prediction assumes that its arterial distribution applies to this patient and that arterial minus transcutaneous disagreement follows the fitted pattern across PaCO₂ values. The overall studies include children and neonates. Acute respiratory failure studies supply the ED/inpatient fit and lung function studies supply the ambulatory fit.</p>
 <p>The paired-measurement model uses evidence collected by <a href="https://doi.org/10.1136/thoraxjnl-2017-211466">Conway and colleagues</a>. Results use the complete empirical distribution. Smooth curves show grouped probabilities, and relative likelihood is scaled to a peak of one. The initial chart spans the central 99.9% of posterior mass and both thresholds.</p>
 <p>Research use. Independent biostatistical review and individual-patient coverage validation are pending.</p></details>
