@@ -24,7 +24,7 @@ DESIGN = (
     "In a post hoc analysis we modeled a device that displays TcCO₂ to the nearest whole mmHg. "
     "For each display from 20 to 100, we integrated the signed disagreement likelihood over its 1-mmHg bin. "
     "At a cap of 1%, 5% or 10%, a low or high display could classify PaCO₂ relative to 45 mmHg if its modeled probability of a wrong call met the cap. "
-    "We took consecutive qualifying displays from each end. Other displays went to ABG, including both out-of-range tails and numerically unresolved boundaries. "
+    "We took consecutive qualifying displays from each end. Patients with other displays received an ABG, including those outside the supported range or at a numerically unresolved boundary. "
     "We evaluated these fixed rules and a display-matched 40–50 comparator on the same posterior draws."
 )
 CORRECTION = (
@@ -41,15 +41,16 @@ COHORT = (
     "The reason-first replay reproduced archived membership across all 18 indication-by-setting groups and the four arterial distributions. Changing the order changed encounter membership. The surviving records do not establish which execution produced the May 2025 archive."
 )
 CAPTION = (
-    "Disposition per 100 eligible testing occasions under the 1%, 5%, and 10% wrong-call caps and fixed 40–50 mmHg referral rule. "
-    "Classified and referred occasions sum to 100 across the display bins. Hatched segments show errors among those classified. "
-    "Both off-grid bins go to ABG. Bars and totals are posterior means, conditional on a usable TcCO₂ and timely ABG."
+    "Who receives an arterial blood gas (ABG) per 100 eligible testing occasions? "
+    "At each whole-number display classified without an ABG, the modeled chance of a wrong call is at most the stated 1%, 5% or 10%. "
+    "The fixed policy uses 40–50 mmHg inclusive. Under every policy, patients with displays outside 20–100 also receive an ABG. "
+    "Hatching shows errors among those classified without an ABG. Bars and totals are posterior means assuming a usable reading and a timely ABG."
 )
 HEADERS = [
     "Policy",
     "ABG band (mmHg)",
     "Classified without ABG (%)",
-    "Referrals /100",
+    "Receives an ABG /100",
     "False negatives /100",
     "False positives /100",
 ]
@@ -338,7 +339,7 @@ def supplement(parent, dest, review, work):
         "We first averaged the positive and total joint display masses over posterior draws and then took their ratio. To improve numerical precision, we used the qualified exact-reading risk as a control for the bin-integrated risk and estimated the small rounding correction on common draws. We allowed two within-chain batch Monte Carlo standard errors and the change from 32 to 64 quadrature nodes. A bound crossing a cap led to referral. For the reference-class alternatives we maximized classification without ABG subject to both whole-strategy FNR and FPR caps. Boundary risks, uncertainty in policy performance and numerical uncertainty have different interpretations."
     )
     d.add_paragraph(
-        "The original continuous comparator uses 40 through 50 inclusive throughout the real line. For the display comparator, the same labels span underlying values from 39.5 up to 50.5 mmHg. Both overflow displays require referral under every display policy. Empty call regions have undefined conditional error rates."
+        "The original continuous comparator uses 40 through 50 inclusive throughout the real line. For the display comparator, the same labels span underlying values from 39.5 up to 50.5 mmHg. Under every policy, a patient with an off-grid display receives an ABG. Empty call regions have undefined conditional error rates."
     )
     all_tables = list(tables((review / "referral-tables.md").read_text()))
     for j, (group, name) in enumerate(NAMES.items()):
@@ -358,7 +359,7 @@ def supplement(parent, dest, review, work):
         )
         tab(
             d,
-            f"Supplementary Table {n}B. Definitive calls and referrals outside the grid",
+            f"Supplementary Table {n}B. Definitive calls and ABGs outside the grid",
             cols(den, [0, 1, 2, 3]),
             [1.25, 1.55, 1.55, 1.9],
         )

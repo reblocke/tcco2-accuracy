@@ -8,3 +8,5 @@ An offline private viewer can display a custodian-approved empirical prior and p
 Source and methods: https://github.com/reblocke/tcco2-accuracy
 
 The public calculator displays the approved summary lookup together with separate rounded fixed-grid drawing coordinates from `models/pages/prediction-plots.json`. The private source curves remain on the mini.
+
+The manuscript exhibits show PaCO2 threshold probabilities and pointwise credible bands given an exact observed TcCO2, and four conditional classification proportions per reading. The whole-number device policies report who receives an ABG per 100 eligible occasions. See https://github.com/reblocke/tcco2-accuracy/blob/main/works-in-progress/README.md.

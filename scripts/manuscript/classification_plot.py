@@ -51,9 +51,9 @@ def render(x, curves, historical, output):
         "The dashed line marks arterial hypercapnia (PaCO₂ ≥45 mmHg).",
         fontsize=8.8,
     )
-    name = output / "classification-figure.png"
+    name = output / "forward-classification.png"
     fig.savefig(name, dpi=300, facecolor="white")
-    fig.savefig(output / "classification-figure.pdf", metadata={"CreationDate": None})
+    fig.savefig(output / "forward-classification.pdf", metadata={"CreationDate": None})
     plt.close(fig)
 
     comparison = plt.figure(figsize=(14.4, 8.2), facecolor="white")
@@ -78,5 +78,5 @@ def render(x, curves, historical, output):
         ax = comparison.add_axes(bounds)
         ax.imshow(plt.imread(source), interpolation="lanczos")
         ax.axis("off")
-    comparison.savefig(output / "classification-comparison.png", dpi=180)
+    comparison.savefig(output / "forward-classification-comparison.png", dpi=180)
     plt.close(comparison)

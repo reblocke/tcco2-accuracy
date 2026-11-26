@@ -17,9 +17,9 @@ from referral_report import CAPS, GROUPS
 from tcco2_accuracy.core.referral_policy import display_policy
 
 LABELS = {
-    "cap 1%": "1% wrong-call cap",
-    "cap 5%": "5% wrong-call cap",
-    "cap 10%": "10% wrong-call cap",
+    "cap 1%": "1% maximum modeled error",
+    "cap 5%": "5% maximum modeled error",
+    "cap 10%": "10% maximum modeled error",
     "fixed": "Fixed 40–50 mmHg",
 }
 OUTCOMES = [
@@ -27,7 +27,7 @@ OUTCOMES = [
     "False negative",
     "Correct positive",
     "False positive",
-    "ABG referral",
+    "Receives an ABG",
 ]
 COLORS = ["#437778", "#cf782e", "#34465e", "#ac4135", "#d2d3d0"]
 HATCHES = ["", "////", "", "xxxx", ""]
@@ -51,28 +51,45 @@ def save(fig, dest, stem):
 
 
 def panels(data, dest):
-    fig, axes = plt.subplots(4, 1, figsize=(7.0, 7.35), sharex=True, sharey=True)
-    fig.subplots_adjust(left=0.09, right=0.976, top=0.858, bottom=0.115, hspace=0.92)
+    fig, axes = plt.subplots(4, 1, figsize=(7.1, 7.5), sharex=True, sharey=True)
+    fig.subplots_adjust(left=0.09, right=0.976, top=0.805, bottom=0.14, hspace=0.92)
     fig.text(
         0.085,
         0.968,
-        "When would a TcCO₂ reading lead to an ABG?",
+        "Who receives an arterial blood gas under each policy?",
         fontsize=13,
         weight="bold",
     )
     fig.text(
         0.085,
         0.932,
-        GROUPS[data["setting"]] + "  ·  Posterior mean per 100 eligible testing occasions",
+        GROUPS[data["setting"]] + "  ·  Posterior means per 100 eligible testing occasions",
         fontsize=10.5,
+    )
+    fig.text(
+        0.085,
+        0.900,
+        "At each reading classified without an ABG, the modeled chance of a wrong call must be",
+        fontsize=8.7,
+    )
+    fig.text(
+        0.085,
+        0.875,
+        "at most 1%, 5% or 10% under the corresponding policy. The fixed policy uses its stated range.",
+        fontsize=8.7,
     )
     xs = np.r_[13, np.arange(20, 101), 107]
     for ax, (key, title) in zip(axes, LABELS.items(), strict=True):
         row = data["policies"][key]
         counts = np.array(row["figure_counts"])
         lo, hi = row["cuts"]
+        action = f"Receives an ABG at {band((lo, hi))} mmHg"
+        if (lo, hi) == (19, 101):
+            action = "Every patient receives an ABG"
+        elif hi == lo + 1:
+            action = "Receives an ABG only outside 20–100 mmHg"
         ax.set_title(
-            title + "   ·   Refer displays " + band((lo, hi)) + " mmHg",
+            title + "   ·   " + action,
             loc="left",
             fontsize=10.4,
             weight="bold",
@@ -85,11 +102,14 @@ def panels(data, dest):
         ):
             raise ValueError("Expected five disposition counts for each of the 83 display bins")
         np.testing.assert_allclose(counts.sum(), 100, rtol=0, atol=1e-8)
+        receives_abg = ((xs > lo) & (xs < hi)) | (xs < 20) | (xs > 100)
+        np.testing.assert_allclose(counts[:4, receives_abg], 0, atol=1e-10, rtol=0)
+        np.testing.assert_allclose(counts[4, ~receives_abg], 0, atol=1e-10, rtol=0)
         eff = counts[:4].sum()
         ax.text(
             0,
             1.035,
-            f"Classified {eff:.1f} (including {counts[1].sum():.2f} false negative, {counts[3].sum():.2f} false positive)   ·   Referred {counts[4].sum():.1f}",
+            f"{counts[4].sum():.1f} receive an ABG   ·   {eff:.1f} classified without one (including {counts[1].sum():.2f} false negatives and {counts[3].sum():.2f} false positives)",
             transform=ax.transAxes,
             fontsize=8.0,
         )
@@ -127,12 +147,18 @@ def panels(data, dest):
     fig.legend(
         handles=legend,
         loc="lower center",
-        bbox_to_anchor=(0.52, 0.023),
+        bbox_to_anchor=(0.52, 0.047),
         ncols=5,
         fontsize=8,
         frameon=False,
         columnspacing=1.05,
         handlelength=1.4,
+    )
+    fig.text(
+        0.085,
+        0.022,
+        "Under every policy, the patient also receives an ABG for a display below 20 or above 100 mmHg.",
+        fontsize=8.4,
     )
     save(fig, dest, "referral-" + data["setting"])
 
@@ -143,7 +169,7 @@ def curve(groups, dest):
     fig.text(
         0.08,
         0.948,
-        "How does the tolerated error change referral burden?",
+        "How often can TcCO₂ classify without an ABG?",
         weight="bold",
         fontsize=14,
     )
@@ -170,7 +196,11 @@ def curve(groups, dest):
         )
         ax.spines[["top", "right"]].set_visible(False)
         ax.grid(axis="y", lw=0.4, color="#ddd")
-    fig.supxlabel("Maximum modeled wrong-call probability at a display (%)", y=0.035, fontsize=10)
+    fig.supxlabel(
+        "Maximum chance of error at each display classified without an ABG (%)",
+        y=0.035,
+        fontsize=10,
+    )
     save(fig, dest, "referral-efficiency")
 
 
@@ -187,11 +217,11 @@ def run(work, dest):
     private_destination(dest)
     data = {g: json.loads((work / (g + "-policy.json")).read_bytes()) for g in GROUPS}
     lines = [
-        "# TcCO₂ referral policies in an ABG-tested population",
+        "# Who receives an ABG under each TcCO₂ policy?",
         "",
-        "Each eligible patient has total weight one, split over arterial result records on the first eligible testing day. Each policy assumes a usable, contemporaneous TcCO₂ and a timely, definitive ABG after referral. Other indications for arterial sampling include pH and PaO₂. Their frequency, sensor failure frequency, and actual punctures avoided are unknown.",
+        "Each eligible patient has total weight one, split over arterial result records on the first eligible testing day. Each policy assumes a usable, contemporaneous TcCO₂ and a timely, definitive result when the patient receives an ABG. Other indications for arterial sampling include pH and PaO₂. Their frequency, sensor failure frequency, and actual punctures avoided are unknown.",
         "",
-        "The primary policies limit the modeled probability of a wrong call at each displayed integer. The class-denominator alternatives limit FNR among all reference-positive and FPR among all reference-negative occasions. All arterial thresholds are inclusive at 45 mmHg. Parentheses give pointwise 95% credible intervals for fixed policies. Operating characteristics are posterior medians. Figure bars and totals are posterior means.",
+        "With a 1%, 5% or 10% policy, each display classified without an ABG must have at most that modeled chance of a wrong call, whether the call is positive or negative. Otherwise the patient receives an ABG. The fixed policy uses the inclusive 40–50 mmHg band. Under all four policies, a patient with a display outside 20–100 mmHg receives an ABG. The class-denominator alternatives limit FNR among all reference-positive and FPR among all reference-negative occasions. All arterial thresholds are inclusive at 45 mmHg. Parentheses give pointwise 95% credible intervals for fixed policies. Operating characteristics are posterior medians. Figure bars and totals are posterior means.",
         "",
     ]
     for g, d in data.items():
@@ -203,10 +233,10 @@ def run(work, dest):
             [
                 "Policy",
                 "Last negative",
-                "ABG displays",
+                "Receives an ABG at (mmHg)",
                 "First positive",
                 "Classified without ABG (%)",
-                "Referrals /100",
+                "Receives an ABG /100",
                 "Residual FN /100",
                 "Residual FP /100",
             ],
@@ -227,7 +257,7 @@ def run(work, dest):
                 "Policy",
                 "Negative /100",
                 "Positive /100",
-                "Off-grid referrals /100",
+                "Receives an ABG outside the grid /100",
                 "Wrong among negative (%)",
                 "Wrong among positive (%)",
                 "Whole-strategy FNR (%)",
@@ -255,7 +285,7 @@ def run(work, dest):
         lines += [
             "### Reading-specific design risks",
             "",
-            "Values are posterior-integrated percentages. The numerical upper bounds incorporate chain-batch Monte Carlo and quadrature error. Off-grid displays always go to ABG.",
+            "Values are posterior-integrated percentages. The numerical upper bounds incorporate chain-batch Monte Carlo and quadrature error. Patients with off-grid displays always receive an ABG.",
             "",
         ]
         rows = []
@@ -293,7 +323,7 @@ def run(work, dest):
         lines += table(
             [
                 "Policy contrast",
-                "Referrals",
+                "Receives an ABG",
                 "Classified without ABG",
                 "False negatives",
                 "False positives",
