@@ -32,7 +32,7 @@ analysis, including the correction to its mixed-log and analytic variance equati
 
 The four-setting figures show how likely simultaneous PaCO₂ is to reach 45 or 52 mmHg after **an observed TcCO₂ reading**. At each reading, the classification bars show what a paired ABG would reveal if TcCO₂ ≥45 mmHg were called positive. Separate policy figures count who receives an ABG per 100 eligible testing occasions. [Threshold probabilities](works-in-progress/classification-figure.png) · [Classification at each reading](works-in-progress/classification-by-reading.png) · [ABG policies](works-in-progress/referral-tables.md)
 
-The manuscript packet includes the Original Research, Short Report, supplement, redlines, and questions for independent statistical review. The review checklist tracks the decisions still needed before submission. [Works in progress](works-in-progress/README.md) · [Next steps for manuscript review](docs/MANUSCRIPT_OUTPUTS.md#next-steps-for-manuscript-review)
+The manuscript packet includes the Original Research, Short Report, supplement, redlines, and questions for independent statistical review. [Works in progress](works-in-progress/README.md) · [Next steps for manuscript review](docs/MANUSCRIPT_OUTPUTS.md#next-steps-for-manuscript-review)
 
 ## Choose a Route
 
