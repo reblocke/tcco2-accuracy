@@ -1,14 +1,14 @@
-# TcCO₂ referral policies in an ABG-tested population
+# Who receives an ABG under each TcCO₂ policy?
 
-Each eligible patient has total weight one, split over arterial result records on the first eligible testing day. Each policy assumes a usable, contemporaneous TcCO₂ and a timely, definitive ABG after referral. Other indications for arterial sampling include pH and PaO₂. Their frequency, sensor failure frequency, and actual punctures avoided are unknown.
+Each eligible patient has total weight one, split over arterial result records on the first eligible testing day. Each policy assumes a usable, contemporaneous TcCO₂ and a timely, definitive result when the patient receives an ABG. Other indications for arterial sampling include pH and PaO₂. Their frequency, sensor failure frequency, and actual punctures avoided are unknown.
 
-The primary policies limit the modeled probability of a wrong call at each displayed integer. The class-denominator alternatives limit FNR among all reference-positive and FPR among all reference-negative occasions. All arterial thresholds are inclusive at 45 mmHg. Parentheses give pointwise 95% credible intervals for fixed policies. Operating characteristics are posterior medians. Figure bars and totals are posterior means.
+With a 1%, 5% or 10% policy, each display classified without an ABG must have at most that modeled chance of a wrong call, whether the call is positive or negative. Otherwise the patient receives an ABG. The fixed policy uses the inclusive 40–50 mmHg band. Under all four policies, a patient with a display outside 20–100 mmHg receives an ABG. The class-denominator alternatives limit FNR among all reference-positive and FPR among all reference-negative occasions. All arterial thresholds are inclusive at 45 mmHg. Parentheses give pointwise 95% credible intervals for fixed policies. Operating characteristics are posterior medians. Figure bars and totals are posterior means.
 
 ## All settings
 
 ### Cutoffs and efficiency
 
-| Policy | Last negative | ABG displays | First positive | Classified without ABG (%) | Referrals /100 | Residual FN /100 | Residual FP /100 |
+| Policy | Last negative | Receives an ABG at (mmHg) | First positive | Classified without ABG (%) | Receives an ABG /100 | Residual FN /100 | Residual FP /100 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | cap 1% | 30 | 31–71 | 72 | 17.61 (16.57–18.75) | 82.39 (81.25–83.43) | 0.08 (0.04–0.15) | 0.01 (0.00–0.04) |
 | cap 5% | 38 | 39–60 | 61 | 48.63 (46.99–50.28) | 51.37 (49.72–53.01) | 0.77 (0.56–1.07) | 0.12 (0.05–0.26) |
@@ -20,7 +20,7 @@ The primary policies limit the modeled probability of a wrong call at each displ
 
 ### Class and call denominators
 
-| Policy | Negative /100 | Positive /100 | Off-grid referrals /100 | Wrong among negative (%) | Wrong among positive (%) | Whole-strategy FNR (%) | Whole-strategy FPR (%) |
+| Policy | Negative /100 | Positive /100 | Receives an ABG outside the grid /100 | Wrong among negative (%) | Wrong among positive (%) | Whole-strategy FNR (%) | Whole-strategy FPR (%) |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | cap 1% | 13.95 (12.83–15.16) | 3.66 (3.54–3.80) | 3.98 (3.62–4.51) | 0.59 (0.32–1.06) | 0.28 (0.07–1.00) | 0.28 (0.15–0.52) | 0.01 (0.00–0.05) |
 | cap 5% | 40.76 (38.84–42.71) | 7.86 (7.53–8.27) | 3.98 (3.62–4.51) | 1.90 (1.38–2.58) | 1.51 (0.69–3.22) | 2.63 (1.89–3.63) | 0.17 (0.07–0.37) |
@@ -32,7 +32,7 @@ The primary policies limit the modeled probability of a wrong call at each displ
 
 ### Reading-specific design risks
 
-Values are posterior-integrated percentages. The numerical upper bounds incorporate chain-batch Monte Carlo and quadrature error. Off-grid displays always go to ABG.
+Values are posterior-integrated percentages. The numerical upper bounds incorporate chain-batch Monte Carlo and quadrature error. Patients with off-grid displays always receive an ABG.
 
 | Policy | Definitive call | Boundary risk (%) | Worst risk (%) | Numerical upper bound (%) |
 | --- | --- | --- | --- | --- |
@@ -53,7 +53,7 @@ Values are posterior-integrated percentages. The numerical upper bounds incorpor
 
 ### Paired changes per 100 eligible occasions
 
-| Policy contrast | Referrals | Classified without ABG | False negatives | False positives |
+| Policy contrast | Receives an ABG | Classified without ABG | False negatives | False positives |
 | --- | --- | --- | --- | --- |
 | cap 1% minus fixed | 45.44 (44.98–45.80) | -45.44 (-45.80–-44.98) | -0.95 (-1.23–-0.72) | -1.78 (-2.47–-1.27) |
 | cap 5% minus fixed | 14.41 (13.75–15.11) | -14.41 (-15.11–-13.75) | -0.26 (-0.31–-0.21) | -1.67 (-2.27–-1.22) |
@@ -68,7 +68,7 @@ The two reference-class constraints gave a unique numerical optimum at each cap.
 
 ### Cutoffs and efficiency
 
-| Policy | Last negative | ABG displays | First positive | Classified without ABG (%) | Referrals /100 | Residual FN /100 | Residual FP /100 |
+| Policy | Last negative | Receives an ABG at (mmHg) | First positive | Classified without ABG (%) | Receives an ABG /100 | Residual FN /100 | Residual FP /100 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | cap 1% | 31 | 32–65 | 66 | 25.48 (23.30–28.01) | 74.52 (71.99–76.70) | 0.07 (0.02–0.25) | 0.01 (0.00–0.09) |
 | cap 5% | 37 | 38–58 | 59 | 48.89 (45.97–51.65) | 51.11 (48.35–54.03) | 0.50 (0.23–1.06) | 0.09 (0.02–0.40) |
@@ -80,7 +80,7 @@ The two reference-class constraints gave a unique numerical optimum at each cap.
 
 ### Class and call denominators
 
-| Policy | Negative /100 | Positive /100 | Off-grid referrals /100 | Wrong among negative (%) | Wrong among positive (%) | Whole-strategy FNR (%) | Whole-strategy FPR (%) |
+| Policy | Negative /100 | Positive /100 | Receives an ABG outside the grid /100 | Wrong among negative (%) | Wrong among positive (%) | Whole-strategy FNR (%) | Whole-strategy FPR (%) |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | cap 1% | 18.13 (15.56–21.03) | 7.34 (6.94–7.86) | 5.67 (5.00–7.02) | 0.39 (0.11–1.29) | 0.11 (0.01–1.21) | 0.22 (0.06–0.79) | 0.01 (0.00–0.14) |
 | cap 5% | 37.63 (33.86–41.09) | 11.25 (10.52–12.26) | 5.67 (5.00–7.02) | 1.32 (0.64–2.73) | 0.76 (0.18–3.35) | 1.57 (0.74–3.34) | 0.12 (0.03–0.58) |
@@ -92,7 +92,7 @@ The two reference-class constraints gave a unique numerical optimum at each cap.
 
 ### Reading-specific design risks
 
-Values are posterior-integrated percentages. The numerical upper bounds incorporate chain-batch Monte Carlo and quadrature error. Off-grid displays always go to ABG.
+Values are posterior-integrated percentages. The numerical upper bounds incorporate chain-batch Monte Carlo and quadrature error. Patients with off-grid displays always receive an ABG.
 
 | Policy | Definitive call | Boundary risk (%) | Worst risk (%) | Numerical upper bound (%) |
 | --- | --- | --- | --- | --- |
@@ -113,7 +113,7 @@ Values are posterior-integrated percentages. The numerical upper bounds incorpor
 
 ### Paired changes per 100 eligible occasions
 
-| Policy contrast | Referrals | Classified without ABG | False negatives | False positives |
+| Policy contrast | Receives an ABG | Classified without ABG | False negatives | False positives |
 | --- | --- | --- | --- | --- |
 | cap 1% minus fixed | 39.39 (38.16–40.05) | -39.39 (-40.05–-38.16) | -0.85 (-1.47–-0.48) | -1.42 (-2.78–-0.76) |
 | cap 5% minus fixed | 15.97 (14.84–17.16) | -15.97 (-17.16–-14.84) | -0.42 (-0.66–-0.26) | -1.34 (-2.51–-0.73) |
@@ -128,7 +128,7 @@ The two reference-class constraints gave a unique numerical optimum at each cap.
 
 ### Cutoffs and efficiency
 
-| Policy | Last negative | ABG displays | First positive | Classified without ABG (%) | Referrals /100 | Residual FN /100 | Residual FP /100 |
+| Policy | Last negative | Receives an ABG at (mmHg) | First positive | Classified without ABG (%) | Receives an ABG /100 | Residual FN /100 | Residual FP /100 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | cap 1% | None | 20–100 | None | 0.00 (0.00–0.00) | 100.00 (100.00–100.00) | 0.00 (0.00–0.00) | 0.00 (0.00–0.00) |
 | cap 5% | 34 | 35–70 | 71 | 33.48 (29.18–37.66) | 66.52 (62.34–70.82) | 0.91 (0.43–1.71) | 0.05 (0.01–0.37) |
@@ -140,7 +140,7 @@ The two reference-class constraints gave a unique numerical optimum at each cap.
 
 ### Class and call denominators
 
-| Policy | Negative /100 | Positive /100 | Off-grid referrals /100 | Wrong among negative (%) | Wrong among positive (%) | Whole-strategy FNR (%) | Whole-strategy FPR (%) |
+| Policy | Negative /100 | Positive /100 | Receives an ABG outside the grid /100 | Wrong among negative (%) | Wrong among positive (%) | Whole-strategy FNR (%) | Whole-strategy FPR (%) |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | cap 1% | 0.00 (0.00–0.00) | 0.00 (0.00–0.00) | 5.01 (3.37–8.14) | Undefined | Undefined | 0.00 (0.00–0.00) | 0.00 (0.00–0.00) |
 | cap 5% | 30.68 (26.15–35.14) | 2.75 (2.46–3.36) | 5.01 (3.37–8.14) | 2.98 (1.48–5.37) | 2.01 (0.20–11.09) | 3.29 (1.53–6.16) | 0.08 (0.01–0.51) |
@@ -152,7 +152,7 @@ The two reference-class constraints gave a unique numerical optimum at each cap.
 
 ### Reading-specific design risks
 
-Values are posterior-integrated percentages. The numerical upper bounds incorporate chain-batch Monte Carlo and quadrature error. Off-grid displays always go to ABG.
+Values are posterior-integrated percentages. The numerical upper bounds incorporate chain-batch Monte Carlo and quadrature error. Patients with off-grid displays always receive an ABG.
 
 | Policy | Definitive call | Boundary risk (%) | Worst risk (%) | Numerical upper bound (%) |
 | --- | --- | --- | --- | --- |
@@ -173,7 +173,7 @@ Values are posterior-integrated percentages. The numerical upper bounds incorpor
 
 ### Paired changes per 100 eligible occasions
 
-| Policy contrast | Referrals | Classified without ABG | False negatives | False positives |
+| Policy contrast | Receives an ABG | Classified without ABG | False negatives | False positives |
 | --- | --- | --- | --- | --- |
 | cap 1% minus fixed | 64.99 (62.15–67.58) | -64.99 (-67.58–-62.15) | -2.59 (-3.98–-1.54) | -1.80 (-3.92–-0.79) |
 | cap 5% minus fixed | 31.56 (29.34–33.26) | -31.56 (-33.26–-29.34) | -1.66 (-2.37–-1.08) | -1.74 (-3.60–-0.78) |
@@ -188,7 +188,7 @@ The two reference-class constraints gave a unique numerical optimum at each cap.
 
 ### Cutoffs and efficiency
 
-| Policy | Last negative | ABG displays | First positive | Classified without ABG (%) | Referrals /100 | Residual FN /100 | Residual FP /100 |
+| Policy | Last negative | Receives an ABG at (mmHg) | First positive | Classified without ABG (%) | Receives an ABG /100 | Residual FN /100 | Residual FP /100 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | cap 1% | 33 | 34–100 | None | 20.31 (14.66–28.24) | 79.69 (71.76–85.34) | 0.08 (0.00–0.67) | 0.00 (0.00–0.00) |
 | cap 5% | 39 | 40–57 | 58 | 52.61 (45.32–59.63) | 47.39 (40.37–54.68) | 0.65 (0.14–2.54) | 0.05 (0.00–1.01) |
@@ -200,7 +200,7 @@ The two reference-class constraints gave a unique numerical optimum at each cap.
 
 ### Class and call denominators
 
-| Policy | Negative /100 | Positive /100 | Off-grid referrals /100 | Wrong among negative (%) | Wrong among positive (%) | Whole-strategy FNR (%) | Whole-strategy FPR (%) |
+| Policy | Negative /100 | Positive /100 | Receives an ABG outside the grid /100 | Wrong among negative (%) | Wrong among positive (%) | Whole-strategy FNR (%) | Whole-strategy FPR (%) |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | cap 1% | 20.31 (14.66–28.24) | 0.00 (0.00–0.00) | 0.88 (0.45–3.14) | 0.38 (0.02–2.80) | Undefined | 0.29 (0.02–2.53) | 0.00 (0.00–0.00) |
 | cap 5% | 46.93 (37.80–54.98) | 5.57 (4.56–8.20) | 0.88 (0.45–3.14) | 1.41 (0.31–5.07) | 0.92 (0.02–13.24) | 2.47 (0.51–9.56) | 0.07 (0.00–1.38) |
@@ -212,7 +212,7 @@ The two reference-class constraints gave a unique numerical optimum at each cap.
 
 ### Reading-specific design risks
 
-Values are posterior-integrated percentages. The numerical upper bounds incorporate chain-batch Monte Carlo and quadrature error. Off-grid displays always go to ABG.
+Values are posterior-integrated percentages. The numerical upper bounds incorporate chain-batch Monte Carlo and quadrature error. Patients with off-grid displays always receive an ABG.
 
 | Policy | Definitive call | Boundary risk (%) | Worst risk (%) | Numerical upper bound (%) |
 | --- | --- | --- | --- | --- |
@@ -233,7 +233,7 @@ Values are posterior-integrated percentages. The numerical upper bounds incorpor
 
 ### Paired changes per 100 eligible occasions
 
-| Policy contrast | Referrals | Classified without ABG | False negatives | False positives |
+| Policy contrast | Receives an ABG | Classified without ABG | False negatives | False positives |
 | --- | --- | --- | --- | --- |
 | cap 1% minus fixed | 40.31 (37.55–41.52) | -40.31 (-41.52–-37.55) | -0.57 (-1.95–-0.13) | -0.67 (-4.00–-0.11) |
 | cap 5% minus fixed | 7.94 (6.24–11.21) | -7.94 (-11.21–-6.24) | 0.00 (0.00–0.00) | -0.61 (-3.07–-0.11) |

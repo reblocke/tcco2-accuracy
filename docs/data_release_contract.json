@@ -21,7 +21,8 @@
         "b1de7593763fd844840750e4b38fd459ccbcc7d3f5142bf976716c7d8deddb96",
         "21d4786439ac2baa6efc6acd11220afe49b30797163e85e0f027877b194095f8",
         "0a4797c5d55a18c160f0937c879270e0ef30d03415ea49b713b0c3d23f577a2d",
-        "cd38fd8df865b7eb819f8c0ddf46b42c0233c24a44c9ad60f57d5a7604a11414"
+        "cd38fd8df865b7eb819f8c0ddf46b42c0233c24a44c9ad60f57d5a7604a11414",
+        "186d10a4b46c413393d00c5c549843aa5cd6133772c5d2e9ad5b6653eb57d719"
       ],
       "works-in-progress/paired-prediction.png": [
         "8ccbfd7a7292fe05768fd174d997310cc294494de69cdaeffe0a1a17092a5854",
@@ -34,7 +35,8 @@
         "1243cb05d677dd6fe8482c4e27c66111eaf28c395ebe6ec22a66200da29ffd72",
         "27dfc6dbd7242fd2ce39cbfd8565caea859ef4ebe62055b4dc2cff1efc113653",
         "a35742a8316f8306eac16fcb2ec8147d53cc102859486c5ae78110ef41aecd6b",
-        "152c755dcb2e35323a1d7c0fa3a715e4a5c1d64f25a73412598e82bff6ed214d"
+        "152c755dcb2e35323a1d7c0fa3a715e4a5c1d64f25a73412598e82bff6ed214d",
+        "9a80e4b90bb6f5b3e2bde34bad32cd0fb76d5ec57c733ad344d7ef77b0e61e4a"
       ],
       "works-in-progress/README.md": [
         "dc2c681bc16699469fe862ec14577d4c5ea23d425c8319c2c1730e14e50a1b26",
@@ -47,7 +49,8 @@
         "73adce3125116ae84368a9c79732530bd24aa14961c164381a627a5c554550af",
         "e2866b86be024d811e429832543744a2d70374630ce1a3c352ec9f8547cf6c40",
         "348756f55566caed3668b50f7afe54378212c099ab2618400a47b584a2b09891",
-        "53173fb5ffabf4dea5ad04535af64db9fc908b7b3452af2e34f1c765720d06a4"
+        "53173fb5ffabf4dea5ad04535af64db9fc908b7b3452af2e34f1c765720d06a4",
+        "f82fb49bfbd9b4e3b05b35b1a7d229eaa4afc87ef02675ca9ae5e163d0e3536f"
       ],
       "works-in-progress/cohort-and-prediction.md": [
         "750367908e22df59a9b0b552b229f4f6d05a60c90a0c98495040d7e8da830c91",
@@ -58,7 +61,8 @@
       "works-in-progress/classification.md": [
         "26ea78933012495119ce103938b2022ac9cd0b1cd5fef69b0043141507e6fd30",
         "5dc6df13c4700f3ad9693892850b6adfdeb4c32fc1cf9bee935e09408acc35eb",
-        "fc32ba049ec5d372915c7d80a17f708728cd8bcb28d77f915396587accd1d693"
+        "fc32ba049ec5d372915c7d80a17f708728cd8bcb28d77f915396587accd1d693",
+        "bdec8a9abbc6c0feb567719a40ca8c70d9e0e531411850358a14740b3edd6cd1"
       ],
       "works-in-progress/agreement.md": [
         "6352a644eaf91175ae1af308f1e8e74400d13b6b41c6ae58bc05c0bdad9cd053",
@@ -70,47 +74,55 @@
       ],
       "works-in-progress/classification-figure.png": [
         "87fbc475e90ecd8ed481e6e9b55f77cfd05f4d50cc3dfc86015192a7cd7e92ce",
-        "f1b7de22bcca8fa7a09c4afd3fd942c32476433eaefc3d44aac05b71cfa627d9"
+        "f1b7de22bcca8fa7a09c4afd3fd942c32476433eaefc3d44aac05b71cfa627d9",
+        "8eb3e700c85ad9769ea6266d32f6bab88f362d0de6bef90ad3fc627c84e97305"
       ],
       "works-in-progress/classification-comparison.png": [
         "5c1e95a2c2be6eba18f91c094de13cd77c8054e78ef1c043d70432b73cdae5ac",
-        "f98eee94440cc1096d3539d958893831be35eff37027b9310bb4ae3c4a2dca33"
+        "f98eee94440cc1096d3539d958893831be35eff37027b9310bb4ae3c4a2dca33",
+        "bffe1a85d34489fc9e0c5eba7a0a78f4d3e2e878010f134d52039446317b2162"
       ],
       "works-in-progress/december-2025/2025-12-24-BWL-letter.docx": [
         "49897ec66f30216191b9d3316c8e4469011a1e8658a849ca47308cec38ff3034"
       ],
       "works-in-progress/letter-december-comparison.docx": [
         "b41a7093be57af7754cf32931be388a7384f18bf6df593d7e2b1c094b5e84b81",
-        "63153db1a983757bf0ca4989dc73cc26a5f6abbebe7b196a69e852b6d977e77d"
+        "63153db1a983757bf0ca4989dc73cc26a5f6abbebe7b196a69e852b6d977e77d",
+        "d72f3bdccf2cfa9047c6cc9497b83692397c677fb202eb94f4c17c487d1daf1b"
       ],
       "works-in-progress/letter-review.docx": [
         "4a0aeeabba2d35344f24bf8f6cd7f51e58618470973641630e509e2426caa08e",
-        "f164fec5cac67125233c720e03a92c35acfd3cd556c88f290287aaada0a91928"
+        "f164fec5cac67125233c720e03a92c35acfd3cd556c88f290287aaada0a91928",
+        "bfb8b95dd70bf5b3335e7906d27edd22192d3093ce4a3197293e5256ce05bd4a"
       ],
       "works-in-progress/manuscript-contrasts.json": [
         "58a05fd7d9231634b7f8eacd87995e2f8ed1261fb6345f0bd782fbf83da63a9a"
       ],
       "works-in-progress/original-research-review.docx": [
         "23b8585f5b1cb0644da5a1347450f08b27ec8fce6ab675d539ab9b232d7e45be",
-        "43b4d339005c45b9f55678671901f33037e934b3d70d674df790666f797b859a"
+        "43b4d339005c45b9f55678671901f33037e934b3d70d674df790666f797b859a",
+        "e958d02c446699fedaef369b8c445d94e76d12ad6e10b330afdf0901113d0b78"
       ],
       "works-in-progress/original-research.docx": [
         "7ec6c846604f91cc5cb7555c6e1473fd3c4e46cdd67de1647ed0ced80797d665",
-        "789d2303bc6f98622eda25d2f1ec7ecf710600437ac46a3ad513cd9785951612"
+        "789d2303bc6f98622eda25d2f1ec7ecf710600437ac46a3ad513cd9785951612",
+        "649d8f7ca9cdcb5688b8261b17c5e375ced5b87bc00448797cf7a86d343b1fc3"
       ],
       "works-in-progress/overall-envelope.R": [
         "95d92482079124f9483e67329887f3e86448257b3a1ec7af0a1d7980e4be3b03"
       ],
       "works-in-progress/reviewer-questions.md": [
         "9e39503df47ea72a938c67e9e4d47b465e8269ec4bbfa43541944fdc0439affd",
-        "8059e600e47dedbcde7e10feb9874e745999343e55639345b654929a056ea0c5"
+        "8059e600e47dedbcde7e10feb9874e745999343e55639345b654929a056ea0c5",
+        "af1d0b45059bb4c78966c54e460498b3d22f368522ab5a279f3b1a08c44d7955"
       ],
       "works-in-progress/study-appraisal.csv": [
         "f433e74327fea052081f2b823163b517a32ca6eb2e016de431c5f515a7045f66"
       ],
       "works-in-progress/supplement-review.docx": [
         "1777fae1f42f2368b65e006299a167baf0ab093f5be4a339eb614f5d7dda4756",
-        "274f22e118310f868f88e4c21969158bd5df2fd91a30d7adfd111b633f4ba478"
+        "274f22e118310f868f88e4c21969158bd5df2fd91a30d7adfd111b633f4ba478",
+        "3a44e787de4663693d031000ab9609923a79a9e8afab1202c221630569e6bc17"
       ],
       "works-in-progress/manuscript-aggregate-tables.md": [
         "4ed6fc906e190a37f871e2f7d9718cf18fa80ad4626d71117bbcb88a6c0e2d54",
@@ -118,7 +130,8 @@
       ],
       "works-in-progress/referral-tables.md": [
         "ffa578c4d6e89ceb87c9c2ce9661d976cec1484714096f6e9c1197858bc5143b",
-        "b464d13bb89e00949f747b27561f0e02d39435b46e175d4b4830dc95129b700c"
+        "b464d13bb89e00949f747b27561f0e02d39435b46e175d4b4830dc95129b700c",
+        "9c728736c0db47a27f69ad8dc4451d93b1054342aac158900e5743922ac74abe"
       ],
       "works-in-progress/encounter-selection.md": [
         "dee51b84bb297efa9e9a79f567a6a8cfb91d9c3dcc7cad340693b3f1b203fabc",
@@ -126,23 +139,31 @@
       ],
       "works-in-progress/referral-all.png": [
         "4707cc609df74f679ef8052185d8da413848508e381d5595532f3789c575ff5c",
-        "a1f3c0de4ef2431867d0e4b66f64e2d4723651a98a93e2fb0c15f703eb201062"
+        "a1f3c0de4ef2431867d0e4b66f64e2d4723651a98a93e2fb0c15f703eb201062",
+        "d90b583e8217b8a4b09756bbcd5838e24db33db9b21e30c31cee10ea246ad0af"
       ],
       "works-in-progress/referral-icu.png": [
         "d36e9b3ce767c333193d524b31f18b173314a7fa61adabbf1a86a94a336d6228",
-        "8d07e18cdfe2ac8f005a29ab406e4e9dd2ad1cec0458e4107d165db73f138f6e"
+        "8d07e18cdfe2ac8f005a29ab406e4e9dd2ad1cec0458e4107d165db73f138f6e",
+        "c220311834ce69bec2d2c6adfd09b5c2f4e24c486c0cc803abec54af48f8a71b"
       ],
       "works-in-progress/referral-ed_inp.png": [
         "0c41242616748ede3a635947e536f0fd88062076bd25f9468aeee945c92f199c",
-        "ce0e9f912b14c12f0b9c36b4a2bf1eafe2662238c14c3082b3f923e828df16ef"
+        "ce0e9f912b14c12f0b9c36b4a2bf1eafe2662238c14c3082b3f923e828df16ef",
+        "e6516958ed058166338a76f33d39e41531c6460c6594ada7a446a5ceb27bd7d1"
       ],
       "works-in-progress/referral-pft.png": [
         "bb24a25770cea453b2dfdd2339000e397ef49b5f0619402366449f3d8ec5981c",
-        "745aa62fcfbac3a85d6694c2df273d8928c051ff661e79d8cfe5658cf3a1fd3b"
+        "745aa62fcfbac3a85d6694c2df273d8928c051ff661e79d8cfe5658cf3a1fd3b",
+        "2cd49b5c579567c984167ba8b2a96fbaae1873ad7d52c331c63c54ee5f3838a8"
       ],
       "works-in-progress/referral-efficiency.png": [
         "651e48903543a589e2538831c2b4f75a3068667e4c5a6abb1542082f576962c9",
-        "58cda99975a4d04ba6c7889d07e2a0a1ac70d9e5819a33642eb4f54433b721e8"
+        "58cda99975a4d04ba6c7889d07e2a0a1ac70d9e5819a33642eb4f54433b721e8",
+        "d1180fe4d8cab2426ed062d07c80080a18add93f33dc11d6773fa516af1b5f14"
+      ],
+      "works-in-progress/classification-by-reading.png": [
+        "414feaefcc500e4ce77688e1375eb81932ddd6263fd01f2b16b82ce3168adc6f"
       ]
     }
   },

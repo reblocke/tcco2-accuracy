@@ -1,5 +1,7 @@
 # Two-step classification of arterial PaCO₂ ≥45 mmHg
 
+For each modeled policy, an occasion either receives an ABG or receives a definitive CO₂ classification from TcCO₂. A percentage policy sets the maximum modeled chance of a wrong classification at each display classified without an ABG. Missed hypercapnia and false positives are subsets of those definitive calls. Under the fixed policy, patients with displays of 40–50 mmHg or outside 20–100 mmHg receive an ABG. [Device-policy figures and tables](../works-in-progress/README.md#evidence-and-questions-for-review)
+
 ## Post hoc specification, November 24, 2026
 
 The investigators selected the 1%, 5%, and 10% wrong-call caps after inspecting the exact-reading lookup. Predictions for simultaneous PaCO₂ remain the primary results. These analyses use the four assigned, receipt-verified priors and saved agreement fits. Each patient has total weight one across eligible arterial result records on the first testing day. All settings is indexed separately. This protocol extends the continuous strategy in the November manuscript. It requires no new sampling.

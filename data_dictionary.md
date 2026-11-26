@@ -176,8 +176,10 @@ The Pages synthetic conditional lookup contains 81 integer readings per setting,
 
 ## Working manuscript exhibits
 
-The [manuscript tables](works-in-progress/cohort-and-prediction.md) give separate denominators for patients, encounters and arterial result records. Prediction intervals and paired medians are in mmHg. Both threshold probabilities include equality. The versioned working tables retain historical precision holds alongside amended results. The current public lookup qualified at all 324 combinations. The approved arterial distribution is a grouped raster figure. The supporting fixed empirical weights are private.
+The [manuscript tables](works-in-progress/cohort-and-prediction.md) give separate denominators for patients, encounters and arterial result records. Prediction intervals and paired medians are in mmHg. Both threshold probabilities include equality. The current public lookup qualified at all 324 combinations. The numerical audit records earlier precision holds. The approved arterial distribution is a grouped raster figure. The supporting fixed empirical weights are private.
 
 The public calculator displays the approved summary lookup together with separate rounded fixed-grid drawing coordinates from `models/pages/prediction-plots.json`. The private source curves remain on the mini.
 
 The [paired-study appraisal](works-in-progress/study-appraisal.csv) describes the 76-row source union, including 75 overall units. It distinguishes inherited Conway protocol and risk judgments from primary-report adjudications. Unreported timing, calibration and failures are identified in the corresponding fields.
+
+The [manuscript threshold-risk figure](works-in-progress/classification-figure.png) uses those lookup probabilities at each exact TcCO₂. Its bands are pointwise credible intervals for each threshold probability. The [conditional classification bars](works-in-progress/classification-by-reading.png) give percentages among testing occasions with that exact reading. The ABG policies in the [review tables](works-in-progress/referral-tables.md) give outcomes per 100 eligible occasions, using rounded device displays.

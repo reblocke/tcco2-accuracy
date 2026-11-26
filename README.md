@@ -17,7 +17,7 @@ The reference population comprises patients who undergo arterial blood gas testi
 
 The calculator is for research use. Independent biostatistical review and validation
 of individual-patient coverage are pending. Preliminary results were presented at
-ATS and CHEST in 2025. The letter and supplement are available as working drafts.
+ATS and CHEST in 2025. The Original Research, Short Report and supplement are available as working drafts.
 
 The current predictions use the [joint Bayesian agreement model](docs/FUTURE_SETTING.md)
 and a fixed empirical arterial CO₂ distribution. The approved
@@ -30,7 +30,9 @@ analysis, including the correction to its mixed-log and analytic variance equati
 
 ## Works in progress
 
-Read the Original Research manuscript or the standalone Short Report, compare the revisions with December, and open the supplement and statistical review questions from the [manuscript working package](works-in-progress/README.md).
+The four-setting figures show how likely simultaneous PaCO₂ is to reach 45 or 52 mmHg after **an observed TcCO₂ reading**. At each reading, the classification bars show what a paired ABG would reveal if TcCO₂ ≥45 mmHg were called positive. Separate policy figures count who receives an ABG per 100 eligible testing occasions. [Threshold probabilities](works-in-progress/classification-figure.png) · [Classification at each reading](works-in-progress/classification-by-reading.png) · [ABG policies](works-in-progress/referral-tables.md)
+
+The manuscript packet includes the Original Research, Short Report, supplement, redlines, and questions for independent statistical review. [Works in progress](works-in-progress/README.md)
 
 ## Choose a Route
 

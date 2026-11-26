@@ -9,6 +9,10 @@
   correction. The documented downstream implementation contract records the code design;
   any separate review is outside this repository implementation.
 
+## Conditional threshold figures, November 25, 2026
+
+For coauthor review, show the two inclusive arterial threshold probabilities conditional on each exact observed TcCO₂. Pointwise credible bands condition on the reading by weighting agreement-parameter draws by its marginal density under the fixed arterial distribution. Primary lines come from the approved full-draw lookup. Classification bars use the same exact readings. The secondary ABG policies retain their 1-mmHg display bins. [Calculation and precision](MANUSCRIPT_OUTPUTS.md#threshold-risk-and-classification-given-an-exact-reading)
+
 ## Workflow and monorepo stabilization
 - The repository remains a monorepo for this wave: Python package, static browser app, source/reference
   data, artifacts, and manuscript drafts stay in one repository with nested `AGENTS.md` guardrails

@@ -2,9 +2,9 @@
 
 Posterior medians with pointwise 95% credible intervals. Counts per 100 use all eligible patient-weighted testing occasions.
 
-## Single TcCO₂ cutoff of 45 mmHg
+## Forward classification across the population with a single TcCO₂ cutoff of 45 mmHg
 
-Classify a reading of at least 45 mmHg as positive. Sensitivity uses all truly hypercapnic occasions. Specificity uses all truly nonhypercapnic occasions.
+Classify a reading of at least 45 mmHg as positive. Sensitivity uses all truly hypercapnic occasions. Specificity uses all truly nonhypercapnic occasions. For the question asked after observing one particular TcCO₂ reading, see the [conditional classification bars](classification-by-reading.png) and [arterial threshold probabilities](classification-figure.png).
 
 | Measure | All settings | Critical Care Billing | ED / inpatient | Ambulatory |
 | --- | --- | --- | --- | --- |
@@ -21,7 +21,7 @@ Classify a reading of at least 45 mmHg as positive. Sensitivity uses all truly h
 
 ## Reflex ABG for continuous TcCO₂ of 40–50 mmHg
 
-Refer the inclusive 40–50 range. Outside it, classify using TcCO₂ alone. In All settings this refers 30.07 per 100, compared with 36.95 for the whole-number device rule. Rounding widens the underlying continuous range that displays 40–50 and the device rule also refers both off-grid tails. [Whole-number referral policies](referral-tables.md)
+Patients with a continuous reading from 40 through 50 mmHg receive an ABG. Other readings give a classification using TcCO₂ alone. In All settings, 30.07 per 100 receive an ABG under this rule and 36.95 under its whole-number display counterpart. Rounding widens the underlying range that displays 40–50, and patients with off-grid displays also receive an ABG. [Whole-number device policies](referral-tables.md)
 
 | Measure | All settings | Critical Care Billing | ED / inpatient | Ambulatory |
 | --- | --- | --- | --- | --- |
