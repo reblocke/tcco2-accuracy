@@ -10,10 +10,11 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from classification_example import positive_calls_per_100, read_lookup
 from inverse_figure import CUTS, GRID, classification_proportions
 from matplotlib.patches import Patch
 from matplotlib.ticker import PercentFormatter
-from private_inputs import digest, private_destination, require_digest
+from private_inputs import digest, private_destination
 from referral_exhibits import COLORS, HATCHES, save
 
 SETTINGS = {
@@ -24,11 +25,7 @@ SETTINGS = {
 }
 
 
-def read_checked(pages, checks, draws):
-    receipt = json.loads((pages / "conditional-release.json").read_bytes())
-    lookup = pages / "conditional-lookup.json"
-    require_digest(lookup, receipt["lookup_sha256"])
-    groups = json.loads(lookup.read_bytes())["groups"]
+def read_checked(receipt, probabilities, checks, draws):
     data = {}
     for group, n in zip(SETTINGS, draws, strict=True):
         record = json.loads((checks / f"{group}-{n}.json").read_bytes())
@@ -49,7 +46,7 @@ def read_checked(pages, checks, draws):
         ):
             raise ValueError(f"Band receipt differs from the requested inputs for {group}")
         np.testing.assert_array_equal(record["readings"], GRID)
-        p = np.asarray([row["tails"] for row in groups[group]["rows"]])
+        p = np.asarray([probabilities[group][reading] for reading in GRID], dtype=float)
         edges = np.asarray(record["edges"])
         mask = np.asarray(record["qualified"], dtype=bool)
         mc = np.asarray(record["mc_radius"])
@@ -159,7 +156,8 @@ def risks(data, dest):
     save(fig, dest, "classification-figure")
 
 
-def bars(data, dest):
+def bars(probabilities, dest, *, lookup_sha256):
+    true_positives, false_positives = positive_calls_per_100(probabilities)
     fig, axes = plt.subplots(4, 1, sharex=True, figsize=(7.1, 6.5))
     fig.subplots_adjust(left=0.102, right=0.978, top=0.819, bottom=0.194, hspace=0.59)
     fig.text(
@@ -176,7 +174,7 @@ def bars(data, dest):
     for ax, (group, label) in zip(axes, SETTINGS.items(), strict=True):
         style(ax)
         ax.set_xticks([20, 30, 40, 45, 50, 60, 70, 80, 90, 100])
-        p = data[group][0][:, 0]
+        p = [probabilities[group][reading][CUTS.index(45)] for reading in GRID]
         shares = classification_proportions(GRID, p)
         np.testing.assert_allclose(shares.sum(axis=1), 1, rtol=0, atol=2e-15)
         base = np.zeros(len(GRID))
@@ -217,10 +215,14 @@ def bars(data, dest):
     fig.text(
         0.102,
         0.016,
-        "At TcCO₂ 45 in All settings, about 32 of 100 calls are true positives and 68 are false positives.",
+        f"At TcCO₂ 45 in All settings, about {true_positives} of 100 calls are true positives and {false_positives} are false positives.",
         fontsize=7.9,
     )
     save(fig, dest, "classification-by-reading")
+    image = dest / "classification-by-reading.png"
+    image.with_suffix(".source.json").write_text(
+        json.dumps({"lookup_sha256": lookup_sha256, "png_sha256": digest(image)}) + "\n"
+    )
 
 
 def comparison(historical, dest):
@@ -259,7 +261,8 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     private_destination(args.dest)
-    data = read_checked(args.pages, args.checks, args.draws)
+    receipt, probabilities = read_lookup(args.pages)
+    data = read_checked(receipt, probabilities, args.checks, args.draws)
     risks(data, args.dest)
-    bars(data, args.dest)
+    bars(probabilities, args.dest, lookup_sha256=receipt["lookup_sha256"])
     comparison(args.historical, args.dest)

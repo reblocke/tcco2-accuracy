@@ -2,12 +2,14 @@
 
 import argparse
 import io
+import json
 import os
 from difflib import SequenceMatcher
 from hashlib import sha256
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
+from classification_example import positive_calls_per_100, read_lookup
 from docx import Document
 from docx.oxml.ns import qn
 from PIL import Image
@@ -15,20 +17,22 @@ from private_inputs import digest, private_destination, require_digest
 from referral_documents import CAPTION, insert_figure
 
 PARENTS = {
+    # Build the supplement first so a stale figure is detected before the other manuscripts are written.
+    "supplement": "152c755dcb2e35323a1d7c0fa3a715e4a5c1d64f25a73412598e82bff6ed214d",
     "letter": "cd38fd8df865b7eb819f8c0ddf46b42c0233c24a44c9ad60f57d5a7604a11414",
     "original-research": "789d2303bc6f98622eda25d2f1ec7ecf710600437ac46a3ad513cd9785951612",
-    "supplement": "152c755dcb2e35323a1d7c0fa3a715e4a5c1d64f25a73412598e82bff6ed214d",
+}
+DEFAULT_PAGES = Path(__file__).resolve().parents[2] / "models/pages"
+# PR #26 predates the per-figure source receipt. These are its reviewed bytes.
+ARCHIVED_BAR_SOURCE = {
+    "lookup_sha256": "6de657bd14e5b0a2de471000b4abd692dc42eca9e601ac999c9114c67964bbaa",
+    "png_sha256": "414feaefcc500e4ce77688e1375eb81932ddd6263fd01f2b16b82ce3168adc6f",
 }
 RISK_CAPTION = (
     "Supplementary Figure 2a. Modeled probabilities of simultaneous PaCO₂ ≥45 and ≥52 mmHg at each exact observed TcCO₂. "
     "Lines give the full posterior-averaged predictions. Shading gives pointwise 95% credible intervals for these probabilities, conditional on the fixed arterial distribution. "
     "Within each agreement-parameter draw we computed both threshold risks, then weighted each draw by the density it assigned to the observed reading. "
     "A gap in shading indicates that an endpoint failed its numerical precision check."
-)
-BAR_CAPTION = (
-    "Supplementary Figure 2b. Results of classifying TcCO₂ ≥45 mmHg as positive. Each column represents 100 eligible occasions with that exact reading. "
-    "Below an observed 45, arterial hypercapnia is a false negative. At or above an observed 45, an arterial value below 45 is a false positive. "
-    "In All settings at an observed 45, about 32 calls per 100 are true positives and 68 are false positives."
 )
 REVISIONS = {
     "We compared referral for displays of 40–50 mmHg with three post hoc rules. Each limited the probability of misclassifying simultaneous PaCO₂ ≥45 at a definitive display to 1%, 5% or 10%. We integrated over each display bin, referred readings outside 20–100 and assumed a timely ABG resolved each referral.": "We compared a fixed rule in which patients with displays of 40–50 mmHg receive an ABG with three post hoc rules. A reading could classify simultaneous PaCO₂ relative to 45 mmHg only if its modeled chance of error was at most 1%, 5% or 10%, respectively. We integrated over each display bin. Patients with displays outside 20–100 received an ABG under every rule. We assumed a timely ABG resolved arterial status.",
@@ -89,7 +93,22 @@ def text_edit(paragraph, new):
         raise ValueError("Run-preserving edit changed the intended reading")
 
 
-def revise(parents, exhibits, dest, stem):
+def bar_caption(image, pages):
+    release, probabilities = read_lookup(pages)
+    sidecar = image.with_suffix(".source.json")
+    source = json.loads(sidecar.read_bytes()) if sidecar.exists() else ARCHIVED_BAR_SOURCE
+    if source["lookup_sha256"] != release["lookup_sha256"]:
+        raise ValueError("Classification figure and Word caption use different lookup revisions")
+    require_digest(image, source["png_sha256"])
+    true_positives, false_positives = positive_calls_per_100(probabilities)
+    return (
+        "Supplementary Figure 2b. Results of classifying TcCO₂ ≥45 mmHg as positive. Each column represents 100 eligible occasions with that exact reading. "
+        "Below an observed 45, arterial hypercapnia is a false negative. At or above an observed 45, an arterial value below 45 is a false positive. "
+        f"In All settings at an observed 45, about {true_positives} calls per 100 are true positives and {false_positives} are false positives."
+    )
+
+
+def revise(parents, exhibits, dest, stem, *, pages=DEFAULT_PAGES):
     source = parents / (stem + ".docx")
     require_digest(source, PARENTS[stem])
     doc = Document(source)
@@ -97,7 +116,8 @@ def revise(parents, exhibits, dest, stem):
         anchor = next(p for p in doc.paragraphs if p.text.startswith("Supplementary Figure 2."))
         text_edit(anchor, RISK_CAPTION)
         after = next(p for p in doc.paragraphs if p.text == "Model-dependence analyses")
-        insert_figure(doc, exhibits / "classification-by-reading.png", BAR_CAPTION, before=after)
+        image = exhibits / "classification-by-reading.png"
+        insert_figure(doc, image, bar_caption(image, pages), before=after)
     for p in doc.paragraphs:
         t = p.text
         if "Disposition per 100 eligible testing occasions under the 1%" in t:
@@ -162,7 +182,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     for arg in ("parents", "exhibits", "dest"):
         parser.add_argument(arg, type=lambda s: Path(s).resolve())
+    parser.add_argument(
+        "--pages",
+        type=Path,
+        default=DEFAULT_PAGES,
+        help="Directory containing the lookup and its release receipt",
+    )
     args = parser.parse_args()
     private_destination(args.dest)
     for name in PARENTS:
-        revise(args.parents, args.exhibits, args.dest, name)
+        revise(args.parents, args.exhibits, args.dest, name, pages=args.pages)
